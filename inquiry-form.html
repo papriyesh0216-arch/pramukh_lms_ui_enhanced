@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inquiry Form - Pramukh Academy</title>
+  <meta name="description" content="Standalone inquiry form for Pramukh Academy lead capture">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/leads.css">
+  <link rel="stylesheet" href="css/inquiry-form.css">
+</head>
+<body class="inquiry-page">
+  <div class="inquiry-shell">
+    <header class="inquiry-topbar">
+      <div class="inquiry-brand">
+        <div class="inquiry-logo-mark">
+          <img src="assets/Logo-04.png" alt="Pramukh Academy" />
+        </div>
+        <div>
+          <div class="inquiry-brand-title">Pramukh Academy</div>
+          <div class="inquiry-brand-sub">Standalone Inquiry Module</div>
+        </div>
+      </div>
+      <div class="inquiry-topbar-actions">
+        <button class="topbar-icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">
+          <i class="fas fa-sun" id="theme-icon"></i>
+        </button>
+        <a class="btn btn-outline btn-sm" href="index.html">
+          <i class="fas fa-arrow-left"></i> Back to CRM
+        </a>
+      </div>
+    </header>
+
+    <main class="inquiry-stage">
+      <section class="inquiry-panel inquiry-form-panel">
+        <div class="inquiry-hero">
+          <div>
+            <div class="inquiry-eyebrow">Inquiry Form</div>
+            <h1 class="panel-title">Add Inquiry</h1>
+            <p class="panel-subtitle">Capture a student lead with the same field set used in the CRM modal.</p>
+          </div>
+          <div class="inquiry-hero-meta">
+            <span class="badge badge-primary">Premium Entry</span>
+            <span class="badge badge-gray">Required fields marked *</span>
+          </div>
+        </div>
+
+        <form id="inquiry-form" class="inquiry-form">
+          <div class="modal-grid-2">
+            <div class="form-field">
+              <label>Full Name *</label>
+              <input type="text" id="i-name" required placeholder="Full Name">
+            </div>
+            <div class="form-field">
+              <label>Contact No. *</label>
+              <input type="tel" id="i-phone" required placeholder="10-digit number">
+            </div>
+            <div class="form-field">
+              <label>Email ID *</label>
+              <input type="email" id="i-email" required placeholder="email@gmail.com">
+            </div>
+            <div class="form-field">
+              <label>Pincode *</label>
+              <input type="text" id="i-pincode" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit pincode">
+            </div>
+            <div class="form-field">
+              <label>City *</label>
+              <input type="text" id="i-city" required placeholder="City name">
+            </div>
+            <div class="form-field">
+              <label>Academic Status *</label>
+              <select id="i-academic-status" required>
+                <option value="HSC Running">HSC Running</option>
+                <option value="HSC Completed">HSC Completed</option>
+                <option value="Graduation Running" selected>Graduation Running</option>
+                <option value="Graduation Completed">Graduation Completed</option>
+                <option value="Post Graduation">Post Graduation</option>
+              </select>
+            </div>
+            <div class="form-field span-2">
+              <label>Inquiry For (Course Selection) *</label>
+              <div class="radio-card-grid cols-3">
+                <label class="radio-card">
+                  <input type="radio" name="course" value="UPSC Foundation" checked required>
+                  <span class="radio-mark"></span>
+                  <span><span class="radio-title">UPSC Foundation</span><span class="radio-subtitle">Foundation batch</span></span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="course" value="GPSC Class 1-2" required>
+                  <span class="radio-mark"></span>
+                  <span><span class="radio-title">GPSC Class 1-2</span><span class="radio-subtitle">Class 1-2 preparation</span></span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="course" value="Sankalp Programme" required>
+                  <span class="radio-mark"></span>
+                  <span><span class="radio-title">Sankalp Programme</span><span class="radio-subtitle">Residential preparation</span></span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="course" value="IAS/IPS Coaching" required>
+                  <span class="radio-mark"></span>
+                  <span><span class="radio-title">IAS/IPS Coaching</span><span class="radio-subtitle">Advanced civil services</span></span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="course" value="Interview Prep" required>
+                  <span class="radio-mark"></span>
+                  <span><span class="radio-title">Interview Prep</span><span class="radio-subtitle">Interview guidance</span></span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="course" value="Other" required>
+                  <span class="radio-mark"></span>
+                  <span><span class="radio-title">Other</span><span class="radio-subtitle">Counselor to confirm</span></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-field span-2">
+              <label>Preferred Mode of Learning *</label>
+              <div class="radio-inline-group">
+                <label class="radio-pill"><input type="radio" name="mode" value="Classroom" checked required>Classroom</label>
+                <label class="radio-pill"><input type="radio" name="mode" value="Online" required>Online</label>
+                <label class="radio-pill"><input type="radio" name="mode" value="Residential Mode" required>Residential Mode</label>
+                <label class="radio-pill"><input type="radio" name="mode" value="Hybrid" required>Hybrid</label>
+              </div>
+            </div>
+            <div class="form-field full">
+              <label>Any Specific Query (Optional)</label>
+              <textarea id="i-query" rows="3" placeholder="Write questions, timing preference, or course doubts..."></textarea>
+            </div>
+          </div>
+
+          <div class="inquiry-actions">
+            <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-paper-plane"></i> Submit Inquiry</button>
+            <span id="inquiry-status" class="form-status"></span>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/inquiry-form.js"></script>
+</body>
+</html>
