@@ -646,6 +646,37 @@
   border-radius: 50%;
 }
 
+.dashboard-quick-actions-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dashboard-quick-action {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+}
+
+.dashboard-quick-action i { color: var(--primary); }
+.dashboard-quick-action:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
 /* Today's Tasks (right panel) */
 .tasks-card {
   background: var(--bg-card);

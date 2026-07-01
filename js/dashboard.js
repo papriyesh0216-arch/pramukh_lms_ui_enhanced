@@ -23,6 +23,7 @@ const DashboardModule = {
     this.renderOperationalReports();
     this.renderMiniCalendar();
     this.renderTasks();
+    this.renderRecentActivities();
     // Charts after a small delay to let DOM settle
     setTimeout(() => {
       this.renderSegmentationChart();
@@ -104,7 +105,9 @@ const DashboardModule = {
       { icon: 'fa-comments', title: 'Counselling Conversion', value: '22.2%', meta: 'Converted after counselling' },
       { icon: 'fa-user-check', title: 'Counselor-wise Assigned', value: '2,214', meta: 'Owned inquiries' },
       { icon: 'fa-route', title: 'Stage-wise Inquiry Count', value: '9', meta: 'Journey stages tracked' },
-      { icon: 'fa-hourglass-half', title: 'Avg. Time Per Stage', value: '2.4d', meta: 'Operational bottleneck view' }
+      { icon: 'fa-hourglass-half', title: 'Avg. Time Per Stage', value: '2.4d', meta: 'Operational bottleneck view' },
+      { icon: 'fa-hourglass-end', title: 'Lead Aging', value: '47', meta: 'Inquiries older than 3 days' },
+      { icon: 'fa-bullhorn', title: 'Source Distribution', value: '6', meta: 'Active inquiry sources' }
     ];
 
     container.innerHTML = reports.map(report => `
@@ -339,10 +342,10 @@ const DashboardModule = {
 
   renderTasks() {
     const tasks = [
-      { type: 'task-call', icon: 'fa-phone', name: 'Call Rahul Patel', course: 'UPSC Foundation', time: '10:30 AM' },
-      { type: 'task-chat', icon: 'fa-comments', name: 'Counseling with Neha Joshi', course: 'GPSC Class 1-2', time: '12:00 PM' },
-      { type: 'task-follow', icon: 'fa-redo', name: 'Follow up with Hardik Patel', course: 'UPSC Foundation', time: '02:30 PM' },
-      { type: 'task-email', icon: 'fa-envelope', name: 'Send Brochure to Sneha Desai', course: 'Sankalp Programme', time: '04:00 PM' },
+      { type: 'task-call', icon: 'fa-user-plus', name: 'New inquiry review - Rahul Patel', course: 'UPSC Foundation', time: '09:45 AM' },
+      { type: 'task-chat', icon: 'fa-comments', name: 'Counselling with Neha Joshi', course: 'GPSC Class 1-2', time: '12:00 PM' },
+      { type: 'task-follow', icon: 'fa-redo', name: 'Follow-up with Hardik Patel', course: 'UPSC Foundation', time: '02:30 PM' },
+      { type: 'task-email', icon: 'fa-list-check', name: 'Pending task: send brochure to Sneha', course: 'Sankalp Programme', time: '04:00 PM' },
     ];
     const container = document.getElementById('tasks-list');
     if (!container) return;
@@ -354,6 +357,28 @@ const DashboardModule = {
           <div class="task-course">${t.course}</div>
         </div>
         <div class="task-time">${t.time}</div>
+      </div>
+    `).join('');
+  },
+
+  renderRecentActivities() {
+    const container = document.getElementById('recent-activities-list');
+    if (!container) return;
+    const items = [
+      { type: 'task-call', icon: 'fa-user-plus', name: 'Inquiry created - Rahul Patel', course: 'Website Inquiry Form', time: '09:30 AM' },
+      { type: 'task-follow', icon: 'fa-user-check', name: 'Assigned to Bharat Sir', course: 'Manual assignment', time: '09:24 AM' },
+      { type: 'task-chat', icon: 'fa-calendar-check', name: 'Follow-up completed', course: 'Outcome: Interested', time: '09:18 AM' },
+      { type: 'task-email', icon: 'fa-comments', name: 'Counselling scheduled', course: 'Parent meeting requested', time: '09:05 AM' },
+      { type: 'task-call', icon: 'fa-graduation-cap', name: 'Converted to admission', course: 'Admission Process Started', time: '08:57 AM' }
+    ];
+    container.innerHTML = items.map(item => `
+      <div class="task-item">
+        <div class="task-icon ${item.type}"><i class="fas ${item.icon}"></i></div>
+        <div class="task-body">
+          <div class="task-name">${item.name}</div>
+          <div class="task-course">${item.course}</div>
+        </div>
+        <div class="task-time">${item.time}</div>
       </div>
     `).join('');
   },

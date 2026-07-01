@@ -75,7 +75,7 @@ const DrawerModule = {
       brochure: 'Brochure sent',
       fee: 'Fee structure shared',
       batch: 'Batch details shared',
-      admission: 'Admission form sent',
+      admission: 'Convert to Admission',
       counselling: 'Counselling action opened',
       note: 'Note added'
     };
@@ -280,11 +280,11 @@ const DrawerModule = {
 
     document.getElementById('drawer-profile-meta').innerHTML = `
       <div class="profile-meta-item"><div class="profile-meta-label">Course</div><div class="profile-meta-value">${this.escapeHtml(lead.course)}</div></div>
-      <div class="profile-meta-item"><div class="profile-meta-label">Source</div><div class="profile-meta-value">${this.escapeHtml(lead.source)}</div></div>
+      <div class="profile-meta-item"><div class="profile-meta-label">Inquiry Source</div><div class="profile-meta-value">${this.escapeHtml(lead.source)}</div></div>
       <div class="profile-meta-item"><div class="profile-meta-label">Campaign</div><div class="profile-meta-value">${this.escapeHtml(lead.campaign || '-')}</div></div>
       <div class="profile-meta-item"><div class="profile-meta-label">Inquiry Date</div><div class="profile-meta-value">${this.escapeHtml(lead.inquiryDate)}</div></div>
       <div class="profile-meta-item">
-        <div class="profile-meta-label">Owner</div>
+        <div class="profile-meta-label">Current Owner</div>
         <div class="profile-meta-value profile-meta-owner">
           <div class="owner-mini-avatar">${this.escapeHtml((lead.owner || 'B').charAt(0))}</div>${this.escapeHtml(lead.owner)}
         </div>
@@ -298,7 +298,7 @@ const DrawerModule = {
       'Follow-up',
       'Counselling',
       'Qualified Lead',
-      'Admission Started',
+      'Admission Process Started',
       'Fee Paid',
       'Student Created'
     ];
@@ -328,7 +328,13 @@ const DrawerModule = {
           ${stageDates[i] ? `<span class="stage-date">${stageDates[i]}</span>` : ''}
         </div>
       `;
-    }).join('');
+    }).join('') + `
+      <div class="journey-outcome-chips">
+        <span class="alt-outcome-chip">Lost Lead</span>
+        <span class="alt-outcome-chip">Closed Inquiry</span>
+        <span class="alt-outcome-chip">Reopened Inquiry</span>
+      </div>
+    `;
 
     const infoRows = [
       { icon: 'fa-user', label: 'Full Name', value: lead.name },
@@ -337,10 +343,10 @@ const DrawerModule = {
       { icon: 'fa-location-dot', label: 'Pincode', value: lead.pincode || '-' },
       { icon: 'fa-map-marker-alt', label: 'City', value: lead.city },
       { icon: 'fa-book', label: 'Course Interested', value: lead.course },
-      { icon: 'fa-laptop', label: 'Mode of Learning', value: lead.mode },
+      { icon: 'fa-laptop', label: 'Preferred Learning Mode', value: lead.mode },
       { icon: 'fa-graduation-cap', label: 'Academic Status', value: lead.academicStatus },
       { icon: 'fa-layer-group', label: 'Lead Segment', value: lead.segment || this.getLeadSegmentName?.(lead) || '-' },
-      { icon: 'fa-user-check', label: 'Lead Owner', value: lead.owner || lead.assignedTo || '-' },
+      { icon: 'fa-user-check', label: 'Current Owner', value: lead.owner || lead.assignedTo || '-' },
       { icon: 'fa-question-circle', label: 'Specific Query', value: lead.query || '-' }
     ];
 
@@ -390,8 +396,8 @@ const DrawerModule = {
 
     document.getElementById('drawer-followup-details').innerHTML = [
       { label: 'Follow-up Type', value: lead.followupType || 'Call' },
-      { label: 'Status', value: lead.followupStatus || 'Scheduled' },
-      { label: 'Outcome', value: lead.followupOutcome || 'Pending' },
+      { label: 'Status', value: `<span class="state-chip">${this.escapeHtml(lead.followupStatus || 'Scheduled')}</span>` },
+      { label: 'Outcome', value: `<span class="outcome-chip">${this.escapeHtml(lead.followupOutcome || 'Pending')}</span>` },
       { label: 'Date', value: lead.followupDate || 'Not Set' },
       { label: 'Time', value: lead.followupTime || '-' },
       { label: 'Purpose / Remarks', value: lead.followupPurpose || 'Share details and check interest.' },
@@ -402,6 +408,54 @@ const DrawerModule = {
         <div class="followup-detail-value">${r.value}</div>
       </div>
     `).join('');
+
+    const counselling = lead.counselling;
+    const counsellingEl = document.getElementById('drawer-counselling-history');
+    if (counsellingEl) {
+      counsellingEl.innerHTML = counselling ? `
+        <div class="comm-item">
+          <div class="comm-icon tl-meeting"><i class="fas fa-comments"></i></div>
+          <div class="comm-body">
+            <div class="comm-title">Counselling Session - ${this.escapeHtml(counselling.interest)}</div>
+            <div class="comm-desc">${this.escapeHtml(counselling.summary || counselling.requirement || 'Discussion summary recorded.')}</div>
+            <div class="comm-meta"><span>${this.escapeHtml(counselling.mode)}</span><span>Parent: ${this.escapeHtml(counselling.parentInvolvement || 'Not Required')}</span></div>
+          </div>
+          <div class="comm-time">${this.escapeHtml(counselling.time || '')}</div>
+        </div>
+      ` : `
+        <div class="comm-item">
+          <div class="comm-icon tl-meeting"><i class="fas fa-comments"></i></div>
+          <div class="comm-body">
+            <div class="comm-title">No counselling session recorded</div>
+            <div class="comm-desc">Schedule counselling to capture requirement, interest level, parent involvement, and next action.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const notes = communications.filter(item => /note/i.test(item.title || '') || item.type === 'note').slice(0, 3);
+    const notesEl = document.getElementById('drawer-internal-notes');
+    if (notesEl) {
+      notesEl.innerHTML = notes.length ? notes.map(note => `
+        <div class="comm-item">
+          <div class="comm-icon"><i class="fas fa-sticky-note"></i></div>
+          <div class="comm-body">
+            <div class="comm-title">${this.escapeHtml(note.title)}</div>
+            <div class="comm-desc">${this.escapeHtml(note.desc)}</div>
+            <div class="comm-meta"><span>By ${this.escapeHtml(note.by)}</span></div>
+          </div>
+          <div class="comm-time">${this.escapeHtml(note.time || '')}</div>
+        </div>
+      `).join('') : `
+        <div class="comm-item">
+          <div class="comm-icon"><i class="fas fa-sticky-note"></i></div>
+          <div class="comm-body">
+            <div class="comm-title">No internal notes yet</div>
+            <div class="comm-desc">Staff-only notes will appear here for counsellor review.</div>
+          </div>
+        </div>
+      `;
+    }
 
     const priority = lead.priority || 'low';
     document.getElementById('drawer-score-value').textContent = lead.leadScore;

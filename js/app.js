@@ -152,7 +152,7 @@ const App = {
     if (!nav) return;
     const sections = this.mobileSectionsByScreen[this.currentScreen] || [];
     const screenLabels = {
-      leads: { label: 'All Leads', icon: 'fa-users' },
+      leads: { label: 'Inquiry List', icon: 'fa-users' },
       calendar: { label: 'Calendar', icon: 'fa-calendar-days' }
     };
 
@@ -278,7 +278,7 @@ const App = {
     // Update page title in topbar
     const titles = {
       dashboard: 'Student Inquiry Dashboard',
-      leads: 'Student Inquiry Lead',
+      leads: 'Inquiry List',
       calendar: 'Follow-Up Calendar',
       segmentation: 'Assignment & Segmentation'
     };
@@ -301,6 +301,22 @@ const App = {
     document.getElementById('dashboard-add-lead-btn')?.addEventListener('click', () => {
       this.showScreen('leads');
       LeadsModule.showAddEditModal();
+    });
+    document.getElementById('dashboard-qa-add')?.addEventListener('click', () => {
+      this.showScreen('leads');
+      LeadsModule.showAddEditModal();
+    });
+    document.getElementById('dashboard-qa-list')?.addEventListener('click', () => this.showScreen('leads'));
+    document.getElementById('dashboard-qa-assign')?.addEventListener('click', () => this.showScreen('segmentation'));
+    document.getElementById('dashboard-qa-followup')?.addEventListener('click', () => {
+      this.showScreen('leads');
+      const lead = LeadsModule.filteredLeads?.[0] || LeadsModule.leads?.[0];
+      if (lead) LeadsModule.showManageFollowup(lead.id);
+    });
+    document.getElementById('dashboard-qa-counselling')?.addEventListener('click', () => {
+      this.showScreen('leads');
+      const lead = LeadsModule.filteredLeads?.[0] || LeadsModule.leads?.[0];
+      if (lead) LeadsModule.showCounsellingModal(lead.id);
     });
     document.getElementById('dashboard-print-btn')?.addEventListener('click', () => window.print());
     document.getElementById('dashboard-report-pdf')?.addEventListener('click', () => this.exportDashboardReport('pdf'));
@@ -655,7 +671,26 @@ const SegmentationModule = {
         <div class="seg-report-value">${card.value}</div>
         <div class="seg-report-meta">${card.meta}</div>
       </div>
-    `).join('');
+    `).join('') + `
+      <div class="assignment-history-panel">
+        <div class="panel-heading">
+          <h2>Assignment History</h2>
+          <span class="panel-subtitle">Presentation record of ownership changes</span>
+        </div>
+        <div class="assignment-history-list">
+          ${leads.slice(0, 4).map((lead, index) => `
+            <div class="assignment-history-row">
+              <span>${lead.enqNo}</span>
+              <strong>${lead.assignedTo || lead.owner || 'Unassigned'}</strong>
+              <span>Assigned By: ${index % 2 ? 'Lead Management Head' : 'Bharat Sir'}</span>
+              <span>${lead.assignedDate || lead.inquiryDate || 'Today'}</span>
+              <span>${index % 2 ? 'Reassignment' : 'Manual'}</span>
+              <span>Current Owner: ${lead.owner || lead.assignedTo || '-'}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
   },
 
   renderFutureEnhancements() {
@@ -741,9 +776,20 @@ const SegmentationModule = {
             <div class="segment-card-details">
               <span><strong>${segment.leadIds.length}</strong> leads</span>
             </div>
+            <div class="segment-tag-row">
+              <span class="state-chip">Scholarship</span>
+              <span class="state-chip">High Priority</span>
+              <span class="state-chip">Parent Inquiry</span>
+              <span class="state-chip">Repeat Inquiry</span>
+            </div>
             <div class="segment-assigned-list">${assignedPills}</div>
             <div class="segment-card-criteria">${segment.criteria}</div>
-            <div class="segment-card-footer">Created ${segment.createdAt}</div>
+            <div class="segment-card-footer">
+              <span>Created ${segment.createdAt}</span>
+              <button type="button" class="segment-card-action" onclick="SegmentationModule.renameSegment(${segment.id}, event)">Rename</button>
+              <button type="button" class="segment-card-action" onclick="SegmentationModule.viewSegmentDetails(${segment.id}, event)">View Details</button>
+              <button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Activate/Deactivate</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -772,6 +818,12 @@ const SegmentationModule = {
             <div class="segment-card-details">
               <span><strong>${segment.leadIds.length}</strong> leads</span>
             </div>
+            <div class="segment-tag-row">
+              <span class="state-chip">Scholarship</span>
+              <span class="state-chip">High Priority</span>
+              <span class="state-chip">Parent Inquiry</span>
+              <span class="state-chip">Repeat Inquiry</span>
+            </div>
             <div class="segment-assigned-list">${assignedPills}</div>
             <div class="segment-card-criteria">${segment.criteria}</div>
             <div class="segment-card-footer">Created ${segment.createdAt}</div>
@@ -791,6 +843,22 @@ const SegmentationModule = {
     this.selectedSegmentId = id;
     this.renderSegmentList();
     this.renderAssignmentQueue();
+  },
+
+  renameSegment(segmentId, event) {
+    if (event) event.stopPropagation();
+    const segment = this.segments.find(s => s.id === segmentId);
+    if (!segment) return;
+    segment.name = `${segment.name} (Renamed)`;
+    this.renderSegmentList();
+    this.showToast('Segment renamed for demo.');
+  },
+
+  viewSegmentDetails(segmentId, event) {
+    if (event) event.stopPropagation();
+    const segment = this.segments.find(s => s.id === segmentId);
+    if (!segment) return;
+    this.showToast(`${segment.name}: ${segment.leadIds?.length || 0} inquiries, ${segment.criteria}`);
   },
 
   toggleArchive(segmentId, event) {

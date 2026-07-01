@@ -833,6 +833,66 @@ body.dark #theme-toggle .fa-moon { color: var(--warning); }
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+.segment-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.segment-tag-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.state-chip,
+.outcome-chip,
+.alt-outcome-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.assignment-history-panel {
+  grid-column: 1 / -1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.assignment-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.assignment-history-row {
+  display: grid;
+  grid-template-columns: 110px 130px 1.2fr 90px 110px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg);
+}
+
+.assignment-history-row strong {
+  color: var(--text-primary);
+}
 .segment-card-details {
   display: flex;
   gap: 10px;

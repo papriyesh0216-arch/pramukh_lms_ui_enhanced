@@ -52,7 +52,7 @@
         </div>
         <div class="nav-submenu" id="submenu-inquiry-lead" style="max-height:0">
           <div class="nav-sub-subitem active" data-screen="leads" onclick="App.showScreen('leads');document.querySelectorAll('.nav-subitem').forEach(i=>i.classList.remove('active'));this.closest('.nav-subitem') && this.closest('.nav-subitem').classList.add('active')">
-            All Leads
+            Inquiry List
           </div>
           <div class="nav-sub-subitem" data-screen="segmentation" onclick="App.showScreen('segmentation')">
             <i class="fas fa-sitemap" style="font-size:10px;color:inherit;margin-right:6px"></i>
@@ -84,7 +84,7 @@
     <header class="topbar">
       <div class="topbar-search">
         <i class="fas fa-search search-icon"></i>
-        <input placeholder="Search by name, mobile, email or lead ID..." id="global-search">
+        <input placeholder="Search inquiry no., student name, mobile number, or email ID..." id="global-search">
       </div>
       <div class="topbar-spacer"></div>
       <div id="page-section-title" style="font-size:12px;color:var(--text-muted);font-weight:500"></div>
@@ -130,9 +130,17 @@
               <i class="fas fa-filter"></i> Filters
             </button>
             <button class="btn btn-primary btn-sm" id="dashboard-add-lead-btn">
-              <i class="fas fa-plus"></i> Add Lead
+              <i class="fas fa-plus"></i> Add Inquiry
             </button>
           </div>
+        </div>
+
+        <div class="dashboard-quick-actions-strip" aria-label="Dashboard quick actions">
+          <button class="dashboard-quick-action" id="dashboard-qa-add"><i class="fas fa-plus"></i><span>Add Inquiry</span></button>
+          <button class="dashboard-quick-action" id="dashboard-qa-list"><i class="fas fa-list"></i><span>View All Leads</span></button>
+          <button class="dashboard-quick-action" id="dashboard-qa-assign"><i class="fas fa-user-check"></i><span>Assign Leads</span></button>
+          <button class="dashboard-quick-action" id="dashboard-qa-followup"><i class="fas fa-calendar-plus"></i><span>Create Follow-up</span></button>
+          <button class="dashboard-quick-action" id="dashboard-qa-counselling"><i class="fas fa-comments"></i><span>Schedule Counselling</span></button>
         </div>
 
         <section class="dashboard-operations-section dashboard-command-panel" id="dashboard-journey">
@@ -178,6 +186,10 @@
                 <select class="chart-filter-select"><option>All Counselors</option><option>Bharat Sir</option><option>Vivek Sir</option><option>Pooja Shah</option></select>
                 <select class="chart-filter-select"><option>All Sources</option><option>Website Inquiry Form</option><option>Walk-In Inquiry</option><option>WhatsApp Inquiry</option></select>
                 <select class="chart-filter-select"><option>All Statuses</option><option>New Inquiry</option><option>Counselling</option><option>Converted</option><option>Lost</option></select>
+                <select class="chart-filter-select"><option>All Branches</option><option>Ahmedabad</option><option>Surat</option><option>Rajkot</option></select>
+                <select class="chart-filter-select"><option>All Learning Modes</option><option>Classroom</option><option>Online</option><option>Residential</option></select>
+                <select class="chart-filter-select"><option>All Academic Status</option><option>Graduation Running</option><option>Graduation Completed</option><option>HSC Completed</option></select>
+                <select class="chart-filter-select"><option>All Cities</option><option>Ahmedabad</option><option>Surat</option><option>Rajkot</option></select>
               </div>
               <div class="report-grid" id="dashboard-report-grid"></div>
             </div>
@@ -194,7 +206,7 @@
           <div class="chart-card">
             <div class="chart-card-header">
               <div>
-                <div class="chart-card-title">Leads by Segmentation</div>
+                <div class="chart-card-title">Course-wise Inquiry Distribution</div>
                 <div class="chart-card-subtitle">Course-wise distribution</div>
               </div>
               <select class="chart-filter-select">
@@ -215,7 +227,7 @@
           <div class="chart-card">
             <div class="chart-card-header">
               <div>
-                <div class="chart-card-title">Leads by Status</div>
+                <div class="chart-card-title">Lead Status Overview</div>
                 <div class="chart-card-subtitle">Total: 2,350 leads</div>
               </div>
               <select class="chart-filter-select">
@@ -269,13 +281,21 @@
               </div>
             </div>
 
-            <!-- Today's Tasks -->
+            <!-- Today's Activities -->
             <div class="tasks-card">
               <div class="card-header">
-                <span class="card-title" style="font-size:13px">Today's Tasks</span>
+                <span class="card-title" style="font-size:13px">Today's Activities</span>
                 <a href="#" id="tasks-view-all-link" style="font-size:11px;color:var(--primary)">View All</a>
               </div>
               <div class="tasks-list" id="tasks-list"></div>
+            </div>
+
+            <div class="tasks-card recent-activities-card">
+              <div class="card-header">
+                <span class="card-title" style="font-size:13px">Recent Lead Activities</span>
+                <a href="#" style="font-size:11px;color:var(--primary)">View All</a>
+              </div>
+              <div class="tasks-list" id="recent-activities-list"></div>
             </div>
 
             <!-- Lead Score Guide -->
@@ -307,7 +327,7 @@
           <div class="table-card">
             <div class="chart-card-header">
               <div>
-                <div class="chart-card-title">Counselor Performance Report</div>
+                <div class="chart-card-title">Counselor Performance</div>
                 <div class="chart-card-subtitle">Monthly performance overview</div>
               </div>
               <div style="display:flex;gap:8px">
@@ -399,7 +419,7 @@
           </button>
           <!-- Import -->
           <button class="toolbar-btn" title="Import Leads" id="import-leads-btn">
-            <i class="fas fa-file-import"></i> Import
+            <i class="fas fa-file-import"></i> Mass Import
           </button>
           <!-- Export -->
           <button class="toolbar-btn" title="Export Leads" id="export-leads-btn">
@@ -434,7 +454,7 @@
             <button class="toolbar-btn" onclick="LeadsModule.batchAction('assign')"><i class="fas fa-user-check"></i> Assign</button>
             <button class="toolbar-btn" onclick="LeadsModule.batchAction('status')"><i class="fas fa-tags"></i> Status</button>
             <button class="toolbar-btn" onclick="LeadsModule.batchAction('segment')"><i class="fas fa-layer-group"></i> Segment</button>
-            <button class="toolbar-btn" onclick="LeadsModule.batchAction('export')"><i class="fas fa-file-export"></i> Export</button>
+            <button class="toolbar-btn" onclick="LeadsModule.batchAction('export')"><i class="fas fa-file-export"></i> Export Selected</button>
             <button class="toolbar-btn" style="color:var(--danger);border-color:var(--danger-light)" onclick="LeadsModule.batchAction('archive')"><i class="fas fa-archive"></i> Archive</button>
           </div>
         </div>
@@ -561,9 +581,12 @@
           <span id="leads-count-label">Showing 1 to 6 of 831 leads</span>
         </div>
         <div class="quick-search-bar">
+          <button class="toolbar-btn" id="saved-filter-btn" title="Saved filter views" onclick="LeadsModule.showToast('Saved filter view bookmarked for demo', 'success')">
+            <i class="fas fa-bookmark"></i> Saved Filters
+          </button>
           <div class="quick-search-wrap">
             <i class="fas fa-search search-icon"></i>
-            <input class="quick-search-input" id="quick-search-input" placeholder="Quick Search...">
+            <input class="quick-search-input" id="quick-search-input" placeholder="Search inquiry no., student name, mobile, email...">
           </div>
           <button class="clear-search-btn" onclick="document.getElementById('quick-search-input').value='';LeadsModule.filterSearch='';document.getElementById('filter-search-input') && (document.getElementById('filter-search-input').value='');LeadsModule.applyFilters()">
             <i class="fas fa-times"></i>
@@ -972,7 +995,7 @@
     <!-- Lead Stage Pipeline -->
     <div class="stage-pipeline-card">
       <div class="drawer-card-header">
-        <div class="drawer-card-title"><i class="fas fa-route"></i> Lead Stage</div>
+        <div class="drawer-card-title"><i class="fas fa-route"></i> Lead Journey</div>
       </div>
       <div style="padding:12px 20px">
         <div class="stage-pipeline" id="drawer-pipeline"></div>
@@ -988,7 +1011,7 @@
 
         <div class="drawer-info-card">
           <div class="drawer-card-header">
-            <div class="drawer-card-title"><i class="fas fa-id-card"></i> Lead Information</div>
+            <div class="drawer-card-title"><i class="fas fa-id-card"></i> Inquiry Details</div>
             <div class="drawer-edit-link" id="drawer-edit-lead-btn"><i class="fas fa-edit"></i> Edit</div>
           </div>
           <div class="info-list" id="drawer-info-list"></div>
@@ -1001,7 +1024,7 @@
       <!-- Column 2: Communication History -->
       <div class="drawer-info-card">
         <div class="drawer-card-header">
-          <div class="drawer-card-title"><i class="fas fa-history"></i> Communication History</div>
+          <div class="drawer-card-title"><i class="fas fa-history"></i> Communication Timeline</div>
           <div class="drawer-edit-link" id="drawer-view-history-btn">View All</div>
         </div>
         <div class="comm-list" id="drawer-comm-list"></div>
@@ -1017,6 +1040,21 @@
             <button class="activity-btn act-more" data-drawer-activity="more"><i class="fas fa-ellipsis-h"></i> More</button>
           </div>
         </div>
+      </div>
+
+      <div class="drawer-info-card">
+        <div class="drawer-card-header">
+          <div class="drawer-card-title"><i class="fas fa-comments"></i> Counselling History</div>
+        </div>
+        <div class="comm-list" id="drawer-counselling-history"></div>
+      </div>
+
+      <div class="drawer-info-card">
+        <div class="drawer-card-header">
+          <div class="drawer-card-title"><i class="fas fa-sticky-note"></i> Internal Notes</div>
+          <span class="state-chip">Staff only</span>
+        </div>
+        <div class="comm-list" id="drawer-internal-notes"></div>
       </div>
 
       <!-- Column 3: Score + Follow-up + Quick Actions -->
@@ -1079,7 +1117,7 @@
             </div>
             <div class="quick-action-btn" data-drawer-quick="admission">
               <div class="qa-icon" style="background:var(--danger-light);color:var(--danger)"><i class="fas fa-file-signature"></i></div>
-              <span class="qa-label">Admission Form</span>
+              <span class="qa-label">Convert to Admission</span>
             </div>
             <div class="quick-action-btn" data-drawer-quick="counselling">
               <div class="qa-icon" style="background:var(--purple-light);color:var(--purple)"><i class="fas fa-handshake"></i></div>

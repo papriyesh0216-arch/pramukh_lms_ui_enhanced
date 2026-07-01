@@ -453,7 +453,7 @@ const LeadsModule = {
 
           <div class="lead-status-wrap">
             <span class="lead-status-pill ${statusClass}">${lead.statusLabel}</span>
-            <span class="status-type-tag">New Enquiry</span>
+            <span class="status-type-tag">New Inquiry</span>
           </div>
 
           <div class="lead-meta">
@@ -491,7 +491,7 @@ const LeadsModule = {
           <div class="lead-detail-grid">
             <div class="lead-detail-col">
               <div class="detail-row">
-                <span class="detail-label">Ref. No</span>
+                <span class="detail-label">Inquiry Reference No.</span>
                 <span class="detail-value">${lead.enqNo}</span>
               </div>
               <div class="detail-row">
@@ -499,7 +499,7 @@ const LeadsModule = {
                 <span class="detail-value">${lead.name}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Mobile No</span>
+                <span class="detail-label">Mobile Number</span>
                 <span class="detail-value">${lead.phone}</span>
               </div>
               <div class="detail-row">
@@ -517,7 +517,7 @@ const LeadsModule = {
                 <span class="detail-value">${lead.academicStatus}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Class</span>
+                <span class="detail-label">Course Interested</span>
                 <span class="detail-value">${lead.course}</span>
               </div>
               <div class="detail-row">
@@ -527,15 +527,15 @@ const LeadsModule = {
             </div>
             <div class="lead-detail-col">
               <div class="detail-row">
-                <span class="detail-label">Mode of Learning</span>
+                <span class="detail-label">Preferred Learning Mode</span>
                 <span class="detail-value">${lead.mode}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Lead Date</span>
+                <span class="detail-label">Inquiry Date/Time</span>
                 <span class="detail-value">${lead.inquiryDate}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Source</span>
+                <span class="detail-label">Inquiry Source</span>
                 <span class="detail-value">${lead.source}</span>
               </div>
               <div class="detail-row">
@@ -954,15 +954,16 @@ const LeadsModule = {
       <div class="dropdown-item" onclick="LeadsModule.action('counselling', ${id})"><i class="fas fa-comments"></i> Schedule Counselling</div>
       <div class="dropdown-item" onclick="LeadsModule.action('note', ${id})"><i class="fas fa-sticky-note"></i> Add Internal Note</div>
       <div class="dropdown-item" onclick="LeadsModule.action('assign', ${id})"><i class="fas fa-user-check"></i> Assign / Reassign</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('edit', ${id})"><i class="fas fa-edit"></i> Edit Lead</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('submit', ${id})"><i class="fas fa-paper-plane"></i> Submit Lead</div>
+      <div class="dropdown-item" onclick="LeadsModule.action('edit', ${id})"><i class="fas fa-edit"></i> View/Edit</div>
+      <div class="dropdown-item" onclick="LeadsModule.action('submit', ${id})"><i class="fas fa-paper-plane"></i> Convert to Admission</div>
       <div class="dropdown-item" onclick="LeadsModule.action('convert', ${id})"><i class="fas fa-graduation-cap"></i> Convert to Admission</div>
       <div class="dropdown-item" onclick="LeadsModule.action('print', ${id})"><i class="fas fa-print"></i> Print Inquiry Form</div>
       <div class="dropdown-item" onclick="LeadsModule.action('copy', ${id})"><i class="fas fa-copy"></i> Copy Lead (New Course)</div>
       <div class="dropdown-item" onclick="LeadsModule.action('changeclass', ${id})"><i class="fas fa-exchange-alt"></i> Change Class / Status</div>
       <div class="dropdown-divider"></div>
       <div class="dropdown-item danger" onclick="LeadsModule.action('lost', ${id})"><i class="fas fa-user-times"></i> Mark as Lost</div>
-      <div class="dropdown-item danger" onclick="LeadsModule.action('archive', ${id})"><i class="fas fa-archive"></i> Archive Lead</div>
+      <div class="dropdown-item danger" onclick="LeadsModule.action('delete_admin', ${id})"><i class="fas fa-trash"></i> Delete (Admin only)</div>
+      <div class="dropdown-item danger" onclick="LeadsModule.action('archive', ${id})"><i class="fas fa-archive"></i> Archive Inquiry</div>
     `;
     e.currentTarget.closest('.more-dropdown').appendChild(menu);
     
@@ -1005,14 +1006,11 @@ const LeadsModule = {
       this.applyFilters();
       this.showToast(`${lead.name} converted to admission`, 'success');
     } else if (type === 'lost') {
-      lead.status = 'lost';
-      lead.statusLabel = 'Lost';
-      lead.lostReason = lead.lostReason || 'No Response';
-      this.recordTimelineAction(lead, 'Marked Lost', `Reason: ${lead.lostReason}`);
-      this.applyFilters();
-      this.showToast(`${lead.name} marked as lost`, 'warning');
+      this.showLostReasonModal(id);
     } else if (type === 'archive') {
       this.archiveLead(id);
+    } else if (type === 'delete_admin') {
+      this.showToast('Delete (Admin only) is represented for audit-log demo; inquiry remains archived-safe.', 'warning');
     } else if (type === 'copy') {
       const copy = { ...lead, id: Date.now(), enqNo: `ENQ${Date.now().toString().slice(-6)}`, course: `${lead.course} (Copy)`, status: 'new', statusLabel: 'New', stage: 0, stageLabel: 'New', communications: [] };
       this.leads.unshift(copy);
@@ -1047,9 +1045,57 @@ const LeadsModule = {
     this.syncAppDataLeads();
   },
 
+  showLostReasonModal(id) {
+    const lead = this.leads.find(l => l.id === id);
+    if (!lead) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-user-times" style="color:var(--danger)"></i> Mark as Lost</span>
+          <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="custom-modal-body">
+          <div class="form-field">
+            <label>Lost Reason *</label>
+            <select id="lost-reason-select" required>
+              <option>Not Interested</option>
+              <option>Joined Elsewhere</option>
+              <option>Financial</option>
+              <option>Course Mismatch</option>
+              <option>No Response</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="custom-modal-footer">
+          <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="LeadsModule.confirmLost(${id})">Confirm</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  },
+
+  confirmLost(id) {
+    const lead = this.leads.find(l => l.id === id);
+    if (!lead) return;
+    const reason = document.getElementById('lost-reason-select')?.value || 'No Response';
+    lead.status = 'lost';
+    lead.statusLabel = 'Lost';
+    lead.lostReason = reason;
+    lead.stageLabel = 'Closed Inquiry';
+    this.recordTimelineAction(lead, 'Marked Lost', `Reason: ${reason}`);
+    document.querySelector('.custom-modal-overlay')?.remove();
+    this.applyFilters();
+    this.updateStatusBarCounts();
+    this.showToast(`${lead.name} marked as lost`, 'warning');
+  },
+
   showAddEditModal(lead = null) {
     const isEdit = lead !== null;
-    const title = isEdit ? 'Edit Lead Details' : 'Add New Inquiry';
+    const title = isEdit ? 'View/Edit Inquiry Details' : 'Add New Inquiry';
     
     const name = isEdit ? lead.name : '';
     const phone = isEdit ? lead.phone : '';
@@ -1098,7 +1144,7 @@ const LeadsModule = {
                 </select>
               </div>
               <div class="form-field">
-                <label>Mode of Learning</label>
+                <label>Preferred Learning Mode</label>
                 <select id="m-mode">
                   <option value="Classroom" ${mode === 'Classroom' ? 'selected' : ''}>Classroom</option>
                   <option value="Online" ${mode === 'Online' ? 'selected' : ''}>Online</option>
@@ -1107,7 +1153,7 @@ const LeadsModule = {
                 </select>
               </div>
               <div class="form-field">
-                <label>Source of Lead</label>
+                <label>Inquiry Source</label>
                 <select id="m-source">
                   <option value="Instagram Ad" ${source === 'Instagram Ad' ? 'selected' : ''}>Instagram Ad</option>
                   <option value="Website" ${source === 'Website' ? 'selected' : ''}>Website</option>
@@ -1310,7 +1356,7 @@ const LeadsModule = {
                 </div>
               </div>
               <div class="form-field span-2">
-                <label>Preferred Mode of Learning *</label>
+                <label>Preferred Learning Mode *</label>
                 <div class="radio-inline-group">
                   ${this.renderModeOption('Classroom', mode)}
                   ${this.renderModeOption('Online', mode)}
@@ -1456,9 +1502,18 @@ const LeadsModule = {
                 <select id="cs-interest">
                   <option>Highly Interested</option>
                   <option>Interested</option>
-                  <option>Need More Information</option>
+                  <option>Need More Info</option>
                   <option>Thinking</option>
                   <option>Not Interested</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Parent Involvement</label>
+                <select id="cs-parent-involvement">
+                  <option>Not Required</option>
+                  <option>Parent Interested</option>
+                  <option>Parent Meeting Needed</option>
+                  <option>Parent Already Counselled</option>
                 </select>
               </div>
               <div class="form-field">
@@ -1514,6 +1569,7 @@ const LeadsModule = {
     const counselor = document.getElementById('cs-counselor').value;
     const mode = document.getElementById('cs-mode').value;
     const interest = document.getElementById('cs-interest').value;
+    const parentInvolvement = document.getElementById('cs-parent-involvement').value;
     const nextAction = document.getElementById('cs-next-action').value;
     const course = document.getElementById('cs-course').value;
     const learningMode = document.getElementById('cs-learning-mode').value;
@@ -1524,8 +1580,8 @@ const LeadsModule = {
     lead.status = 'counselling';
     lead.statusLabel = 'Counselling';
     lead.stage = Math.max(lead.stage || 0, 4);
-    lead.counselling = { date, time, counselor, mode, interest, nextAction, course, learningMode, requirement, summary, remarks };
-    this.recordTimelineAction(lead, 'Counselling Conducted', `${mode}. ${summary} Interest: ${interest}. Next action: ${nextAction}.`);
+    lead.counselling = { date, time, counselor, mode, interest, parentInvolvement, nextAction, course, learningMode, requirement, summary, remarks };
+    this.recordTimelineAction(lead, 'Counselling Conducted', `${mode}. ${summary} Interest: ${interest}. Parent involvement: ${parentInvolvement}. Next action: ${nextAction}.`);
     document.querySelector('.custom-modal-overlay')?.remove();
     this.applyFilters();
     this.updateStatusBarCounts();
@@ -1610,7 +1666,7 @@ const LeadsModule = {
                   <label>Outcome</label>
                   <select id="f-outcome">
                     <option>Interested</option>
-                    <option>Need More Information</option>
+                    <option>Need More Info</option>
                     <option>Call Later</option>
                     <option>Counselling Required</option>
                     <option>Admission Form Sent</option>
@@ -1701,7 +1757,7 @@ const LeadsModule = {
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
     
-    if (confirm(`Are you sure you want to submit the lead "${lead.name}" to admissions?`)) {
+    if (confirm(`Are you sure you want to convert the inquiry "${lead.name}" to admission?`)) {
       lead.status = 'admission_confirmed';
       lead.statusLabel = 'Admission Confirmed';
       lead.stage = 4;
@@ -1709,7 +1765,7 @@ const LeadsModule = {
       
       this.applyFilters();
       this.updateStatusBarCounts();
-      this.showToast(`Lead ${lead.name} submitted to admissions!`, 'success');
+      this.showToast(`Inquiry ${lead.name} converted to admission!`, 'success');
     }
   },
 
@@ -1722,7 +1778,7 @@ const LeadsModule = {
     overlay.innerHTML = `
       <div class="custom-modal-card">
         <div class="custom-modal-header">
-          <span class="custom-modal-title"><i class="fas fa-exchange-alt" style="color:var(--primary)"></i>Change Lead Status</span>
+          <span class="custom-modal-title"><i class="fas fa-exchange-alt" style="color:var(--primary)"></i>Update Inquiry Status</span>
           <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
         </div>
         <div class="custom-modal-body">

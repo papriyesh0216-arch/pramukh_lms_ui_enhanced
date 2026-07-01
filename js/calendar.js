@@ -154,7 +154,7 @@ const CalendarModule = {
         <div class="day-popup-footer">
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('day-popup-overlay').remove()">Close</button>
           <button class="btn btn-primary btn-sm" onclick="App.showScreen('leads'); document.getElementById('day-popup-overlay').remove()">
-            <i class="fas fa-list"></i> View All Leads
+            <i class="fas fa-list"></i> Inquiry List
           </button>
         </div>
       </div>
