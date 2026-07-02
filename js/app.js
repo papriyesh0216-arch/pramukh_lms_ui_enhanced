@@ -187,8 +187,7 @@ const App = {
       { id: 'segmentation-summary', label: 'Summary', icon: 'fa-table-list', tab: 'segments' },
       { id: 'segmentation-build', label: 'Build', icon: 'fa-pen-ruler', tab: 'segments' },
       { id: 'segmentation-library', label: 'Library', icon: 'fa-layer-group', tab: 'segments' },
-      { id: 'segmentation-assign', label: 'Assign', icon: 'fa-user-check', tab: 'assignments' },
-      { id: 'segmentation-roadmap', label: 'Roadmap', icon: 'fa-road', tab: 'future' }
+      { id: 'segmentation-assign', label: 'Assign', icon: 'fa-user-check', tab: 'assignments' }
     ]
   },
 
@@ -563,7 +562,6 @@ const SegmentationModule = {
     this.workloadSummaryCount = document.getElementById('summary-workload-count');
     this.segmentReportGrid = document.getElementById('segment-report-grid');
     this.assignmentSummaryGrid = document.getElementById('assignment-summary-grid');
-    this.futureEnhancementGrid = document.getElementById('future-enhancement-grid');
     this.assignmentUserList = document.getElementById('assignment-user-list');
     this.assignmentSegmentQueue = document.getElementById('assignment-segment-queue');
     this.toastContainer = document.getElementById('toast-container');
@@ -592,7 +590,6 @@ const SegmentationModule = {
     this.renderSummaryCards();
     this.renderSegmentReports();
     this.renderAssignmentReports();
-    this.renderFutureEnhancements();
     this.renderSegmentList();
     this.bindArchiveDrop();
     this.renderAssignmentUsers();
@@ -888,61 +885,6 @@ const SegmentationModule = {
         </div>
       </div>
     `;
-  },
-
-  renderFutureEnhancements() {
-    if (!this.futureEnhancementGrid) return;
-    const modules = [
-      {
-        title: 'Dashboard',
-        items: ['Customizable widgets', 'Personal dashboard layouts', 'AI priority recommendations', 'Predictive admission trends', 'Real-time notifications', 'Multi-campus comparison', 'Mobile dashboard']
-      },
-      {
-        title: 'Inquiry List',
-        items: ['Saved filter views', 'Custom columns', 'Drag-and-drop lead management', 'AI-powered search', 'Smart lead prioritization', 'Duplicate inquiry suggestions', 'Advanced bulk operations', 'Pin favorite inquiries']
-      },
-      {
-        title: 'Inquiry Details',
-        items: ['Voice call recording', 'WhatsApp conversation sync', 'AI counselling summary', 'Sentiment analysis', 'Document upload', 'Admission readiness score', 'AI suggested next action', 'Student timeline analytics']
-      },
-      {
-        title: 'Lead Actions',
-        items: ['Click-to-call integration', 'Automatic call recording', 'WhatsApp Business API', 'Email templates', 'AI call summary', 'Voice-to-text notes', 'Digital document sharing', 'E-signature support']
-      },
-      {
-        title: 'Follow-up',
-        items: ['Automatic reminders', 'Google Calendar integration', 'Outlook integration', 'WhatsApp reminder automation', 'AI follow-up timing', 'AI follow-up summaries', 'Voice transcription', 'Follow-up SLA monitoring']
-      },
-      {
-        title: 'Counselling',
-        items: ['Video meeting integration', 'Counselling templates', 'AI-generated counselling summary', 'Parent counselling workflow', 'Admission readiness score', 'AI course suggestions', 'Digital counselling feedback']
-      },
-      {
-        title: 'Assignment',
-        items: ['Automatic assignment', 'Round-robin assignment', 'Workload-based assignment', 'Skill-based assignment', 'AI assignment recommendations', 'Assignment SLA monitoring']
-      },
-      {
-        title: 'Segmentation',
-        items: ['AI smart segments', 'Predictive lead grouping', 'Auto-refresh saved segments', 'Rule-based segmentation', 'Geographic map segmentation', 'Segment sharing across branches', 'Multi-campus segments']
-      },
-      {
-        title: 'Lead Journey',
-        items: ['AI admission probability', 'Journey health score', 'Predictive bottleneck analysis', 'Custom journey templates', 'Multi-program journeys', 'Parent journey tracking', 'Multi-campus journey analytics']
-      },
-      {
-        title: 'Reports',
-        items: ['Custom report builder', 'Interactive charts', 'AI-powered insights', 'Predictive admission analytics', 'Scheduled reports', 'Saved report templates', 'Executive dashboard']
-      }
-    ];
-
-    this.futureEnhancementGrid.innerHTML = modules.map(module => `
-      <div class="future-module-card">
-        <div class="future-module-title">${module.title}</div>
-        <div class="future-module-list">
-          ${module.items.map(item => `<span><i class="fas fa-check"></i>${item}</span>`).join('')}
-        </div>
-      </div>
-    `).join('');
   },
 
   renderSegmentList() {

@@ -1,1140 +1,2178 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pramukh Academy — Lead Management System</title>
-  <meta name="description" content="Next-generation ERP Lead Management System for Pramukh Academy — Student Inquiry Dashboard, Lead Tracking, Follow-Up Calendar">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/sidebar.css">
-  <link rel="stylesheet" href="css/dashboard.css">
-  <link rel="stylesheet" href="css/leads.css">
-  <link rel="stylesheet" href="css/drawer.css">
-  <link rel="stylesheet" href="css/calendar.css">
-  <link rel="stylesheet" href="css/dialer.css">
-  <link rel="stylesheet" href="css/responsive.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
-<div class="app-shell">
-
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark">
-        <img src="assets/Logo-04.png" alt="Pramukh Academy" style="width:44px;height:44px;object-fit:contain" />
-      </div>
-      <div class="logo-text">Pramukh Academy<span>ERP Suite v3.0</span></div>
-    </div>
-
-    <div class="sidebar-search">
-      <div class="sidebar-search-wrap">
-        <i class="fas fa-search search-icon"></i>
-        <input class="sidebar-search-input" placeholder="Search menu...">
-      </div>
-    </div>
-
-    <nav class="sidebar-nav">
-      <div class="nav-group">
-        <div class="nav-subitem active" data-screen="dashboard" onclick="App.showScreen('dashboard');">
-          <i class="fas fa-tachometer-alt" style="width:12px;color:inherit"></i>
-          Student Inquiry Dashboard
-        </div>
-
-        <div class="nav-subitem" data-submenu="submenu-inquiry-lead" onclick="event.stopPropagation()">
-          <i class="fas fa-users" style="width:12px;color:inherit"></i>
-          Student Inquiry Lead
-          <i class="fas fa-chevron-down" style="font-size:8px;margin-left:8px;color:var(--sidebar-text)" id="inquiry-lead-chevron"></i>
-        </div>
-        <div class="nav-submenu" id="submenu-inquiry-lead" style="max-height:0">
-          <div class="nav-sub-subitem active" data-screen="leads" onclick="App.showScreen('leads');document.querySelectorAll('.nav-subitem').forEach(i=>i.classList.remove('active'));this.closest('.nav-subitem') && this.closest('.nav-subitem').classList.add('active')">
-            Inquiry List
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pramukh Academy — Lead Management System</title>
+    <meta
+      name="description"
+      content="Next-generation ERP Lead Management System for Pramukh Academy — Student Inquiry Dashboard, Lead Tracking, Follow-Up Calendar"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="stylesheet" href="css/leads.css" />
+    <link rel="stylesheet" href="css/drawer.css" />
+    <link rel="stylesheet" href="css/calendar.css" />
+    <link rel="stylesheet" href="css/dialer.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- ===== SIDEBAR ===== -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-mark">
+            <img
+              src="assets/Logo-04.png"
+              alt="Pramukh Academy"
+              style="width: 44px; height: 44px; object-fit: contain"
+            />
           </div>
-          <div class="nav-sub-subitem" data-screen="segmentation" onclick="App.showScreen('segmentation')">
-            <i class="fas fa-sitemap" style="font-size:10px;color:inherit;margin-right:6px"></i>
-            Assignment &amp; Segmentation
-          </div>
-          <div class="nav-sub-subitem" onclick="window.open('inquiry-form.html','_blank')">
-            <i class="fas fa-arrow-up-right-from-square" style="font-size:10px;color:inherit;margin-right:6px"></i>
-            Inquiry Form
+          <div class="logo-text">
+            Pramukh Academy<span>ERP Suite v3.0</span>
           </div>
         </div>
-      </div>
-    </nav>
 
-    <div class="sidebar-footer">
-      <div class="sidebar-help">
-        <div class="help-icon"><i class="fas fa-headset"></i></div>
-        <div class="help-text">
-          <div class="help-title">Need Help?</div>
-          <div class="help-sub">Contact Support</div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ===== MAIN CONTENT ===== -->
-  <div class="main-content">
-
-    <!-- Top Bar -->
-    <header class="topbar">
-      <div class="topbar-search">
-        <i class="fas fa-search search-icon"></i>
-        <input placeholder="Search inquiry no., student name, mobile number, or email ID..." id="global-search">
-      </div>
-      <div class="topbar-spacer"></div>
-      <div id="page-section-title" style="font-size:12px;color:var(--text-muted);font-weight:500"></div>
-      <div class="topbar-actions">
-        <div class="role-switcher-wrap" id="role-switcher-wrap"></div>
-        <button class="topbar-icon-btn audit-btn is-hidden" title="Audit Log" id="audit-btn">
-          <i class="fas fa-shield-halved"></i>
-        </button>
-        <button id="theme-toggle" class="topbar-icon-btn" title="Toggle theme" aria-label="Toggle theme">
-          <i class="fas fa-sun" id="theme-icon"></i>
-        </button>
-        <button class="topbar-icon-btn" title="Notifications" id="notification-btn">
-          <i class="fas fa-bell"></i>
-          <span class="notif-badge">10</span>
-        </button>
-        <div class="topbar-user">
-          <div class="user-avatar">BS</div>
-          <div class="user-info">
-            <div class="user-name">Bharat Sir</div>
-            <div class="user-role">Admin</div>
+        <div class="sidebar-search">
+          <div class="sidebar-search-wrap">
+            <i class="fas fa-search search-icon"></i>
+            <input class="sidebar-search-input" placeholder="Search menu..." />
           </div>
-          <i class="fas fa-chevron-down" style="font-size:10px;color:var(--text-muted);margin-left:4px"></i>
         </div>
-      </div>
-    </header>
 
-    <!-- ======================================
+        <nav class="sidebar-nav">
+          <div class="nav-group">
+            <div
+              class="nav-subitem active"
+              data-screen="dashboard"
+              onclick="App.showScreen('dashboard')"
+            >
+              <i
+                class="fas fa-tachometer-alt"
+                style="width: 12px; color: inherit"
+              ></i>
+              Student Inquiry Dashboard
+            </div>
+
+            <div
+              class="nav-subitem"
+              data-submenu="submenu-inquiry-lead"
+              onclick="event.stopPropagation()"
+            >
+              <i class="fas fa-users" style="width: 12px; color: inherit"></i>
+              Student Inquiry Lead
+              <i
+                class="fas fa-chevron-down"
+                style="
+                  font-size: 8px;
+                  margin-left: 8px;
+                  color: var(--sidebar-text);
+                "
+                id="inquiry-lead-chevron"
+              ></i>
+            </div>
+            <div
+              class="nav-submenu"
+              id="submenu-inquiry-lead"
+              style="max-height: 0"
+            >
+              <div
+                class="nav-sub-subitem active"
+                data-screen="leads"
+                onclick="
+                  App.showScreen('leads');
+                  document
+                    .querySelectorAll('.nav-subitem')
+                    .forEach((i) => i.classList.remove('active'));
+                  this.closest('.nav-subitem') &&
+                    this.closest('.nav-subitem').classList.add('active');
+                "
+              >
+                Inquiry List
+              </div>
+              <div
+                class="nav-sub-subitem"
+                data-screen="segmentation"
+                onclick="App.showScreen('segmentation')"
+              >
+                <i
+                  class="fas fa-sitemap"
+                  style="font-size: 10px; color: inherit; margin-right: 6px"
+                ></i>
+                Assignment &amp; Segmentation
+              </div>
+              <div
+                class="nav-sub-subitem"
+                onclick="window.open('inquiry-form.html', '_blank')"
+              >
+                <i
+                  class="fas fa-arrow-up-right-from-square"
+                  style="font-size: 10px; color: inherit; margin-right: 6px"
+                ></i>
+                Inquiry Form
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-help">
+            <div class="help-icon"><i class="fas fa-headset"></i></div>
+            <div class="help-text">
+              <div class="help-title">Need Help?</div>
+              <div class="help-sub">Contact Support</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ===== MAIN CONTENT ===== -->
+      <div class="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+          <div class="topbar-search">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              placeholder="Search inquiry no., student name, mobile number, or email ID..."
+              id="global-search"
+            />
+          </div>
+          <div class="topbar-spacer"></div>
+          <div
+            id="page-section-title"
+            style="font-size: 12px; color: var(--text-muted); font-weight: 500"
+          ></div>
+          <div class="topbar-actions">
+            <div class="role-switcher-wrap" id="role-switcher-wrap"></div>
+            <button
+              class="topbar-icon-btn audit-btn is-hidden"
+              title="Audit Log"
+              id="audit-btn"
+            >
+              <i class="fas fa-shield-halved"></i>
+            </button>
+            <button
+              id="theme-toggle"
+              class="topbar-icon-btn"
+              title="Toggle theme"
+              aria-label="Toggle theme"
+            >
+              <i class="fas fa-sun" id="theme-icon"></i>
+            </button>
+            <button
+              class="topbar-icon-btn"
+              title="Notifications"
+              id="notification-btn"
+            >
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge">10</span>
+            </button>
+            <div class="topbar-user">
+              <div class="user-avatar">BS</div>
+              <div class="user-info">
+                <div class="user-name">Bharat Sir</div>
+                <div class="user-role">Admin</div>
+              </div>
+              <i
+                class="fas fa-chevron-down"
+                style="
+                  font-size: 10px;
+                  color: var(--text-muted);
+                  margin-left: 4px;
+                "
+              ></i>
+            </div>
+          </div>
+        </header>
+
+        <!-- ======================================
          SCREEN 1: STUDENT INQUIRY DASHBOARD
          ====================================== -->
-    <div class="screen active" id="screen-dashboard">
-      <div class="content-area">
-
-        <!-- Dashboard Header -->
-        <div class="dashboard-header dashboard-hero-header" id="dashboard-overview">
-          <div class="dashboard-title-wrap">
-            <div class="section-eyebrow">Student Inquiry Dashboard</div>
-            <h1>Lead Managment <span>System</span></h1>
-            <div class="dashboard-welcome">
-              Inquiry tracking, assignment, follow-ups, counselling, reports, and admission conversion analytics.
-            </div>
-          </div>
-          <div class="dashboard-controls">
-            <select class="chart-filter-select" id="dashboard-journey-course">
-              <option value="all">All Courses</option>
-              <option value="upsc">UPSC Foundation</option>
-              <option value="gpsc">GPSC Class 1-2</option>
-              <option value="sankalp">Sankalp Programme</option>
-            </select>
-            <button class="date-filter-btn" id="date-filter-btn">
-              <i class="fas fa-calendar-alt"></i> Custom Date
-            </button>
-          </div>
-        </div>
-
-        <!-- KPI Counts Row -->
-        <div class="kpi-row" id="kpi-row"></div>
-
-        <section class="dashboard-operations-section dashboard-command-panel" id="dashboard-journey">
-          <div class="section-heading-row command-panel-head">
-            <div>
-              <div class="section-eyebrow">Operational Command Center</div>
-              <h2>Lead Journey Analytics</h2>
-              <p>Monitor every lead from inquiry creation to final admission conversion.</p>
-            </div>
-            <div class="section-actions">
-              <button class="btn btn-outline btn-sm" id="dashboard-print-btn"><i class="fas fa-print"></i> Print</button>
-              <button class="btn btn-primary btn-sm" onclick="App.showScreen('leads')"><i class="fas fa-list"></i> Inquiry List</button>
-            </div>
-          </div>
-
-          <div class="dashboard-ops-grid command-panel-grid">
-            <div class="ops-analytics-card journey-card command-card">
-              <div class="chart-card-header">
-                <div>
-                  <div class="chart-card-title"><i class="fas fa-route"></i> Lead Journey Analytics</div>
-                  <div class="chart-card-subtitle">Stage-wise count, bottlenecks, and conversion health.</div>
-                </div>
-                <button class="btn btn-outline btn-sm" onclick="App.showScreen('leads')"><i class="fas fa-eye"></i> View</button>
-              </div>
-              <div class="journey-analytics" id="dashboard-journey-analytics"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Main Dashboard Grid -->
-        <div class="dashboard-grid" id="dashboard-insights">
-
-          <!-- Chart 1: Leads by Segmentation -->
-          <div class="chart-card">
-            <div class="chart-card-header">
-              <div>
-                <div class="chart-card-title">Course-wise Inquiry Distribution</div>
-                <div class="chart-card-subtitle">Course-wise distribution</div>
-              </div>
-              <select class="chart-filter-select">
-                <option>This Month</option>
-                <option>This Week</option>
-                <option>This Quarter</option>
-              </select>
-            </div>
-            <div class="chart-body" style="height:140px">
-              <div class="chart-canvas-wrap" style="max-width:140px">
-                <canvas id="chart-segmentation"></canvas>
-              </div>
-            </div>
-            <div class="chart-legend" id="seg-legend"></div>
-          </div>
-
-          <!-- Chart 2: Leads by Status -->
-          <div class="chart-card">
-            <div class="chart-card-header">
-              <div>
-                <div class="chart-card-title">Lead Status Overview</div>
-                <div class="chart-card-subtitle">Total: 2,350 leads</div>
-              </div>
-              <select class="chart-filter-select">
-                <option>This Month</option>
-                <option>This Week</option>
-              </select>
-            </div>
-            <div class="chart-body" style="height:140px">
-              <div class="chart-canvas-wrap" style="max-width:140px">
-                <canvas id="chart-status"></canvas>
-              </div>
-            </div>
-            <div class="chart-legend" id="status-legend"></div>
-          </div>
-
-          <!-- Chart 3: Conversion Funnel -->
-          <div class="chart-card">
-            <div class="chart-card-header">
-              <div>
-                <div class="chart-card-title">Conversion Funnel</div>
-                <div class="chart-card-subtitle">Lead to Admission journey</div>
-              </div>
-            </div>
-            <div id="funnel-container" class="funnel-container"></div>
-          </div>
-
-          <!-- Right Panel -->
-          <div class="dashboard-right-panel" id="dashboard-support">
-            <!-- Mini Calendar -->
-            <div class="mini-calendar-card">
-              <div class="mini-cal-header">
-                <button class="mini-cal-nav" id="mini-prev"><i class="fas fa-chevron-left"></i></button>
-                <span class="mini-cal-title" id="mini-cal-month-label">June 2026</span>
-                <button class="mini-cal-nav" id="mini-next"><i class="fas fa-chevron-right"></i></button>
-                <button class="mini-cal-nav" id="mini-goto-cal" title="Go to Follow-Up Calendar" style="margin-left:auto"><i class="fas fa-calendar-alt"></i></button>
-              </div>
-              <div class="mini-cal-weekdays">
-                <div class="mini-cal-weekday">Mo</div>
-                <div class="mini-cal-weekday">Tu</div>
-                <div class="mini-cal-weekday">We</div>
-                <div class="mini-cal-weekday">Th</div>
-                <div class="mini-cal-weekday">Fr</div>
-                <div class="mini-cal-weekday">Sa</div>
-                <div class="mini-cal-weekday">Su</div>
-              </div>
-              <div class="mini-cal-days" id="mini-cal-days"></div>
-              <div class="mini-cal-legend">
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--warning)"></div>Pending</div>
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--danger)"></div>Overdue</div>
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--primary)"></div>Follow-up</div>
-              </div>
-            </div>
-
-            <!-- Today's Activities -->
-            <div class="tasks-card">
-              <div class="card-header">
-                <span class="card-title" style="font-size:13px">Today's Activities</span>
-                <a href="#" id="tasks-view-all-link" style="font-size:11px;color:var(--primary)">View All</a>
-              </div>
-              <div class="tasks-list" id="tasks-list"></div>
-            </div>
-
-            <div class="tasks-card recent-activities-card">
-              <div class="card-header">
-                <span class="card-title" style="font-size:13px">Recent Lead Activities</span>
-                <a href="#" style="font-size:11px;color:var(--primary)">View All</a>
-              </div>
-              <div class="tasks-list" id="recent-activities-list"></div>
-            </div>
-
-            <!-- Lead Score Guide -->
-            <div class="score-guide-card">
-              <div class="card-header">
-                <span class="card-title" style="font-size:12px">Lead Score Guide</span>
-              </div>
-              <div class="score-rows">
-                <div class="score-row">
-                  <span class="score-stars">★★★★★</span>
-                  <span class="score-label">High (Hot Lead)</span>
-                  <span class="score-range">80–100</span>
-                </div>
-                <div class="score-row">
-                  <span class="score-stars">★★★☆☆</span>
-                  <span class="score-label">Medium (Warm Lead)</span>
-                  <span class="score-range">60–79</span>
-                </div>
-                <div class="score-row">
-                  <span class="score-stars">★☆☆☆☆</span>
-                  <span class="score-label">Low (Cold Lead)</span>
-                  <span class="score-range">0–59</span>
+        <div class="screen active" id="screen-dashboard">
+          <div class="content-area">
+            <!-- Dashboard Header -->
+            <div
+              class="dashboard-header dashboard-hero-header"
+              id="dashboard-overview"
+            >
+              <div class="dashboard-title-wrap">
+                <div class="section-eyebrow">Student Inquiry Dashboard</div>
+                <h1>Lead Managment <span>System</span></h1>
+                <div class="dashboard-welcome">
+                  Inquiry tracking, assignment, follow-ups, counselling,
+                  reports, and admission conversion analytics.
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Counselor Performance Table -->
-          <div class="table-card">
-            <div class="chart-card-header">
-              <div>
-                <div class="chart-card-title">Counselor Performance</div>
-                <div class="chart-card-subtitle">Monthly performance overview</div>
-              </div>
-              <div style="display:flex;gap:8px">
-                <select class="chart-filter-select">
-                  <option>This Month</option>
-                  <option>Last Month</option>
-                  <option>This Quarter</option>
+              <div class="dashboard-controls">
+                <select
+                  class="chart-filter-select"
+                  id="dashboard-journey-course"
+                >
+                  <option value="all">All Courses</option>
+                  <option value="upsc">UPSC Foundation</option>
+                  <option value="gpsc">GPSC Class 1-2</option>
+                  <option value="sankalp">Sankalp Programme</option>
                 </select>
-                <button class="btn btn-outline btn-sm" id="counselor-download-btn"><i class="fas fa-download"></i></button>
+                <button class="date-filter-btn" id="date-filter-btn">
+                  <i class="fas fa-calendar-alt"></i> Custom Date
+                </button>
               </div>
             </div>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Counselor</th>
-                  <th>Leads Assigned</th>
-                  <th>Contacted</th>
-                  <th>Interested</th>
-                  <th>Admissions</th>
-                  <th>Conversion %</th>
-                </tr>
-              </thead>
-              <tbody id="counselor-table-body"></tbody>
-            </table>
-          </div>
 
-          <!-- KPI Metrics Row (spans 3 cols) -->
-          <div style="grid-column:1/4" id="dashboard-kpis">
-            <div class="chart-card-header" style="padding:0 0 10px">
-              <div class="chart-card-title">KPI Metrics — Action Required</div>
+            <!-- KPI Counts Row -->
+            <div class="kpi-row" id="kpi-row"></div>
+
+            <section
+              class="dashboard-operations-section dashboard-command-panel"
+              id="dashboard-journey"
+            >
+              <div class="section-heading-row command-panel-head">
+                <div>
+                  <div class="section-eyebrow">Operational Command Center</div>
+                  <h2>Lead Journey Analytics</h2>
+                  <p>
+                    Monitor every lead from inquiry creation to final admission
+                    conversion.
+                  </p>
+                </div>
+                <div class="section-actions">
+                  <button
+                    class="btn btn-outline btn-sm"
+                    id="dashboard-print-btn"
+                  >
+                    <i class="fas fa-print"></i> Print
+                  </button>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    onclick="App.showScreen('leads')"
+                  >
+                    <i class="fas fa-list"></i> Inquiry List
+                  </button>
+                </div>
+              </div>
+
+              <div class="dashboard-ops-grid command-panel-grid">
+                <div class="ops-analytics-card journey-card command-card">
+                  <div class="chart-card-header">
+                    <div>
+                      <div class="chart-card-title">
+                        <i class="fas fa-route"></i> Lead Journey Analytics
+                      </div>
+                      <div class="chart-card-subtitle">
+                        Stage-wise count, bottlenecks, and conversion health.
+                      </div>
+                    </div>
+                    <button
+                      class="btn btn-outline btn-sm"
+                      onclick="App.showScreen('leads')"
+                    >
+                      <i class="fas fa-eye"></i> View
+                    </button>
+                  </div>
+                  <div
+                    class="journey-analytics"
+                    id="dashboard-journey-analytics"
+                  ></div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid" id="dashboard-insights">
+              <!-- Chart 1: Leads by Segmentation -->
+              <div class="chart-card">
+                <div class="chart-card-header">
+                  <div>
+                    <div class="chart-card-title">
+                      Course-wise Inquiry Distribution
+                    </div>
+                    <div class="chart-card-subtitle">
+                      Course-wise distribution
+                    </div>
+                  </div>
+                  <select class="chart-filter-select">
+                    <option>This Month</option>
+                    <option>This Week</option>
+                    <option>This Quarter</option>
+                  </select>
+                </div>
+                <div class="chart-body" style="height: 140px">
+                  <div class="chart-canvas-wrap" style="max-width: 140px">
+                    <canvas id="chart-segmentation"></canvas>
+                  </div>
+                </div>
+                <div class="chart-legend" id="seg-legend"></div>
+              </div>
+
+              <!-- Chart 2: Leads by Status -->
+              <div class="chart-card">
+                <div class="chart-card-header">
+                  <div>
+                    <div class="chart-card-title">Lead Status Overview</div>
+                    <div class="chart-card-subtitle">Total: 2,350 leads</div>
+                  </div>
+                  <select class="chart-filter-select">
+                    <option>This Month</option>
+                    <option>This Week</option>
+                  </select>
+                </div>
+                <div class="chart-body" style="height: 140px">
+                  <div class="chart-canvas-wrap" style="max-width: 140px">
+                    <canvas id="chart-status"></canvas>
+                  </div>
+                </div>
+                <div class="chart-legend" id="status-legend"></div>
+              </div>
+
+              <!-- Chart 3: Conversion Funnel -->
+              <div class="chart-card">
+                <div class="chart-card-header">
+                  <div>
+                    <div class="chart-card-title">Conversion Funnel</div>
+                    <div class="chart-card-subtitle">
+                      Lead to Admission journey
+                    </div>
+                  </div>
+                </div>
+                <div id="funnel-container" class="funnel-container"></div>
+              </div>
+
+              <!-- Right Panel -->
+              <div class="dashboard-right-panel" id="dashboard-support">
+                <!-- Mini Calendar -->
+                <div class="mini-calendar-card">
+                  <div class="mini-cal-header">
+                    <button class="mini-cal-nav" id="mini-prev">
+                      <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="mini-cal-title" id="mini-cal-month-label"
+                      >June 2026</span
+                    >
+                    <button class="mini-cal-nav" id="mini-next">
+                      <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button
+                      class="mini-cal-nav"
+                      id="mini-goto-cal"
+                      title="Go to Follow-Up Calendar"
+                      style="margin-left: auto"
+                    >
+                      <i class="fas fa-calendar-alt"></i>
+                    </button>
+                  </div>
+                  <div class="mini-cal-weekdays">
+                    <div class="mini-cal-weekday">Mo</div>
+                    <div class="mini-cal-weekday">Tu</div>
+                    <div class="mini-cal-weekday">We</div>
+                    <div class="mini-cal-weekday">Th</div>
+                    <div class="mini-cal-weekday">Fr</div>
+                    <div class="mini-cal-weekday">Sa</div>
+                    <div class="mini-cal-weekday">Su</div>
+                  </div>
+                  <div class="mini-cal-days" id="mini-cal-days"></div>
+                  <div class="mini-cal-legend">
+                    <div class="cal-legend-item">
+                      <div
+                        class="cal-legend-dot"
+                        style="background: var(--warning)"
+                      ></div>
+                      Pending
+                    </div>
+                    <div class="cal-legend-item">
+                      <div
+                        class="cal-legend-dot"
+                        style="background: var(--danger)"
+                      ></div>
+                      Overdue
+                    </div>
+                    <div class="cal-legend-item">
+                      <div
+                        class="cal-legend-dot"
+                        style="background: var(--primary)"
+                      ></div>
+                      Follow-up
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Today's Activities -->
+                <div class="tasks-card">
+                  <div class="card-header">
+                    <span class="card-title" style="font-size: 13px"
+                      >Today's Activities</span
+                    >
+                    <a
+                      href="#"
+                      id="tasks-view-all-link"
+                      style="font-size: 11px; color: var(--primary)"
+                      >View All</a
+                    >
+                  </div>
+                  <div class="tasks-list" id="tasks-list"></div>
+                </div>
+
+                <div class="tasks-card recent-activities-card">
+                  <div class="card-header">
+                    <span class="card-title" style="font-size: 13px"
+                      >Recent Lead Activities</span
+                    >
+                    <a href="#" style="font-size: 11px; color: var(--primary)"
+                      >View All</a
+                    >
+                  </div>
+                  <div class="tasks-list" id="recent-activities-list"></div>
+                </div>
+
+                <!-- Lead Score Guide -->
+                <div class="score-guide-card">
+                  <div class="card-header">
+                    <span class="card-title" style="font-size: 12px"
+                      >Lead Score Guide</span
+                    >
+                  </div>
+                  <div class="score-rows">
+                    <div class="score-row">
+                      <span class="score-stars">★★★★★</span>
+                      <span class="score-label">High (Hot Lead)</span>
+                      <span class="score-range">80–100</span>
+                    </div>
+                    <div class="score-row">
+                      <span class="score-stars">★★★☆☆</span>
+                      <span class="score-label">Medium (Warm Lead)</span>
+                      <span class="score-range">60–79</span>
+                    </div>
+                    <div class="score-row">
+                      <span class="score-stars">★☆☆☆☆</span>
+                      <span class="score-label">Low (Cold Lead)</span>
+                      <span class="score-range">0–59</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Counselor Performance Table -->
+              <div class="table-card">
+                <div class="chart-card-header">
+                  <div>
+                    <div class="chart-card-title">Counselor Performance</div>
+                    <div class="chart-card-subtitle">
+                      Monthly performance overview
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px">
+                    <select class="chart-filter-select">
+                      <option>This Month</option>
+                      <option>Last Month</option>
+                      <option>This Quarter</option>
+                    </select>
+                    <button
+                      class="btn btn-outline btn-sm"
+                      id="counselor-download-btn"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </div>
+                </div>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Counselor</th>
+                      <th>Leads Assigned</th>
+                      <th>Contacted</th>
+                      <th>Interested</th>
+                      <th>Admissions</th>
+                      <th>Conversion %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="counselor-table-body"></tbody>
+                </table>
+              </div>
+
+              <!-- KPI Metrics Row (spans 3 cols) -->
+              <div style="grid-column: 1/4" id="dashboard-kpis">
+                <div class="chart-card-header" style="padding: 0 0 10px">
+                  <div class="chart-card-title">
+                    KPI Metrics — Action Required
+                  </div>
+                </div>
+                <div class="kpi-metrics-row" id="kpi-metrics-row"></div>
+              </div>
             </div>
-            <div class="kpi-metrics-row" id="kpi-metrics-row"></div>
-          </div>
 
-        </div>
-
-        <!-- System Alerts -->
-        <div class="alerts-card">
-          <div class="chart-card-header">
-            <div class="chart-card-title">
-              <i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:6px"></i>
-              System Alerts
+            <!-- System Alerts -->
+            <div class="alerts-card">
+              <div class="chart-card-header">
+                <div class="chart-card-title">
+                  <i
+                    class="fas fa-exclamation-triangle"
+                    style="color: var(--warning); margin-right: 6px"
+                  ></i>
+                  System Alerts
+                </div>
+                <span class="badge badge-danger">3 Active</span>
+              </div>
+              <div id="alerts-list"></div>
             </div>
-            <span class="badge badge-danger">3 Active</span>
           </div>
-          <div id="alerts-list"></div>
+          <!-- /content-area -->
         </div>
+        <!-- /screen-dashboard -->
 
-      </div><!-- /content-area -->
-    </div><!-- /screen-dashboard -->
-
-
-    <!-- ======================================
+        <!-- ======================================
          SCREEN 2: STUDENT INQUIRY LEAD
          ====================================== -->
-    <div class="screen" id="screen-leads">
+        <div class="screen" id="screen-leads">
+          <!-- Status Bar -->
+          <div class="status-bar" id="status-bar"></div>
 
-      <!-- Status Bar -->
-      <div class="status-bar" id="status-bar"></div>
+          <!-- Sub Status Bar (hidden initially, shown when Admission is active) -->
+          <div
+            class="status-sub-bar"
+            id="status-sub-bar"
+            style="
+              display: none;
+              background: var(--bg-subtle);
+              border-bottom: 1px solid var(--border);
+              padding: 6px 20px;
+              gap: 8px;
+              align-items: center;
+              flex-shrink: 0;
+            "
+          >
+            <span
+              style="
+                font-size: 10px;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                margin-right: 8px;
+              "
+              >Form Type:</span
+            >
+            <div
+              class="status-sub-tab active"
+              data-substatus="exam"
+              onclick="LeadsModule.setSubStatus('exam', this)"
+            >
+              Exam <span class="status-count" id="count-exam">0</span>
+            </div>
+            <div
+              class="status-sub-tab"
+              data-substatus="interview"
+              onclick="LeadsModule.setSubStatus('interview', this)"
+            >
+              Interview <span class="status-count" id="count-interview">0</span>
+            </div>
+            <div
+              class="status-sub-tab"
+              data-substatus="admission_confirmed"
+              onclick="LeadsModule.setSubStatus('admission_confirmed', this)"
+            >
+              Admission Confirmed
+              <span class="status-count" id="count-admission_confirmed">0</span>
+            </div>
+            <div
+              class="status-sub-tab"
+              data-substatus="admission_rejected"
+              onclick="LeadsModule.setSubStatus('admission_rejected', this)"
+            >
+              Admission Rejected
+              <span class="status-count" id="count-admission_rejected">0</span>
+            </div>
+          </div>
 
-      <!-- Sub Status Bar (hidden initially, shown when Admission is active) -->
-      <div class="status-sub-bar" id="status-sub-bar" style="display:none;background:var(--bg-subtle);border-bottom:1px solid var(--border);padding:6px 20px;gap:8px;align-items:center;flex-shrink:0">
-        <span style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-right:8px">Form Type:</span>
-        <div class="status-sub-tab active" data-substatus="exam" onclick="LeadsModule.setSubStatus('exam', this)">Exam <span class="status-count" id="count-exam">0</span></div>
-        <div class="status-sub-tab" data-substatus="interview" onclick="LeadsModule.setSubStatus('interview', this)">Interview <span class="status-count" id="count-interview">0</span></div>
-        <div class="status-sub-tab" data-substatus="admission_confirmed" onclick="LeadsModule.setSubStatus('admission_confirmed', this)">Admission Confirmed <span class="status-count" id="count-admission_confirmed">0</span></div>
-        <div class="status-sub-tab" data-substatus="admission_rejected" onclick="LeadsModule.setSubStatus('admission_rejected', this)">Admission Rejected <span class="status-count" id="count-admission_rejected">0</span></div>
+          <!-- Toolbar -->
+          <div class="leads-toolbar">
+            <div class="toolbar-left">
+              <!-- Selection Checkbox -->
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  margin-right: 6px;
+                "
+              >
+                <input
+                  type="checkbox"
+                  id="select-all-leads"
+                  style="width: 16px; height: 16px; cursor: pointer"
+                  title="Select All On Page"
+                  onclick="LeadsModule.toggleSelectAll(this)"
+                />
+              </div>
+              <!-- Global Filter -->
+              <button
+                class="toolbar-btn"
+                id="filter-toggle-btn"
+                title="Global Filter"
+              >
+                <i class="fas fa-filter"></i> Filter
+              </button>
+              <!-- Refresh -->
+              <button class="toolbar-btn" id="refresh-btn" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <div class="toolbar-divider"></div>
+              <!-- Add New Inquiry -->
+              <button class="toolbar-btn btn-add-lead" id="add-lead-btn">
+                <i class="fas fa-plus"></i> Add New Inquiry
+              </button>
+              <!-- Import -->
+              <button
+                class="toolbar-btn"
+                title="Import Leads"
+                id="import-leads-btn"
+              >
+                <i class="fas fa-file-import"></i> Mass Import
+              </button>
+              <!-- Export -->
+              <button
+                class="toolbar-btn"
+                title="Export Leads"
+                id="export-leads-btn"
+              >
+                <i class="fas fa-file-export"></i> Export
+              </button>
+              <!-- Download -->
+              <button
+                class="toolbar-btn"
+                title="Download"
+                id="download-leads-btn"
+              >
+                <i class="fas fa-download"></i>
+              </button>
+              <div class="toolbar-divider"></div>
+              <!-- Send Email to All -->
+              <button
+                class="toolbar-btn"
+                title="Send Email to All"
+                id="email-all-btn"
+              >
+                <i class="fas fa-envelope"></i> Email All
+              </button>
+              <!-- Sort by Date -->
+              <button
+                class="toolbar-btn"
+                id="sort-toggle-btn"
+                title="Sort Leads"
+              >
+                <i class="fas fa-sort-amount-down"></i> Sort
+              </button>
+              <div class="toolbar-divider"></div>
+              <!-- Mass Admission Confirmation -->
+              <button class="toolbar-btn btn-mass-admit" id="mass-admit-btn">
+                <i class="fas fa-check-double"></i> Mass Admission
+              </button>
+
+              <!-- Selection Info and Action Buttons -->
+              <span
+                id="selected-count-badge"
+                style="
+                  display: none;
+                  background: var(--primary-light);
+                  color: var(--primary);
+                  font-size: 11px;
+                  font-weight: 700;
+                  padding: 4px 8px;
+                  border-radius: var(--radius);
+                  margin-left: 8px;
+                "
+              >
+                Selected: <span id="selected-count-num">0</span>
+              </span>
+              <div id="batch-actions-wrap" style="display: none; gap: 4px">
+                <button
+                  class="toolbar-btn"
+                  style="color: var(--primary); border-color: var(--primary)"
+                  onclick="LeadsModule.batchAction('email')"
+                >
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+                <button
+                  class="toolbar-btn"
+                  style="color: var(--wa); border-color: var(--wa-light)"
+                  onclick="LeadsModule.batchAction('whatsapp')"
+                >
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button
+                  class="toolbar-btn"
+                  onclick="LeadsModule.batchAction('assign')"
+                >
+                  <i class="fas fa-user-check"></i> Assign
+                </button>
+                <button
+                  class="toolbar-btn"
+                  onclick="LeadsModule.batchAction('status')"
+                >
+                  <i class="fas fa-tags"></i> Status
+                </button>
+                <button
+                  class="toolbar-btn"
+                  onclick="LeadsModule.batchAction('segment')"
+                >
+                  <i class="fas fa-layer-group"></i> Segment
+                </button>
+                <button
+                  class="toolbar-btn"
+                  onclick="LeadsModule.batchAction('export')"
+                >
+                  <i class="fas fa-file-export"></i> Export Selected
+                </button>
+                <button
+                  class="toolbar-btn"
+                  style="
+                    color: var(--danger);
+                    border-color: var(--danger-light);
+                  "
+                  onclick="LeadsModule.batchAction('archive')"
+                >
+                  <i class="fas fa-archive"></i> Archive
+                </button>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <div class="toolbar-view-toggle">
+                <button
+                  class="toolbar-btn active"
+                  id="row-view-btn"
+                  title="Row View"
+                >
+                  <i class="fas fa-list"></i> Row View
+                </button>
+                <button
+                  class="toolbar-btn"
+                  id="calendar-view-btn"
+                  title="Calendar View"
+                >
+                  <i class="fas fa-calendar-alt"></i> Calendar View
+                </button>
+              </div>
+              <!-- Collapse/Expand All (single toggle button) -->
+              <button class="toolbar-btn active" id="collapse-toggle-btn">
+                <i class="fas fa-expand-alt"></i> Expand All
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Hidden Filters Panel -->
+          <div
+            class="leads-filter-panel"
+            id="leads-filter-panel"
+            style="
+              display: none;
+              background: var(--bg-card);
+              border-bottom: 1px solid var(--border);
+              padding: 12px 20px;
+              gap: 16px;
+              align-items: center;
+              flex-wrap: wrap;
+              flex-shrink: 0;
+            "
+          >
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Course</label
+              >
+              <select
+                id="filter-course"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 160px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              >
+                <option value="all">All Courses</option>
+                <option value="UPSC Foundation">UPSC Foundation</option>
+                <option value="GPSC (Class 1 & 2) - Foundation">
+                  GPSC Foundation
+                </option>
+                <option value="GPSC Class 1-2">GPSC Class 1-2</option>
+                <option value="Sankalp Programme">Sankalp Programme</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Source</label
+              >
+              <select
+                id="filter-source"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 160px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              >
+                <option value="all">All Sources</option>
+                <option value="Website Inquiry Form">
+                  Website Inquiry Form
+                </option>
+                <option value="Walk-In Inquiry">Walk-In Inquiry</option>
+                <option value="Phone Inquiry">Phone Inquiry</option>
+                <option value="WhatsApp Inquiry">WhatsApp Inquiry</option>
+                <option value="Event Registration">Event Registration</option>
+                <option value="Seminar Registration">
+                  Seminar Registration
+                </option>
+                <option value="Referral">Referral</option>
+                <option value="Social Media">Social Media</option>
+                <option value="Education Fair">Education Fair</option>
+                <option value="Manual Entry">Manual Entry</option>
+                <option value="Excel Import">Excel Import</option>
+                <option value="Instagram Ad">Instagram Ad</option>
+                <option value="Website">Website</option>
+                <option value="Walk-in">Walk-in</option>
+                <option value="Google Ads">Google Ads</option>
+                <option value="Seminar">Seminar</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Search Leads</label
+              >
+              <div style="position: relative">
+                <i
+                  class="fas fa-search"
+                  style="
+                    position: absolute;
+                    left: 8px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 11px;
+                    color: var(--text-muted);
+                  "
+                ></i>
+                <input
+                  type="text"
+                  id="filter-search-input"
+                  placeholder="Search name, phone, email..."
+                  style="
+                    padding: 6px 10px 6px 26px;
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius);
+                    font-size: 11.5px;
+                    outline: none;
+                    width: 220px;
+                  "
+                  oninput="LeadsModule.applyFilters()"
+                />
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Counselor</label
+              >
+              <select
+                id="filter-counselor"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 160px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              >
+                <option value="all">All Counselors</option>
+                <option value="Bharat Sir">Bharat Sir</option>
+                <option value="Vivek Sir">Vivek Sir</option>
+                <option value="Pooja Shah">Pooja Shah</option>
+                <option value="Jignesh Trivedi">Jignesh Trivedi</option>
+                <option value="Unassigned">Unassigned</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Learning Mode</label
+              >
+              <select
+                id="filter-mode"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 150px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              >
+                <option value="all">All Modes</option>
+                <option value="Classroom">Classroom</option>
+                <option value="Online">Online</option>
+                <option value="Residential Mode">Residential Mode</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Academic Status</label
+              >
+              <select
+                id="filter-academic-status"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 175px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              >
+                <option value="all">All Academic Status</option>
+                <option value="HSC Running">HSC Running</option>
+                <option value="HSC Completed">HSC Completed</option>
+                <option value="Graduation Running">Graduation Running</option>
+                <option value="Graduation Completed">
+                  Graduation Completed
+                </option>
+                <option value="Post Graduation">Post Graduation</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >City</label
+              >
+              <input
+                type="text"
+                id="filter-city"
+                placeholder="City"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 140px;
+                "
+                oninput="LeadsModule.applyFilters()"
+              />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Inquiry Date</label
+              >
+              <input
+                type="date"
+                id="filter-inquiry-date"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 150px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Follow-up Date</label
+              >
+              <input
+                type="date"
+                id="filter-followup-date"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 150px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <label
+                style="
+                  font-size: 10px;
+                  font-weight: 700;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                "
+                >Lead Segment</label
+              >
+              <select
+                id="filter-segment"
+                style="
+                  padding: 6px 10px;
+                  border: 1px solid var(--border);
+                  border-radius: var(--radius);
+                  font-size: 11.5px;
+                  outline: none;
+                  width: 170px;
+                "
+                onchange="LeadsModule.applyFilters()"
+              >
+                <option value="all">All Segments</option>
+                <option value="UPSC Aspirants">UPSC Aspirants</option>
+                <option value="GPSC Campaign">GPSC Campaign</option>
+                <option value="Sankalp Seminar">Sankalp Seminar</option>
+                <option value="First-Time Visitors">First-Time Visitors</option>
+              </select>
+            </div>
+            <div style="display: flex; align-self: flex-end; gap: 8px">
+              <button
+                class="btn btn-outline btn-sm"
+                onclick="LeadsModule.resetFilters()"
+                style="height: 30px; font-size: 11px; padding: 0 12px"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Info Bar -->
+          <div class="leads-info-bar">
+            <div class="leads-result-label">
+              <span class="result-badge">Search Result</span>
+              <span id="leads-count-label">Showing 1 to 6 of 831 leads</span>
+            </div>
+            <div class="quick-search-bar">
+              <button
+                class="toolbar-btn"
+                id="saved-filter-btn"
+                title="Saved filter views"
+                onclick="
+                  LeadsModule.showToast(
+                    'Saved filter view bookmarked for demo',
+                    'success',
+                  )
+                "
+              >
+                <i class="fas fa-bookmark"></i> Saved Filters
+              </button>
+              <div class="quick-search-wrap">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  class="quick-search-input"
+                  id="quick-search-input"
+                  placeholder="Search inquiry no., student name, mobile, email..."
+                />
+              </div>
+              <button
+                class="clear-search-btn"
+                onclick="
+                  document.getElementById('quick-search-input').value = '';
+                  LeadsModule.filterSearch = '';
+                  document.getElementById('filter-search-input') &&
+                    (document.getElementById('filter-search-input').value = '');
+                  LeadsModule.applyFilters();
+                "
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Lead List -->
+          <div class="lead-list" id="lead-list"></div>
+          <div
+            class="lead-calendar-view"
+            id="lead-calendar-view"
+            style="display: none"
+          ></div>
+
+          <!-- Pagination -->
+          <div class="leads-pagination">
+            <span class="pagination-info" id="leads-count-label-2"
+              >Showing 1 to 10 of 831 leads</span
+            >
+            <div class="pagination-btns">
+              <button class="page-btn">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <span
+                style="
+                  padding: 0 4px;
+                  color: var(--text-muted);
+                  font-size: 12px;
+                "
+                >...</span
+              >
+              <button class="page-btn">84</button>
+              <button class="page-btn">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+            <select class="page-size-select">
+              <option>10 / page</option>
+              <option>25 / page</option>
+              <option>50 / page</option>
+            </select>
+          </div>
+        </div>
+        <!-- /screen-leads -->
+
+        <!-- ======================================
+         SCREEN 3: FOLLOW-UP CALENDAR
+         ====================================== -->
+        <div class="screen" id="screen-calendar">
+          <div class="content-area">
+            <div class="calendar-header">
+              <div>
+                <h1 style="font-size: 18px; font-weight: 700">
+                  Follow-Up Calendar
+                </h1>
+                <div
+                  style="
+                    font-size: 12px;
+                    color: var(--text-muted);
+                    margin-top: 2px;
+                  "
+                >
+                  Click on any date to view scheduled leads and follow-ups
+                </div>
+              </div>
+              <div class="calendar-nav-group">
+                <button class="cal-nav-btn" id="cal-prev-btn">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="cal-today-btn" id="cal-today-btn">Today</button>
+                <button class="cal-nav-btn" id="cal-next-btn">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+                <h2 class="cal-month-title" id="cal-month-title">June 2026</h2>
+              </div>
+            </div>
+
+            <div class="calendar-grid-wrap">
+              <div class="cal-weekdays-header">
+                <div class="cal-weekday-label">Monday</div>
+                <div class="cal-weekday-label">Tuesday</div>
+                <div class="cal-weekday-label">Wednesday</div>
+                <div class="cal-weekday-label">Thursday</div>
+                <div class="cal-weekday-label">Friday</div>
+                <div class="cal-weekday-label weekend">Saturday</div>
+                <div class="cal-weekday-label weekend">Sunday</div>
+              </div>
+              <div class="cal-days-grid" id="cal-days-grid"></div>
+              <div class="calendar-legend-bar">
+                <span class="cal-legend-label">Legend:</span>
+                <div class="cal-legend-item">
+                  <div class="cal-legend-swatch swatch-pending"></div>
+                  Pending Leads
+                </div>
+                <div class="cal-legend-item">
+                  <div class="cal-legend-swatch swatch-overdue"></div>
+                  Overdue Follow-ups
+                </div>
+                <div class="cal-legend-item">
+                  <div class="cal-legend-swatch swatch-followup"></div>
+                  Scheduled Follow-ups
+                </div>
+                <div class="cal-legend-item">
+                  <div class="cal-legend-swatch swatch-completed"></div>
+                  Completed
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /screen-calendar -->
+
+        <!-- ======================================
+         SCREEN 4: ASSIGNMENT & SEGMENTATION
+         ====================================== -->
+        <div class="screen" id="screen-segmentation">
+          <div class="content-area">
+            <div class="page-header" id="segmentation-summary">
+              <div>
+                <h1 style="font-size: 18px; font-weight: 700">
+                  Assignment &amp; Segmentation
+                </h1>
+                <div style="font-size: 12px; color: var(--text-muted)">
+                  Create segments, assign them to counselors, and track lead
+                  coverage.
+                </div>
+              </div>
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="SegmentationModule.switchTab('assignments')"
+              >
+                <i class="fas fa-plus"></i> Assign Leads
+              </button>
+            </div>
+
+            <div class="segmentation-layout">
+              <aside class="segmentation-side-panel">
+                <div class="segmentation-tabs">
+                  <button
+                    class="seg-tab active"
+                    data-tab="segments"
+                    onclick="SegmentationModule.switchTab('segments')"
+                  >
+                    Segments
+                  </button>
+                  <button
+                    class="seg-tab"
+                    data-tab="assignments"
+                    onclick="SegmentationModule.switchTab('assignments')"
+                  >
+                    Assignments
+                  </button>
+                </div>
+
+                <div
+                  class="segmentation-summary-cards segmentation-live-summary"
+                >
+                  <div class="summary-card summary-card-primary">
+                    <div class="summary-label">Active Segments</div>
+                    <div class="summary-value" id="summary-segment-count">
+                      0
+                    </div>
+                    <div class="summary-meta">Reusable business groups</div>
+                  </div>
+                  <div class="summary-card">
+                    <div class="summary-label">Total Inquiries</div>
+                    <div class="summary-value" id="summary-inquiry-count">
+                      0
+                    </div>
+                    <div class="summary-meta">Across active segments</div>
+                  </div>
+                  <div class="summary-card">
+                    <div class="summary-label">Unassigned Segments</div>
+                    <div
+                      class="summary-value"
+                      id="summary-unassigned-segment-count"
+                    >
+                      0
+                    </div>
+                    <div class="summary-meta">Needs assignment</div>
+                  </div>
+                  <div class="summary-card summary-card-wide">
+                    <div class="summary-label">Top Segment</div>
+                    <div
+                      class="summary-value summary-value-name"
+                      id="summary-top-segment"
+                    >
+                      -
+                    </div>
+                    <div class="summary-meta" id="summary-top-segment-meta">
+                      No active segment
+                    </div>
+                  </div>
+                </div>
+
+                <div class="segmentation-quick-actions">
+                  <div class="quick-actions-title">Quick Actions</div>
+
+                  <div class="quick-actions-list">
+                    <button
+                      class="quick-action-btn"
+                      type="button"
+                      onclick="document.getElementById('segment-name')?.focus()"
+                    >
+                      <div class="qa-icon qa-primary">
+                        <i class="fas fa-plus"></i>
+                      </div>
+                      <span class="qa-label">Create Segment</span>
+                      <i class="fas fa-chevron-right qa-arrow"></i>
+                    </button>
+
+                    <button
+                      class="quick-action-btn"
+                      type="button"
+                      onclick="SegmentationModule.switchTab('assignments')"
+                    >
+                      <div class="qa-icon qa-success">
+                        <i class="fas fa-user-check"></i>
+                      </div>
+                      <span class="qa-label">Assign Leads</span>
+                      <i class="fas fa-chevron-right qa-arrow"></i>
+                    </button>
+
+                    <button
+                      class="quick-action-btn"
+                      type="button"
+                      onclick="SegmentationModule.exportSegments()"
+                    >
+                      <div class="qa-icon qa-info">
+                        <i class="fas fa-file-export"></i>
+                      </div>
+                      <span class="qa-label">Export Segments</span>
+                      <i class="fas fa-chevron-right qa-arrow"></i>
+                    </button>
+                  </div>
+                </div>
+              </aside>
+
+              <section class="segmentation-main-panel">
+                <div
+                  class="segmentation-panel-body active"
+                  id="segmentation-panel-segments"
+                >
+                  <div class="segmentation-card" id="segmentation-build">
+                    <div class="segmentation-card-header">
+                      <div>
+                        <div class="segmentation-card-title">
+                          Create a new segment
+                        </div>
+                        <div class="segmentation-card-subtitle">
+                          Use rules to group leads for assignment.
+                        </div>
+                      </div>
+                    </div>
+                    <form id="segment-form" class="segment-form">
+                      <div class="form-grid cols-2">
+                        <div class="form-row segment-name-row">
+                          <label for="segment-name">Segment name</label>
+                          <input
+                            id="segment-name"
+                            type="text"
+                            placeholder="e.g. UPSC Aspirants"
+                            required
+                          />
+                        </div>
+                        <div class="form-row segment-static-fields">
+                          <label for="segment-generated-inquiry"
+                            >Generated inquiry</label
+                          >
+                          <select id="segment-generated-inquiry">
+                            <option value="today">Today</option>
+                            <option value="this-week">This Week</option>
+                            <option value="this-month">This Month</option>
+                            <option value="all-time">All Time</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <label for="segment-criteria">Criteria</label>
+                        <textarea
+                          id="segment-criteria"
+                          rows="3"
+                          placeholder="Write the core criteria for this segment"
+                          required
+                        ></textarea>
+                      </div>
+
+                      <div class="form-row segment-type-selection-row">
+                        <label>Segment type</label>
+                        <div class="segment-type-switcher">
+                          <button
+                            type="button"
+                            class="segment-type-btn active"
+                            data-type="static"
+                            onclick="
+                              SegmentationModule.setSegmentType('static')
+                            "
+                          >
+                            Static Segment
+                          </button>
+                          <button
+                            type="button"
+                            class="segment-type-btn"
+                            data-type="dynamic"
+                            onclick="
+                              SegmentationModule.setSegmentType('dynamic')
+                            "
+                          >
+                            Dynamic Segment
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        class="form-row segment-type-summary"
+                        id="segment-type-summary"
+                      >
+                        Static segments are manually defined and assigned once;
+                        dynamic segments auto-assign matching leads to
+                        counselors.
+                      </div>
+
+                      <div
+                        class="segment-dynamic-fields segment-dynamic-fields-grid"
+                        style="display: none"
+                      >
+                        <div class="form-row">
+                          <label for="segment-source">Source</label>
+                          <select id="segment-source">
+                            <option value="Instagram Ad">Instagram Ad</option>
+                            <option value="Website">Website</option>
+                            <option value="Walk-in">Walk-in</option>
+                            <option value="Google Ads">Google Ads</option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-course">Course</label>
+                          <select id="segment-course">
+                            <option value="UPSC Foundation">
+                              UPSC Foundation
+                            </option>
+                            <option value="GPSC Class 1-2">
+                              GPSC Class 1-2
+                            </option>
+                            <option value="Sankalp Programme">
+                              Sankalp Programme
+                            </option>
+                            <option value="IAS/IPS Coaching">
+                              IAS/IPS Coaching
+                            </option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-mode">Mode</label>
+                          <select id="segment-mode">
+                            <option value="Classroom">Classroom</option>
+                            <option value="Online">Online</option>
+                            <option value="Residential">Residential</option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-date">Date</label>
+                          <input id="segment-date" type="date" />
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-academic-status"
+                            >Academic status</label
+                          >
+                          <select id="segment-academic-status">
+                            <option value="Graduation Running">
+                              Graduation Running
+                            </option>
+                            <option value="Graduation Completed">
+                              Graduation Completed
+                            </option>
+                            <option value="HSC Completed">HSC Completed</option>
+                            <option value="Post Graduation">
+                              Post Graduation
+                            </option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-city">City</label>
+                          <input
+                            id="segment-city"
+                            type="text"
+                            placeholder="e.g. Surat"
+                          />
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-pincode">Pincode</label>
+                          <input
+                            id="segment-pincode"
+                            type="text"
+                            maxlength="6"
+                            inputmode="numeric"
+                            placeholder="6-digit pincode"
+                          />
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-status">Lead status</label>
+                          <select id="segment-status">
+                            <option value="">Any Status</option>
+                            <option value="new">New Inquiry</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="interested">Interested</option>
+                            <option value="followup">Follow-up</option>
+                            <option value="counselling">Counselling</option>
+                            <option value="converted">Converted</option>
+                            <option value="lost">Lost</option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-lead-age">Lead age</label>
+                          <select id="segment-lead-age">
+                            <option value="">Any Age</option>
+                            <option value="0 Days">Same Day</option>
+                            <option value="1 Day">1 Day</option>
+                            <option value="2 Days">2 Days</option>
+                            <option value="3+ Days">3+ Days</option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-assigned-counselor"
+                            >Assigned counselor</label
+                          >
+                          <select id="segment-assigned-counselor">
+                            <option value="">Any Counselor</option>
+                            <option value="Bharat Sir">Bharat Sir</option>
+                            <option value="Vivek Sir">Vivek Sir</option>
+                            <option value="Pooja Shah">Pooja Shah</option>
+                            <option value="Jignesh Trivedi">
+                              Jignesh Trivedi
+                            </option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label for="segment-owner">Lead owner</label>
+                          <select id="segment-owner">
+                            <option value="">Any Owner</option>
+                            <option value="UPSC Team">UPSC Team</option>
+                            <option value="GPSC Team">GPSC Team</option>
+                            <option value="Sankalp Team">Sankalp Team</option>
+                            <option value="Admin">Admin</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div
+                        class="segment-action-strip"
+                        aria-label="Segment actions"
+                      >
+                        <button
+                          type="button"
+                          class="segment-action-chip"
+                          onclick="SegmentationModule.editSelectedSegment()"
+                        >
+                          <i class="fas fa-pen"></i><span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="segment-action-chip"
+                          onclick="
+                            SegmentationModule.duplicateSelectedSegment()
+                          "
+                        >
+                          <i class="fas fa-copy"></i><span>Duplicate</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="segment-action-chip"
+                          onclick="SegmentationModule.archiveSelectedSegment()"
+                        >
+                          <i class="fas fa-box-archive"></i><span>Archive</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="segment-action-chip"
+                          onclick="SegmentationModule.exportSegments()"
+                        >
+                          <i class="fas fa-file-export"></i><span>Export</span>
+                        </button>
+                      </div>
+
+                      <div class="form-row form-actions">
+                        <button class="btn btn-outline btn-sm" type="reset">
+                          <i class="fas fa-rotate-left"></i> Clear
+                        </button>
+                        <button class="btn btn-primary btn-sm" type="submit">
+                          <i class="fas fa-check"></i> Save Segment
+                        </button>
+                        <span
+                          id="segment-form-status"
+                          class="form-status"
+                        ></span>
+                      </div>
+                    </form>
+                  </div>
+
+                  <div class="segment-list-panel" id="segmentation-library">
+                    <div class="panel-heading">
+                      <h2>Active segments</h2>
+                      <span
+                        id="segment-list-count"
+                        class="panel-subtitle"
+                      ></span>
+                    </div>
+                    <div class="segment-grid" id="segment-list"></div>
+                    <div class="panel-heading" style="margin-top: 24px">
+                      <h2>Archived segments</h2>
+                      <span class="panel-subtitle"
+                        >Older or retired segments</span
+                      >
+                    </div>
+                    <div
+                      class="segment-grid archived"
+                      id="segment-archive-list"
+                    ></div>
+                  </div>
+                </div>
+
+                <div
+                  class="segmentation-panel-body"
+                  id="segmentation-panel-assignments"
+                >
+                  <div
+                    class="assignment-summary-grid"
+                    id="assignment-summary-grid"
+                  ></div>
+                  <div class="assignment-layout" id="segmentation-assign">
+                    <div class="assignment-left-panel">
+                      <div class="panel-heading">
+                        <h2>Assign segments</h2>
+                        <span class="panel-subtitle"
+                          >Drag active segments onto a user or team to assign
+                          them.</span
+                        >
+                      </div>
+                      <div class="assignment-filter-row">
+                        <button
+                          type="button"
+                          class="assignment-filter-btn active"
+                          data-group="counselors"
+                          onclick="SegmentationModule.selectGroup('counselors')"
+                        >
+                          Counselors
+                        </button>
+                        <button
+                          type="button"
+                          class="assignment-filter-btn"
+                          data-group="admission"
+                          onclick="SegmentationModule.selectGroup('admission')"
+                        >
+                          Admission Team
+                        </button>
+                        <button
+                          type="button"
+                          class="assignment-filter-btn"
+                          data-group="tally"
+                          onclick="SegmentationModule.selectGroup('tally')"
+                        >
+                          Tally Caller
+                        </button>
+                        <button
+                          type="button"
+                          class="assignment-filter-btn"
+                          data-group="staff"
+                          onclick="SegmentationModule.selectGroup('staff')"
+                        >
+                          Staff
+                        </button>
+                      </div>
+                      <div
+                        class="assignment-users"
+                        id="assignment-user-list"
+                      ></div>
+                    </div>
+
+                    <div class="assignment-right-panel">
+                      <div class="panel-heading">
+                        <h2>Active segment queue</h2>
+                        <span class="panel-subtitle"
+                          >Drag segments to assign them to the selected
+                          user.</span
+                        >
+                      </div>
+                      <div
+                        class="assignment-segment-queue"
+                        id="assignment-segment-queue"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+              </section>
+            </div>
+          </div>
+        </div>
+        <!-- /screen-segmentation -->
+
+        <nav
+          class="mobile-bottom-nav"
+          id="mobile-bottom-nav"
+          aria-label="Mobile navigation"
+        ></nav>
       </div>
+      <!-- /main-content -->
 
-      <!-- Toolbar -->
-      <div class="leads-toolbar">
-        <div class="toolbar-left">
-          <!-- Selection Checkbox -->
-          <div style="display:flex;align-items:center;gap:6px;margin-right:6px">
-            <input type="checkbox" id="select-all-leads" style="width:16px;height:16px;cursor:pointer" title="Select All On Page" onclick="LeadsModule.toggleSelectAll(this)">
-          </div>
-          <!-- Global Filter -->
-          <button class="toolbar-btn" id="filter-toggle-btn" title="Global Filter">
-            <i class="fas fa-filter"></i> Filter
-          </button>
-          <!-- Refresh -->
-          <button class="toolbar-btn" id="refresh-btn" title="Refresh">
-            <i class="fas fa-sync-alt"></i>
-          </button>
-          <div class="toolbar-divider"></div>
-          <!-- Add New Inquiry -->
-          <button class="toolbar-btn btn-add-lead" id="add-lead-btn">
-            <i class="fas fa-plus"></i> Add New Inquiry
-          </button>
-          <!-- Import -->
-          <button class="toolbar-btn" title="Import Leads" id="import-leads-btn">
-            <i class="fas fa-file-import"></i> Mass Import
-          </button>
-          <!-- Export -->
-          <button class="toolbar-btn" title="Export Leads" id="export-leads-btn">
-            <i class="fas fa-file-export"></i> Export
-          </button>
-          <!-- Download -->
-          <button class="toolbar-btn" title="Download" id="download-leads-btn">
-            <i class="fas fa-download"></i>
-          </button>
-          <div class="toolbar-divider"></div>
-          <!-- Send Email to All -->
-          <button class="toolbar-btn" title="Send Email to All" id="email-all-btn">
-            <i class="fas fa-envelope"></i> Email All
-          </button>
-          <!-- Sort by Date -->
-          <button class="toolbar-btn" id="sort-toggle-btn" title="Sort Leads">
-            <i class="fas fa-sort-amount-down"></i> Sort
-          </button>
-          <div class="toolbar-divider"></div>
-          <!-- Mass Admission Confirmation -->
-          <button class="toolbar-btn btn-mass-admit" id="mass-admit-btn">
-            <i class="fas fa-check-double"></i> Mass Admission
-          </button>
-          
-          <!-- Selection Info and Action Buttons -->
-          <span id="selected-count-badge" style="display:none;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700;padding:4px 8px;border-radius:var(--radius);margin-left:8px">
-            Selected: <span id="selected-count-num">0</span>
-          </span>
-          <div id="batch-actions-wrap" style="display:none;gap:4px">
-            <button class="toolbar-btn" style="color:var(--primary);border-color:var(--primary)" onclick="LeadsModule.batchAction('email')"><i class="fas fa-envelope"></i> Email</button>
-            <button class="toolbar-btn" style="color:var(--wa);border-color:var(--wa-light)" onclick="LeadsModule.batchAction('whatsapp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
-            <button class="toolbar-btn" onclick="LeadsModule.batchAction('assign')"><i class="fas fa-user-check"></i> Assign</button>
-            <button class="toolbar-btn" onclick="LeadsModule.batchAction('status')"><i class="fas fa-tags"></i> Status</button>
-            <button class="toolbar-btn" onclick="LeadsModule.batchAction('segment')"><i class="fas fa-layer-group"></i> Segment</button>
-            <button class="toolbar-btn" onclick="LeadsModule.batchAction('export')"><i class="fas fa-file-export"></i> Export Selected</button>
-            <button class="toolbar-btn" style="color:var(--danger);border-color:var(--danger-light)" onclick="LeadsModule.batchAction('archive')"><i class="fas fa-archive"></i> Archive</button>
-          </div>
-        </div>
-        <div class="toolbar-right">
-          <div class="toolbar-view-toggle">
-            <button class="toolbar-btn active" id="row-view-btn" title="Row View">
-              <i class="fas fa-list"></i> Row View
-            </button>
-            <button class="toolbar-btn" id="calendar-view-btn" title="Calendar View">
-              <i class="fas fa-calendar-alt"></i> Calendar View
-            </button>
-          </div>
-          <!-- Collapse/Expand All (single toggle button) -->
-          <button class="toolbar-btn active" id="collapse-toggle-btn">
-            <i class="fas fa-expand-alt"></i> Expand All
-          </button>
-        </div>
-      </div>
+      <div id="toast-container" class="toast-container"></div>
+    </div>
+    <!-- /app-shell -->
 
-      <!-- Collapsible Hidden Filters Panel -->
-      <div class="leads-filter-panel" id="leads-filter-panel" style="display:none;background:var(--bg-card);border-bottom:1px solid var(--border);padding:12px 20px;gap:16px;align-items:center;flex-wrap:wrap;flex-shrink:0">
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Course</label>
-          <select id="filter-course" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:160px" onchange="LeadsModule.applyFilters()">
-            <option value="all">All Courses</option>
-            <option value="UPSC Foundation">UPSC Foundation</option>
-            <option value="GPSC (Class 1 & 2) - Foundation">GPSC Foundation</option>
-            <option value="GPSC Class 1-2">GPSC Class 1-2</option>
-            <option value="Sankalp Programme">Sankalp Programme</option>
-          </select>
+    <!-- ===== LEAD DETAIL DRAWER ===== -->
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <div class="lead-drawer" id="lead-drawer">
+      <div
+        class="drawer-resize-handle"
+        id="drawer-resize-handle"
+        aria-hidden="true"
+      ></div>
+      <!-- Drawer Top Bar -->
+      <div class="drawer-topbar">
+        <div class="drawer-breadcrumb">
+          Lead Details <span class="sep">&rsaquo;</span>
+          <strong id="drawer-enq-id">ENQ0002387</strong>
+          <span
+            class="drawer-status-pill badge status-interested"
+            id="drawer-status-pill"
+            >Interested</span
+          >
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Source</label>
-          <select id="filter-source" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:160px" onchange="LeadsModule.applyFilters()">
-            <option value="all">All Sources</option>
-            <option value="Website Inquiry Form">Website Inquiry Form</option>
-            <option value="Walk-In Inquiry">Walk-In Inquiry</option>
-            <option value="Phone Inquiry">Phone Inquiry</option>
-            <option value="WhatsApp Inquiry">WhatsApp Inquiry</option>
-            <option value="Event Registration">Event Registration</option>
-            <option value="Seminar Registration">Seminar Registration</option>
-            <option value="Referral">Referral</option>
-            <option value="Social Media">Social Media</option>
-            <option value="Education Fair">Education Fair</option>
-            <option value="Manual Entry">Manual Entry</option>
-            <option value="Excel Import">Excel Import</option>
-            <option value="Instagram Ad">Instagram Ad</option>
-            <option value="Website">Website</option>
-            <option value="Walk-in">Walk-in</option>
-            <option value="Google Ads">Google Ads</option>
-            <option value="Seminar">Seminar</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Search Leads</label>
-          <div style="position:relative">
-            <i class="fas fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text-muted)"></i>
-            <input type="text" id="filter-search-input" placeholder="Search name, phone, email..." style="padding:6px 10px 6px 26px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:220px" oninput="LeadsModule.applyFilters()">
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Counselor</label>
-          <select id="filter-counselor" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:160px" onchange="LeadsModule.applyFilters()">
-            <option value="all">All Counselors</option>
-            <option value="Bharat Sir">Bharat Sir</option>
-            <option value="Vivek Sir">Vivek Sir</option>
-            <option value="Pooja Shah">Pooja Shah</option>
-            <option value="Jignesh Trivedi">Jignesh Trivedi</option>
-            <option value="Unassigned">Unassigned</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Learning Mode</label>
-          <select id="filter-mode" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:150px" onchange="LeadsModule.applyFilters()">
-            <option value="all">All Modes</option>
-            <option value="Classroom">Classroom</option>
-            <option value="Online">Online</option>
-            <option value="Residential Mode">Residential Mode</option>
-            <option value="Hybrid">Hybrid</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Academic Status</label>
-          <select id="filter-academic-status" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:175px" onchange="LeadsModule.applyFilters()">
-            <option value="all">All Academic Status</option>
-            <option value="HSC Running">HSC Running</option>
-            <option value="HSC Completed">HSC Completed</option>
-            <option value="Graduation Running">Graduation Running</option>
-            <option value="Graduation Completed">Graduation Completed</option>
-            <option value="Post Graduation">Post Graduation</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">City</label>
-          <input type="text" id="filter-city" placeholder="City" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:140px" oninput="LeadsModule.applyFilters()">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Inquiry Date</label>
-          <input type="date" id="filter-inquiry-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:150px" onchange="LeadsModule.applyFilters()">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Follow-up Date</label>
-          <input type="date" id="filter-followup-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:150px" onchange="LeadsModule.applyFilters()">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Lead Segment</label>
-          <select id="filter-segment" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:11.5px;outline:none;width:170px" onchange="LeadsModule.applyFilters()">
-            <option value="all">All Segments</option>
-            <option value="UPSC Aspirants">UPSC Aspirants</option>
-            <option value="GPSC Campaign">GPSC Campaign</option>
-            <option value="Sankalp Seminar">Sankalp Seminar</option>
-            <option value="First-Time Visitors">First-Time Visitors</option>
-          </select>
-        </div>
-        <div style="display:flex;align-self:flex-end;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="LeadsModule.resetFilters()" style="height:30px;font-size:11px;padding:0 12px">Reset</button>
-        </div>
-      </div>
-
-      <!-- Info Bar -->
-      <div class="leads-info-bar">
-        <div class="leads-result-label">
-          <span class="result-badge">Search Result</span>
-          <span id="leads-count-label">Showing 1 to 6 of 831 leads</span>
-        </div>
-        <div class="quick-search-bar">
-          <button class="toolbar-btn" id="saved-filter-btn" title="Saved filter views" onclick="LeadsModule.showToast('Saved filter view bookmarked for demo', 'success')">
-            <i class="fas fa-bookmark"></i> Saved Filters
+        <div class="drawer-actions">
+          <button class="btn btn-primary btn-sm" id="drawer-add-followup-btn">
+            <i class="fas fa-plus"></i> Add Follow-Up
           </button>
-          <div class="quick-search-wrap">
-            <i class="fas fa-search search-icon"></i>
-            <input class="quick-search-input" id="quick-search-input" placeholder="Search inquiry no., student name, mobile, email...">
-          </div>
-          <button class="clear-search-btn" onclick="document.getElementById('quick-search-input').value='';LeadsModule.filterSearch='';document.getElementById('filter-search-input') && (document.getElementById('filter-search-input').value='');LeadsModule.applyFilters()">
+          <button
+            class="btn btn-outline btn-sm"
+            id="drawer-schedule-meeting-btn"
+          >
+            <i class="fas fa-calendar-check"></i> Schedule Counselling
+          </button>
+          <button class="btn btn-outline btn-sm" id="drawer-more-actions-btn">
+            <i class="fas fa-ellipsis-h"></i> Change status
+          </button>
+          <button class="drawer-close-btn" id="drawer-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
       </div>
 
-      <!-- Lead List -->
-      <div class="lead-list" id="lead-list"></div>
-      <div class="lead-calendar-view" id="lead-calendar-view" style="display:none"></div>
-
-      <!-- Pagination -->
-      <div class="leads-pagination">
-        <span class="pagination-info" id="leads-count-label-2">Showing 1 to 10 of 831 leads</span>
-        <div class="pagination-btns">
-          <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-          <button class="page-btn active">1</button>
-          <button class="page-btn">2</button>
-          <button class="page-btn">3</button>
-          <span style="padding:0 4px;color:var(--text-muted);font-size:12px">...</span>
-          <button class="page-btn">84</button>
-          <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <select class="page-size-select">
-          <option>10 / page</option>
-          <option>25 / page</option>
-          <option>50 / page</option>
-        </select>
-      </div>
-
-    </div><!-- /screen-leads -->
-
-
-    <!-- ======================================
-         SCREEN 3: FOLLOW-UP CALENDAR
-         ====================================== -->
-    <div class="screen" id="screen-calendar">
-      <div class="content-area">
-
-        <div class="calendar-header">
-          <div>
-            <h1 style="font-size:18px;font-weight:700">Follow-Up Calendar</h1>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Click on any date to view scheduled leads and follow-ups</div>
-          </div>
-          <div class="calendar-nav-group">
-            <button class="cal-nav-btn" id="cal-prev-btn"><i class="fas fa-chevron-left"></i></button>
-            <button class="cal-today-btn" id="cal-today-btn">Today</button>
-            <button class="cal-nav-btn" id="cal-next-btn"><i class="fas fa-chevron-right"></i></button>
-            <h2 class="cal-month-title" id="cal-month-title">June 2026</h2>
+      <div class="drawer-body">
+        <!-- Profile Card -->
+        <div class="drawer-profile-card">
+          <div class="drawer-avatar" id="drawer-avatar-letter">R</div>
+          <div class="drawer-profile-info">
+            <div class="drawer-profile-name">
+              <span id="drawer-lead-name">Rahul Patel</span>
+              <i
+                class="fas fa-star"
+                style="color: var(--warning); font-size: 14px"
+              ></i>
+              <i
+                class="fas fa-fire"
+                style="color: var(--danger); font-size: 14px"
+              ></i>
+            </div>
+            <div class="profile-enq-id" id="drawer-enq-id-2">ENQ0002387</div>
+            <div class="profile-tags" id="drawer-profile-tags"></div>
+            <div class="profile-contacts" id="drawer-contacts"></div>
+            <div class="profile-meta-row" id="drawer-profile-meta"></div>
           </div>
         </div>
 
-        <div class="calendar-grid-wrap">
-          <div class="cal-weekdays-header">
-            <div class="cal-weekday-label">Monday</div>
-            <div class="cal-weekday-label">Tuesday</div>
-            <div class="cal-weekday-label">Wednesday</div>
-            <div class="cal-weekday-label">Thursday</div>
-            <div class="cal-weekday-label">Friday</div>
-            <div class="cal-weekday-label weekend">Saturday</div>
-            <div class="cal-weekday-label weekend">Sunday</div>
-          </div>
-          <div class="cal-days-grid" id="cal-days-grid"></div>
-          <div class="calendar-legend-bar">
-            <span class="cal-legend-label">Legend:</span>
-            <div class="cal-legend-item"><div class="cal-legend-swatch swatch-pending"></div>Pending Leads</div>
-            <div class="cal-legend-item"><div class="cal-legend-swatch swatch-overdue"></div>Overdue Follow-ups</div>
-            <div class="cal-legend-item"><div class="cal-legend-swatch swatch-followup"></div>Scheduled Follow-ups</div>
-            <div class="cal-legend-item"><div class="cal-legend-swatch swatch-completed"></div>Completed</div>
-          </div>
-        </div>
-
-      </div>
-    </div><!-- /screen-calendar -->
-
-
-    <!-- ======================================
-         SCREEN 4: ASSIGNMENT & SEGMENTATION
-         ====================================== -->
-    <div class="screen" id="screen-segmentation">
-      <div class="content-area">
-        <div class="page-header" id="segmentation-summary">
-          <div>
-            <h1 style="font-size:18px;font-weight:700">Assignment &amp; Segmentation</h1>
-            <div style="font-size:12px;color:var(--text-muted)">Create segments, assign them to counselors, and track lead coverage.</div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="SegmentationModule.switchTab('assignments')"><i class="fas fa-plus"></i> Assign Leads</button>
-        </div>
-
-        <div class="segmentation-layout">
-          <aside class="segmentation-side-panel">
-            <div class="segmentation-tabs">
-              <button class="seg-tab active" data-tab="segments" onclick="SegmentationModule.switchTab('segments')">Segments</button>
-              <button class="seg-tab" data-tab="assignments" onclick="SegmentationModule.switchTab('assignments')">Assignments</button>
-            </div>
-
-            <div class="segmentation-summary-cards segmentation-live-summary">
-              <div class="summary-card summary-card-primary">
-                <div class="summary-label">Active Segments</div>
-                <div class="summary-value" id="summary-segment-count">0</div>
-                <div class="summary-meta">Reusable business groups</div>
-              </div>
-              <div class="summary-card">
-                <div class="summary-label">Total Inquiries</div>
-                <div class="summary-value" id="summary-inquiry-count">0</div>
-                <div class="summary-meta">Across active segments</div>
-              </div>
-              <div class="summary-card">
-                <div class="summary-label">Unassigned Segments</div>
-                <div class="summary-value" id="summary-unassigned-segment-count">0</div>
-                <div class="summary-meta">Needs assignment</div>
-              </div>
-              <div class="summary-card summary-card-wide">
-                <div class="summary-label">Top Segment</div>
-                <div class="summary-value summary-value-name" id="summary-top-segment">-</div>
-                <div class="summary-meta" id="summary-top-segment-meta">No active segment</div>
-              </div>
-            </div>
-
-            <div class="segmentation-quick-actions">
-              <div class="quick-actions-title">Quick Actions</div>
-
-                <div class="quick-actions-list">
-
-                  <button class="quick-action-btn" type="button"
-                          onclick="document.getElementById('segment-name')?.focus()">
-                    <div class="qa-icon qa-primary">
-                      <i class="fas fa-plus"></i>
-                    </div>
-                    <span class="qa-label">Create Segment</span>
-                    <i class="fas fa-chevron-right qa-arrow"></i>
-                  </button>
-
-                  <button class="quick-action-btn" type="button"
-                          onclick="SegmentationModule.switchTab('assignments')">
-                    <div class="qa-icon qa-success">
-                      <i class="fas fa-user-check"></i>
-                    </div>
-                    <span class="qa-label">Assign Leads</span>
-                    <i class="fas fa-chevron-right qa-arrow"></i>
-                  </button>
-
-                  <button class="quick-action-btn" type="button" onclick="SegmentationModule.exportSegments()">
-                    <div class="qa-icon qa-info">
-                      <i class="fas fa-file-export"></i>
-                    </div>
-                    <span class="qa-label">Export Segments</span>
-                    <i class="fas fa-chevron-right qa-arrow"></i>
-                  </button>
-
-                </div>
-            </div>
-          </aside>
-
-          <section class="segmentation-main-panel">
-            <div class="segmentation-panel-body active" id="segmentation-panel-segments">
-              <div class="segmentation-card" id="segmentation-build">
-                <div class="segmentation-card-header">
-                  <div>
-                    <div class="segmentation-card-title">Create a new segment</div>
-                    <div class="segmentation-card-subtitle">Use rules to group leads for assignment.</div>
-                  </div>
-                </div>
-                <form id="segment-form" class="segment-form">
-                  <div class="form-grid cols-2">
-                    <div class="form-row segment-name-row">
-                      <label for="segment-name">Segment name</label>
-                      <input id="segment-name" type="text" placeholder="e.g. UPSC Aspirants" required>
-                    </div>
-                    <div class="form-row segment-static-fields">
-                      <label for="segment-generated-inquiry">Generated inquiry</label>
-                      <select id="segment-generated-inquiry">
-                        <option value="today">Today</option>
-                        <option value="this-week">This Week</option>
-                        <option value="this-month">This Month</option>
-                        <option value="all-time">All Time</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="form-row">
-                    <label for="segment-criteria">Criteria</label>
-                    <textarea id="segment-criteria" rows="3" placeholder="Write the core criteria for this segment" required></textarea>
-                  </div>
-
-                  <div class="form-row segment-type-selection-row">
-                    <label>Segment type</label>
-                    <div class="segment-type-switcher">
-                      <button type="button" class="segment-type-btn active" data-type="static" onclick="SegmentationModule.setSegmentType('static')">Static Segment</button>
-                      <button type="button" class="segment-type-btn" data-type="dynamic" onclick="SegmentationModule.setSegmentType('dynamic')">Dynamic Segment</button>
-                    </div>
-                  </div>
-                  <div class="form-row segment-type-summary" id="segment-type-summary">Static segments are manually defined and assigned once; dynamic segments auto-assign matching leads to counselors.</div>
-
-                  <div class="segment-dynamic-fields segment-dynamic-fields-grid" style="display:none;">
-                    <div class="form-row">
-                      <label for="segment-source">Source</label>
-                      <select id="segment-source">
-                        <option value="Instagram Ad">Instagram Ad</option>
-                        <option value="Website">Website</option>
-                        <option value="Walk-in">Walk-in</option>
-                        <option value="Google Ads">Google Ads</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-course">Course</label>
-                      <select id="segment-course">
-                        <option value="UPSC Foundation">UPSC Foundation</option>
-                        <option value="GPSC Class 1-2">GPSC Class 1-2</option>
-                        <option value="Sankalp Programme">Sankalp Programme</option>
-                        <option value="IAS/IPS Coaching">IAS/IPS Coaching</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-mode">Mode</label>
-                      <select id="segment-mode">
-                        <option value="Classroom">Classroom</option>
-                        <option value="Online">Online</option>
-                        <option value="Residential">Residential</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-date">Date</label>
-                      <input id="segment-date" type="date">
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-academic-status">Academic status</label>
-                      <select id="segment-academic-status">
-                        <option value="Graduation Running">Graduation Running</option>
-                        <option value="Graduation Completed">Graduation Completed</option>
-                        <option value="HSC Completed">HSC Completed</option>
-                        <option value="Post Graduation">Post Graduation</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-city">City</label>
-                      <input id="segment-city" type="text" placeholder="e.g. Surat">
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-pincode">Pincode</label>
-                      <input id="segment-pincode" type="text" maxlength="6" inputmode="numeric" placeholder="6-digit pincode">
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-status">Lead status</label>
-                      <select id="segment-status">
-                        <option value="">Any Status</option>
-                        <option value="new">New Inquiry</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="interested">Interested</option>
-                        <option value="followup">Follow-up</option>
-                        <option value="counselling">Counselling</option>
-                        <option value="converted">Converted</option>
-                        <option value="lost">Lost</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-lead-age">Lead age</label>
-                      <select id="segment-lead-age">
-                        <option value="">Any Age</option>
-                        <option value="0 Days">Same Day</option>
-                        <option value="1 Day">1 Day</option>
-                        <option value="2 Days">2 Days</option>
-                        <option value="3+ Days">3+ Days</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-assigned-counselor">Assigned counselor</label>
-                      <select id="segment-assigned-counselor">
-                        <option value="">Any Counselor</option>
-                        <option value="Bharat Sir">Bharat Sir</option>
-                        <option value="Vivek Sir">Vivek Sir</option>
-                        <option value="Pooja Shah">Pooja Shah</option>
-                        <option value="Jignesh Trivedi">Jignesh Trivedi</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label for="segment-owner">Lead owner</label>
-                      <select id="segment-owner">
-                        <option value="">Any Owner</option>
-                        <option value="UPSC Team">UPSC Team</option>
-                        <option value="GPSC Team">GPSC Team</option>
-                        <option value="Sankalp Team">Sankalp Team</option>
-                        <option value="Admin">Admin</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="segment-action-strip" aria-label="Segment actions">
-                    <button type="button" class="segment-action-chip" onclick="SegmentationModule.editSelectedSegment()"><i class="fas fa-pen"></i><span>Edit</span></button>
-                    <button type="button" class="segment-action-chip" onclick="SegmentationModule.duplicateSelectedSegment()"><i class="fas fa-copy"></i><span>Duplicate</span></button>
-                    <button type="button" class="segment-action-chip" onclick="SegmentationModule.archiveSelectedSegment()"><i class="fas fa-box-archive"></i><span>Archive</span></button>
-                    <button type="button" class="segment-action-chip" onclick="SegmentationModule.exportSegments()"><i class="fas fa-file-export"></i><span>Export</span></button>
-                  </div>
-
-                  <div class="form-row form-actions">
-                    <button class="btn btn-outline btn-sm" type="reset"><i class="fas fa-rotate-left"></i> Clear</button>
-                    <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-check"></i> Save Segment</button>
-                    <span id="segment-form-status" class="form-status"></span>
-                  </div>
-                </form>
-              </div>
-
-              <div class="segment-list-panel" id="segmentation-library">
-                <div class="panel-heading">
-                  <h2>Active segments</h2>
-                  <span id="segment-list-count" class="panel-subtitle"></span>
-                </div>
-                <div class="segment-grid" id="segment-list"></div>
-                <div class="panel-heading" style="margin-top:24px;">
-                  <h2>Archived segments</h2>
-                  <span class="panel-subtitle">Older or retired segments</span>
-                </div>
-                <div class="segment-grid archived" id="segment-archive-list"></div>
-              </div>
-            </div>
-
-            <div class="segmentation-panel-body" id="segmentation-panel-assignments">
-              <div class="assignment-summary-grid" id="assignment-summary-grid"></div>
-              <div class="assignment-layout" id="segmentation-assign">
-                <div class="assignment-left-panel">
-                  <div class="panel-heading">
-                    <h2>Assign segments</h2>
-                    <span class="panel-subtitle">Drag active segments onto a user or team to assign them.</span>
-                  </div>
-                  <div class="assignment-filter-row">
-                    <button type="button" class="assignment-filter-btn active" data-group="counselors" onclick="SegmentationModule.selectGroup('counselors')">Counselors</button>
-                    <button type="button" class="assignment-filter-btn" data-group="admission" onclick="SegmentationModule.selectGroup('admission')">Admission Team</button>
-                    <button type="button" class="assignment-filter-btn" data-group="tally" onclick="SegmentationModule.selectGroup('tally')">Tally Caller</button>
-                    <button type="button" class="assignment-filter-btn" data-group="staff" onclick="SegmentationModule.selectGroup('staff')">Staff</button>
-                  </div>
-                  <div class="assignment-users" id="assignment-user-list"></div>
-                </div>
-
-                <div class="assignment-right-panel">
-                  <div class="panel-heading">
-                    <h2>Active segment queue</h2>
-                    <span class="panel-subtitle">Drag segments to assign them to the selected user.</span>
-                  </div>
-                  <div class="assignment-segment-queue" id="assignment-segment-queue"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="segmentation-panel-body" id="segmentation-panel-future">
-              <div class="future-enhancement-card" id="segmentation-roadmap">
-                <div class="segmentation-card-header">
-                  <div>
-                    <div class="segmentation-card-title">Future Enhancement Roadmap</div>
-                    <div class="segmentation-card-subtitle">Module-wise future capabilities captured from the frozen Lead Management BRD/FRD.</div>
-                  </div>
-                </div>
-                <div class="future-enhancement-grid" id="future-enhancement-grid"></div>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div><!-- /screen-segmentation -->
-
-
-    <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobile navigation"></nav>
-
-  </div><!-- /main-content -->
-
-<div id="toast-container" class="toast-container"></div>
-
-</div><!-- /app-shell -->
-
-
-<!-- ===== LEAD DETAIL DRAWER ===== -->
-<div class="drawer-overlay" id="drawer-overlay"></div>
-<div class="lead-drawer" id="lead-drawer">
-  <div class="drawer-resize-handle" id="drawer-resize-handle" aria-hidden="true"></div>
-  <!-- Drawer Top Bar -->
-  <div class="drawer-topbar">
-    <div class="drawer-breadcrumb">
-      Lead Details <span class="sep">&rsaquo;</span> <strong id="drawer-enq-id">ENQ0002387</strong>
-      <span class="drawer-status-pill badge status-interested" id="drawer-status-pill">Interested</span>
-    </div>
-    <div class="drawer-actions">
-      <button class="btn btn-primary btn-sm" id="drawer-add-followup-btn"><i class="fas fa-plus"></i> Add Follow-Up</button>
-      <button class="btn btn-outline btn-sm" id="drawer-schedule-meeting-btn"><i class="fas fa-calendar-check"></i> Schedule Counselling</button>
-      <button class="btn btn-outline btn-sm" id="drawer-more-actions-btn"><i class="fas fa-ellipsis-h"></i> Change status</button>
-      <button class="drawer-close-btn" id="drawer-close-btn"><i class="fas fa-times"></i></button>
-    </div>
-  </div>
-
-  <div class="drawer-body">
-
-    <!-- Profile Card -->
-    <div class="drawer-profile-card">
-      <div class="drawer-avatar" id="drawer-avatar-letter">R</div>
-      <div class="drawer-profile-info">
-        <div class="drawer-profile-name">
-          <span id="drawer-lead-name">Rahul Patel</span>
-          <i class="fas fa-star" style="color:var(--warning);font-size:14px"></i>
-          <i class="fas fa-fire" style="color:var(--danger);font-size:14px"></i>
-        </div>
-        <div class="profile-enq-id" id="drawer-enq-id-2">ENQ0002387</div>
-        <div class="profile-tags" id="drawer-profile-tags"></div>
-        <div class="profile-contacts" id="drawer-contacts"></div>
-        <div class="profile-meta-row" id="drawer-profile-meta"></div>
-      </div>
-    </div>
-
-    <!-- Lead Stage Pipeline -->
-    <div class="stage-pipeline-card">
-      <div class="drawer-card-header">
-        <div class="drawer-card-title"><i class="fas fa-route"></i> Lead Journey</div>
-      </div>
-      <div style="padding:12px 20px">
-        <div class="stage-pipeline" id="drawer-pipeline"></div>
-      </div>
-    </div>
-
-    <!-- 3-Column Layout: Info | Communications | Score+Followup -->
-    <div class="drawer-3col">
-
-      <!-- Column 1: Inquiry Origin + Lead Information -->
-      <div class="drawer-left-stack">
-        <div class="drawer-origin-card" id="drawer-origin-card"></div>
-
-        <div class="drawer-info-card">
+        <!-- Lead Stage Pipeline -->
+        <div class="stage-pipeline-card">
           <div class="drawer-card-header">
-            <div class="drawer-card-title"><i class="fas fa-id-card"></i> Inquiry Details</div>
-            <div class="drawer-edit-link" id="drawer-edit-lead-btn"><i class="fas fa-edit"></i> Edit</div>
+            <div class="drawer-card-title">
+              <i class="fas fa-route"></i> Lead Journey
+            </div>
           </div>
-          <div class="info-list" id="drawer-info-list"></div>
-          <div style="padding:12px 16px;border-top:1px solid var(--divider)">
-            <a href="#" id="drawer-view-more-link" style="font-size:12px;color:var(--primary);font-weight:500">View More Details &rarr;</a>
+          <div style="padding: 12px 20px">
+            <div class="stage-pipeline" id="drawer-pipeline"></div>
+          </div>
+        </div>
+
+        <!-- 3-Column Layout: Info | Communications | Score+Followup -->
+        <div class="drawer-3col">
+          <!-- Column 1: Inquiry Origin + Lead Information -->
+          <div class="drawer-left-stack">
+            <div class="drawer-origin-card" id="drawer-origin-card"></div>
+
+            <div class="drawer-info-card">
+              <div class="drawer-card-header">
+                <div class="drawer-card-title">
+                  <i class="fas fa-id-card"></i> Inquiry Details
+                </div>
+                <div class="drawer-edit-link" id="drawer-edit-lead-btn">
+                  <i class="fas fa-edit"></i> Edit
+                </div>
+              </div>
+              <div class="info-list" id="drawer-info-list"></div>
+              <div
+                style="padding: 12px 16px; border-top: 1px solid var(--divider)"
+              >
+                <a
+                  href="#"
+                  id="drawer-view-more-link"
+                  style="
+                    font-size: 12px;
+                    color: var(--primary);
+                    font-weight: 500;
+                  "
+                  >View More Details &rarr;</a
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Communication History -->
+          <div class="drawer-info-card">
+            <div class="drawer-card-header">
+              <div class="drawer-card-title">
+                <i class="fas fa-history"></i> Communication Timeline
+              </div>
+              <div class="drawer-edit-link" id="drawer-view-history-btn">
+                View All
+              </div>
+            </div>
+            <div class="comm-list" id="drawer-comm-list"></div>
+
+            <!-- Add New Activity -->
+            <div
+              style="padding: 12px 16px; border-top: 1px solid var(--divider)"
+            >
+              <div
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: var(--text-muted);
+                  margin-bottom: 8px;
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Add New Activity
+              </div>
+              <div class="activity-btns">
+                <button
+                  class="activity-btn act-call"
+                  data-drawer-activity="call"
+                >
+                  <i class="fas fa-phone"></i> Call
+                </button>
+                <button
+                  class="activity-btn act-wa"
+                  data-drawer-activity="whatsapp"
+                >
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button
+                  class="activity-btn act-email"
+                  data-drawer-activity="email"
+                >
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+                <button
+                  class="activity-btn act-meet"
+                  data-drawer-activity="meeting"
+                >
+                  <i class="fas fa-handshake"></i> Meeting
+                </button>
+                <button
+                  class="activity-btn act-more"
+                  data-drawer-activity="more"
+                >
+                  <i class="fas fa-ellipsis-h"></i> More
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="drawer-info-card">
+            <div class="drawer-card-header">
+              <div class="drawer-card-title">
+                <i class="fas fa-comments"></i> Counselling History
+              </div>
+            </div>
+            <div class="comm-list" id="drawer-counselling-history"></div>
+          </div>
+
+          <div class="drawer-info-card">
+            <div class="drawer-card-header">
+              <div class="drawer-card-title">
+                <i class="fas fa-sticky-note"></i> Internal Notes
+              </div>
+              <span class="state-chip">Staff only</span>
+            </div>
+            <div class="comm-list" id="drawer-internal-notes"></div>
+          </div>
+
+          <!-- Column 3: Score + Follow-up + Quick Actions -->
+          <div class="drawer-right-stack">
+            <!-- Lead Score -->
+            <div class="score-card">
+              <div class="drawer-card-header">
+                <div class="drawer-card-title">
+                  <i class="fas fa-star"></i> Lead Score
+                </div>
+                <div>
+                  <div style="font-size: 10px; color: var(--text-muted)">
+                    Priority
+                  </div>
+                  <div
+                    style="
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: var(--danger);
+                    "
+                    id="drawer-priority-value"
+                  >
+                    🔥 High
+                  </div>
+                </div>
+              </div>
+              <div class="score-gauge-wrap">
+                <div style="text-align: center; padding: 12px 0">
+                  <div
+                    style="
+                      font-size: 40px;
+                      font-weight: 900;
+                      color: var(--primary);
+                    "
+                    id="drawer-score-value"
+                  >
+                    85
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted)">
+                    /100 · Score: High
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 8px;
+                  padding: 0 14px 12px;
+                "
+              >
+                <div
+                  style="
+                    background: var(--bg);
+                    border-radius: var(--radius);
+                    padding: 8px 10px;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 10px;
+                      color: var(--text-muted);
+                      margin-bottom: 2px;
+                    "
+                  >
+                    Lead Age
+                  </div>
+                  <div
+                    style="font-size: 12px; font-weight: 700"
+                    id="drawer-lead-age"
+                  >
+                    2 Days
+                  </div>
+                </div>
+                <div
+                  style="
+                    background: var(--bg);
+                    border-radius: var(--radius);
+                    padding: 8px 10px;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 10px;
+                      color: var(--text-muted);
+                      margin-bottom: 2px;
+                    "
+                  >
+                    Assigned On
+                  </div>
+                  <div
+                    style="font-size: 11px; font-weight: 600"
+                    id="drawer-assigned-on"
+                  >
+                    15 May 2025
+                  </div>
+                </div>
+              </div>
+              <div class="score-rows" id="drawer-score-rows"></div>
+            </div>
+
+            <!-- Next Follow-Up -->
+            <div class="followup-card">
+              <div class="drawer-card-header">
+                <div class="drawer-card-title">
+                  <i class="fas fa-calendar-check"></i> Next Follow-Up
+                </div>
+                <div class="drawer-edit-link">
+                  <i class="fas fa-edit"></i> Edit
+                </div>
+              </div>
+              <div id="drawer-followup-details"></div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions-card">
+              <div class="drawer-card-header">
+                <div class="drawer-card-title">
+                  <i class="fas fa-bolt"></i> Quick Actions
+                </div>
+              </div>
+              <div class="quick-actions-grid">
+                <div class="quick-action-btn" data-drawer-quick="brochure">
+                  <div
+                    class="qa-icon"
+                    style="
+                      background: var(--info-light);
+                      color: var(--info-strong);
+                    "
+                  >
+                    <i class="fas fa-file-alt"></i>
+                  </div>
+                  <span class="qa-label">Send Brochure</span>
+                </div>
+                <div class="quick-action-btn" data-drawer-quick="fee">
+                  <div
+                    class="qa-icon"
+                    style="
+                      background: var(--success-light);
+                      color: var(--success);
+                    "
+                  >
+                    <i class="fas fa-rupee-sign"></i>
+                  </div>
+                  <span class="qa-label">Fee Structure</span>
+                </div>
+                <div class="quick-action-btn" data-drawer-quick="batch">
+                  <div
+                    class="qa-icon"
+                    style="
+                      background: var(--warning-light);
+                      color: var(--warning);
+                    "
+                  >
+                    <i class="fas fa-users-class"></i>
+                  </div>
+                  <span class="qa-label">Batch Details</span>
+                </div>
+                <div class="quick-action-btn" data-drawer-quick="admission">
+                  <div
+                    class="qa-icon"
+                    style="
+                      background: var(--danger-light);
+                      color: var(--danger);
+                    "
+                  >
+                    <i class="fas fa-file-signature"></i>
+                  </div>
+                  <span class="qa-label">Convert to Admission</span>
+                </div>
+                <div class="quick-action-btn" data-drawer-quick="counselling">
+                  <div
+                    class="qa-icon"
+                    style="
+                      background: var(--purple-light);
+                      color: var(--purple);
+                    "
+                  >
+                    <i class="fas fa-handshake"></i>
+                  </div>
+                  <span class="qa-label">Counselling</span>
+                </div>
+                <div class="quick-action-btn" data-drawer-quick="note">
+                  <div
+                    class="qa-icon"
+                    style="
+                      background: var(--neutral-light);
+                      color: var(--text-secondary);
+                    "
+                  >
+                    <i class="fas fa-sticky-note"></i>
+                  </div>
+                  <span class="qa-label">Add Note</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mark as Lost -->
+            <button class="mark-lost-btn" id="drawer-mark-lost-btn">
+              <i class="fas fa-user-times"></i> Mark as Lost
+            </button>
           </div>
         </div>
       </div>
-
-      <!-- Column 2: Communication History -->
-      <div class="drawer-info-card">
-        <div class="drawer-card-header">
-          <div class="drawer-card-title"><i class="fas fa-history"></i> Communication Timeline</div>
-          <div class="drawer-edit-link" id="drawer-view-history-btn">View All</div>
-        </div>
-        <div class="comm-list" id="drawer-comm-list"></div>
-
-        <!-- Add New Activity -->
-        <div style="padding:12px 16px;border-top:1px solid var(--divider)">
-          <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Add New Activity</div>
-          <div class="activity-btns">
-            <button class="activity-btn act-call" data-drawer-activity="call"><i class="fas fa-phone"></i> Call</button>
-            <button class="activity-btn act-wa" data-drawer-activity="whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</button>
-            <button class="activity-btn act-email" data-drawer-activity="email"><i class="fas fa-envelope"></i> Email</button>
-            <button class="activity-btn act-meet" data-drawer-activity="meeting"><i class="fas fa-handshake"></i> Meeting</button>
-            <button class="activity-btn act-more" data-drawer-activity="more"><i class="fas fa-ellipsis-h"></i> More</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="drawer-info-card">
-        <div class="drawer-card-header">
-          <div class="drawer-card-title"><i class="fas fa-comments"></i> Counselling History</div>
-        </div>
-        <div class="comm-list" id="drawer-counselling-history"></div>
-      </div>
-
-      <div class="drawer-info-card">
-        <div class="drawer-card-header">
-          <div class="drawer-card-title"><i class="fas fa-sticky-note"></i> Internal Notes</div>
-          <span class="state-chip">Staff only</span>
-        </div>
-        <div class="comm-list" id="drawer-internal-notes"></div>
-      </div>
-
-      <!-- Column 3: Score + Follow-up + Quick Actions -->
-      <div class="drawer-right-stack">
-
-        <!-- Lead Score -->
-        <div class="score-card">
-          <div class="drawer-card-header">
-            <div class="drawer-card-title"><i class="fas fa-star"></i> Lead Score</div>
-            <div>
-              <div style="font-size:10px;color:var(--text-muted)">Priority</div>
-              <div style="font-size:12px;font-weight:700;color:var(--danger)" id="drawer-priority-value">🔥 High</div>
-            </div>
-          </div>
-          <div class="score-gauge-wrap">
-            <div style="text-align:center;padding:12px 0">
-              <div style="font-size:40px;font-weight:900;color:var(--primary)" id="drawer-score-value">85</div>
-              <div style="font-size:11px;color:var(--text-muted)">/100 · Score: High</div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 12px">
-            <div style="background:var(--bg);border-radius:var(--radius);padding:8px 10px">
-              <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Lead Age</div>
-              <div style="font-size:12px;font-weight:700" id="drawer-lead-age">2 Days</div>
-            </div>
-            <div style="background:var(--bg);border-radius:var(--radius);padding:8px 10px">
-              <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Assigned On</div>
-              <div style="font-size:11px;font-weight:600" id="drawer-assigned-on">15 May 2025</div>
-            </div>
-          </div>
-          <div class="score-rows" id="drawer-score-rows"></div>
-        </div>
-
-        <!-- Next Follow-Up -->
-        <div class="followup-card">
-          <div class="drawer-card-header">
-            <div class="drawer-card-title"><i class="fas fa-calendar-check"></i> Next Follow-Up</div>
-            <div class="drawer-edit-link"><i class="fas fa-edit"></i> Edit</div>
-          </div>
-          <div id="drawer-followup-details"></div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions-card">
-          <div class="drawer-card-header">
-            <div class="drawer-card-title"><i class="fas fa-bolt"></i> Quick Actions</div>
-          </div>
-          <div class="quick-actions-grid">
-            <div class="quick-action-btn" data-drawer-quick="brochure">
-              <div class="qa-icon" style="background:var(--info-light);color:var(--info-strong)"><i class="fas fa-file-alt"></i></div>
-              <span class="qa-label">Send Brochure</span>
-            </div>
-            <div class="quick-action-btn" data-drawer-quick="fee">
-              <div class="qa-icon" style="background:var(--success-light);color:var(--success)"><i class="fas fa-rupee-sign"></i></div>
-              <span class="qa-label">Fee Structure</span>
-            </div>
-            <div class="quick-action-btn" data-drawer-quick="batch">
-              <div class="qa-icon" style="background:var(--warning-light);color:var(--warning)"><i class="fas fa-users-class"></i></div>
-              <span class="qa-label">Batch Details</span>
-            </div>
-            <div class="quick-action-btn" data-drawer-quick="admission">
-              <div class="qa-icon" style="background:var(--danger-light);color:var(--danger)"><i class="fas fa-file-signature"></i></div>
-              <span class="qa-label">Convert to Admission</span>
-            </div>
-            <div class="quick-action-btn" data-drawer-quick="counselling">
-              <div class="qa-icon" style="background:var(--purple-light);color:var(--purple)"><i class="fas fa-handshake"></i></div>
-              <span class="qa-label">Counselling</span>
-            </div>
-            <div class="quick-action-btn" data-drawer-quick="note">
-              <div class="qa-icon" style="background:var(--neutral-light);color:var(--text-secondary)"><i class="fas fa-sticky-note"></i></div>
-              <span class="qa-label">Add Note</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mark as Lost -->
-        <button class="mark-lost-btn" id="drawer-mark-lost-btn">
-          <i class="fas fa-user-times"></i> Mark as Lost
-        </button>
-
-      </div>
+      <!-- /drawer-body -->
     </div>
+    <!-- /lead-drawer -->
 
-  </div><!-- /drawer-body -->
-</div><!-- /lead-drawer -->
+    <!-- Inline script to handle submenu expansion for nav-subitem that has data-submenu -->
+    <script>
+      document
+        .querySelectorAll(".nav-subitem[data-submenu]")
+        .forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const submenuId = item.getAttribute("data-submenu");
+            const submenu = document.getElementById(submenuId);
+            const chevron = document.getElementById("inquiry-lead-chevron");
+            if (!submenu) return;
+            const isOpen = submenu.classList.contains("open");
+            submenu.style.maxHeight = isOpen ? "0" : "200px";
+            submenu.classList.toggle("open", !isOpen);
+            if (chevron)
+              chevron.style.transform = isOpen ? "" : "rotate(180deg)";
+          });
+        });
+    </script>
 
-
-<!-- Inline script to handle submenu expansion for nav-subitem that has data-submenu -->
-<script>
-  document.querySelectorAll('.nav-subitem[data-submenu]').forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const submenuId = item.getAttribute('data-submenu');
-      const submenu = document.getElementById(submenuId);
-      const chevron = document.getElementById('inquiry-lead-chevron');
-      if (!submenu) return;
-      const isOpen = submenu.classList.contains('open');
-      submenu.style.maxHeight = isOpen ? '0' : '200px';
-      submenu.classList.toggle('open', !isOpen);
-      if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-    });
-  });
-</script>
-
-<script src="js/data.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/leads.js"></script>
-<script src="js/drawer.js"></script>
-<script src="js/calendar.js"></script>
-<script src="js/dialer.js"></script>
-<script src="js/app.js"></script>
-</body>
+    <script src="js/data.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/leads.js"></script>
+    <script src="js/drawer.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/dialer.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>
