@@ -39,7 +39,7 @@ const LeadsModule = {
 
   injectMockLeads() {
     // If not already injected, add some leads for other statuses
-    if (this.leads.length <= 6) {
+    if (this.leads.length <= 7) {
       const extraLeads = [
         {
           id: 10, enqNo: 'ENQ1001', name: 'Amit Kumar', phone: '9988776655', whatsapp: '9988776655',
@@ -112,6 +112,14 @@ const LeadsModule = {
     window.APP_DATA.LEAD_DATA = this.leads;
   },
 
+  applyRoleScope(rows) {
+    return window.AuthModule ? AuthModule.applyScope(rows) : rows;
+  },
+
+  can(module, action) {
+    return window.AuthModule ? AuthModule.can(module, action) : true;
+  },
+
   getLeadStatusKey(lead) {
     if (lead.archived) return null;
     const stageLabel = (lead.stageLabel || '').toLowerCase();
@@ -122,7 +130,7 @@ const LeadsModule = {
     if (status === 'exam' || status === 'interview' || status === 'admission_confirmed' || status === 'admission_rejected' || status === 'admissionconfirmed' || status === 'admissionrejected') {
       return 'admission_form';
     }
-    if (status === 'converted' || status === 'admission_confirmed' || stageLabel === 'student created') return 'converted';
+    if (status === 'converted' || status === 'admission_confirmed' || stageLabel === 'student created') return 'admission_form';
     if (status === 'lost' || status === 'not_interested') return 'lost';
     if (status === 'closed') return 'closed';
     if (status === 'admission_process' || stageLabel === 'admission') return 'admission_process';
@@ -151,16 +159,14 @@ const LeadsModule = {
       { key: 'all', label: 'All' },
       { key: 'new', label: 'New Inquiry' },
       { key: 'contacted', label: 'Contacted' },
-      { key: 'interested', label: 'Interested' },
       { key: 'followup', label: 'Follow-up' },
       { key: 'counselling', label: 'Counselling' },
       { key: 'hotlead', label: 'Hot Lead' },
       { key: 'coldlead', label: 'Cold Lead' },
-      { key: 'admission_process', label: 'Admission Process' },
-      { key: 'converted', label: 'Converted' },
+      { key: 'admission_process', label: 'Admission Form' },
       { key: 'lost', label: 'Lost' },
       { key: 'closed', label: 'Closed' },
-      { key: 'admission_form', label: 'Admission Forms' }
+      { key: 'admission_form', label: 'Admission' }
     ];
     const container = document.getElementById('status-bar');
     if (!container) return;
@@ -180,7 +186,7 @@ const LeadsModule = {
       exam: 0, interview: 0, admission_confirmed: 0, admission_rejected: 0
     };
     
-    this.leads.forEach(l => {
+    this.applyRoleScope(this.leads).forEach(l => {
       if (l.archived) return;
       counts.all++;
       const statusKey = this.getLeadStatusKey(l);
@@ -231,7 +237,7 @@ const LeadsModule = {
     this.filterCourse = document.getElementById('filter-course')?.value || this.filterCourse || 'all';
     this.filterSource = document.getElementById('filter-source')?.value || this.filterSource || 'all';
     this.filterSearch = document.getElementById('filter-search-input')?.value || this.filterSearch || '';
-    let result = [...this.leads].filter(l => !l.archived);
+    let result = this.applyRoleScope([...this.leads]).filter(l => !l.archived);
 
     // Apply status filter
     if (this.activeStatus !== 'all') {
@@ -322,6 +328,7 @@ const LeadsModule = {
     this.updateSelectAllCheckboxState();
     this.updateSelectionUI();
     this.syncCollapseAllButton();
+    this.applyToolbarPermissions?.();
   },
 
   normalizeSource(value = '') {
@@ -554,7 +561,7 @@ const LeadsModule = {
           </div>
           <div class="lead-assignment-row">
             <span><i class="fas fa-user-check"></i> Inquiry Assigned to <strong>${lead.assignedTo}</strong> on ${lead.assignedDate}</span>
-            <button class="edit-assign-btn" onclick="LeadsModule.action('changeclass', ${lead.id})"><i class="fas fa-edit"></i></button>
+            ${this.can('inquiryList', 'status') ? `<button class="edit-assign-btn" onclick="LeadsModule.action('changeclass', ${lead.id})"><i class="fas fa-edit"></i></button>` : ''}
           </div>
         </div>
       </div>
@@ -652,6 +659,7 @@ const LeadsModule = {
       if (badge) badge.style.display = 'inline-block';
       if (badgeNum) badgeNum.textContent = count;
       if (batchActions) batchActions.style.display = 'flex';
+      this.applyToolbarPermissions();
     } else {
       if (badge) badge.style.display = 'none';
       if (batchActions) batchActions.style.display = 'none';
@@ -661,6 +669,12 @@ const LeadsModule = {
   batchAction(type) {
     const count = this.selectedLeads.size;
     if (count === 0) return;
+    const actionMap = { archive: 'delete', assign: 'assign', segment: 'assign', export: 'export', email: 'export', whatsapp: 'export', status: 'status' };
+    const required = actionMap[type];
+    if (required && !this.can('inquiryList', required)) {
+      this.showToast('This action is not available for the current role.', 'warning');
+      return;
+    }
     const selectedIds = Array.from(this.selectedLeads);
     const selectedNames = selectedIds.map(id => this.leads.find(l => l.id === id)?.name).filter(Boolean).slice(0, 3).join(', ');
     
@@ -668,7 +682,10 @@ const LeadsModule = {
       if (confirm(`Are you sure you want to archive ${count} selected lead(s)?\n(${selectedNames}${count > 3 ? '...' : ''})`)) {
         selectedIds.forEach(id => {
           const lead = this.leads.find(l => l.id === id);
-          if (lead) lead.archived = true;
+          if (lead) {
+            this.addAuditRecord(lead, 'Batch archived inquiry');
+            lead.archived = true;
+          }
         });
         this.selectedLeads.clear();
         this.applyFilters();
@@ -715,7 +732,7 @@ const LeadsModule = {
   },
 
   exportLeads(ids = null, filename = 'leads-export.csv') {
-    const rows = ids ? this.leads.filter(l => ids.includes(l.id)) : this.filteredLeads;
+    const rows = ids ? this.applyRoleScope(this.leads).filter(l => ids.includes(l.id)) : this.filteredLeads;
     const headers = ['Enquiry No', 'Name', 'Phone', 'Email', 'City', 'Course', 'Source', 'Status', 'Assigned To', 'Inquiry Date'];
     const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [headers.map(escape).join(',')].concat(rows.map(lead => [
@@ -737,6 +754,19 @@ const LeadsModule = {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
 
+  addAuditRecord(lead, action) {
+    const records = JSON.parse(localStorage.getItem('paAuditDeleted') || '[]');
+    records.unshift({
+      id: Date.now(),
+      enqNo: lead.enqNo,
+      name: lead.name,
+      action,
+      by: window.DEMO_AUTH?.user || 'Admin',
+      at: new Date().toLocaleString('en-IN')
+    });
+    localStorage.setItem('paAuditDeleted', JSON.stringify(records.slice(0, 50)));
+  },
+
   bulkEmail(ids = null) {
     const rows = ids ? this.leads.filter(l => ids.includes(l.id)) : this.filteredLeads;
     if (!rows.length) return this.showToast('No leads available to email', 'warning');
@@ -755,6 +785,10 @@ const LeadsModule = {
   },
 
   showImportModal() {
+    if (!this.can('inquiryList', 'import')) {
+      this.showToast('Import is not available for the current role.', 'warning');
+      return;
+    }
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
     overlay.innerHTML = `
@@ -946,25 +980,29 @@ const LeadsModule = {
     document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
+    if (window.AuthModule && !AuthModule.isInScope(lead)) {
+      this.showToast('This inquiry is outside the current role scope.', 'warning');
+      return;
+    }
     
     const menu = document.createElement('div');
     menu.className = 'more-dropdown-menu';
-    menu.innerHTML = `
-      <div class="dropdown-item" onclick="LeadsModule.action('followup', ${id})"><i class="fas fa-redo"></i> Manage Follow-up</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('counselling', ${id})"><i class="fas fa-comments"></i> Schedule Counselling</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('note', ${id})"><i class="fas fa-sticky-note"></i> Add Internal Note</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('assign', ${id})"><i class="fas fa-user-check"></i> Assign / Reassign</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('edit', ${id})"><i class="fas fa-edit"></i> View/Edit</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('submit', ${id})"><i class="fas fa-paper-plane"></i> Convert to Admission</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('convert', ${id})"><i class="fas fa-graduation-cap"></i> Convert to Admission</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('print', ${id})"><i class="fas fa-print"></i> Print Inquiry Form</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('copy', ${id})"><i class="fas fa-copy"></i> Copy Lead (New Course)</div>
-      <div class="dropdown-item" onclick="LeadsModule.action('changeclass', ${id})"><i class="fas fa-exchange-alt"></i> Change Class / Status</div>
-      <div class="dropdown-divider"></div>
-      <div class="dropdown-item danger" onclick="LeadsModule.action('lost', ${id})"><i class="fas fa-user-times"></i> Mark as Lost</div>
-      <div class="dropdown-item danger" onclick="LeadsModule.action('delete_admin', ${id})"><i class="fas fa-trash"></i> Delete (Admin only)</div>
-      <div class="dropdown-item danger" onclick="LeadsModule.action('archive', ${id})"><i class="fas fa-archive"></i> Archive Inquiry</div>
-    `;
+    const items = [];
+    if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('followup', ${id})"><i class="fas fa-redo"></i> Manage Follow-up</div>`);
+    if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('counselling', ${id})"><i class="fas fa-comments"></i> Schedule Counselling</div>`);
+    if (this.can('inquiryList', 'note')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('note', ${id})"><i class="fas fa-sticky-note"></i> Add Internal Note</div>`);
+    if (this.can('inquiryList', 'assign')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('assign', ${id})"><i class="fas fa-user-check"></i> Assign / Reassign</div>`);
+    if (this.can('inquiryList', 'edit')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('edit', ${id})"><i class="fas fa-edit"></i> View/Edit</div>`);
+    if (this.can('inquiryList', 'convert')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('convert', ${id})"><i class="fas fa-graduation-cap"></i> Convert to Admission</div>`);
+    if (this.can('inquiryList', 'export')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('print', ${id})"><i class="fas fa-print"></i> Print Inquiry Form</div>`);
+    if (this.can('inquiryList', 'create')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('copy', ${id})"><i class="fas fa-copy"></i> Copy Lead (New Course)</div>`);
+    if (this.can('inquiryList', 'markLost') || this.can('inquiryList', 'delete')) items.push('<div class="dropdown-divider"></div>');
+    if (this.can('inquiryList', 'markLost')) items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('lost', ${id})"><i class="fas fa-user-times"></i> Mark as Lost</div>`);
+    if (this.can('inquiryList', 'delete')) {
+      items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('delete_admin', ${id})"><i class="fas fa-trash"></i> Delete (Admin only)</div>`);
+      items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('archive', ${id})"><i class="fas fa-archive"></i> Archive Inquiry</div>`);
+    }
+    menu.innerHTML = items.join('');
     e.currentTarget.closest('.more-dropdown').appendChild(menu);
     
     const rect = menu.getBoundingClientRect();
@@ -978,6 +1016,26 @@ const LeadsModule = {
     document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
+    const permissionByAction = {
+      followup: 'followup',
+      counselling: 'followup',
+      note: 'note',
+      assign: 'assign',
+      edit: 'edit',
+      submit: 'convert',
+      convert: 'convert',
+      lost: 'markLost',
+      archive: 'delete',
+      delete_admin: 'delete',
+      copy: 'create',
+      print: 'export',
+      changeclass: 'status'
+    };
+    const required = permissionByAction[type];
+    if (required && !this.can('inquiryList', required)) {
+      this.showToast('This action is not available for the current role.', 'warning');
+      return;
+    }
     
     if (type === 'followup') {
       this.showManageFollowup(id);
@@ -1000,9 +1058,9 @@ const LeadsModule = {
       this.showCounsellingModal(id);
     } else if (type === 'convert') {
       lead.status = 'converted';
-      lead.statusLabel = 'Converted';
+      lead.statusLabel = 'Admission';
       lead.stage = 8;
-      this.recordTimelineAction(lead, 'Admission Process Started', 'Inquiry converted to admission workflow.');
+      this.recordTimelineAction(lead, 'Admission Form Started', 'Inquiry converted to admission workflow.');
       this.applyFilters();
       this.showToast(`${lead.name} converted to admission`, 'success');
     } else if (type === 'lost') {
@@ -1010,7 +1068,12 @@ const LeadsModule = {
     } else if (type === 'archive') {
       this.archiveLead(id);
     } else if (type === 'delete_admin') {
-      this.showToast('Delete (Admin only) is represented for audit-log demo; inquiry remains archived-safe.', 'warning');
+      this.addAuditRecord(lead, 'Admin delete requested');
+      lead.archived = true;
+      this.selectedLeads.delete(id);
+      this.applyFilters();
+      this.updateStatusBarCounts();
+      this.showToast('Inquiry moved to Admin audit log.', 'warning');
     } else if (type === 'copy') {
       const copy = { ...lead, id: Date.now(), enqNo: `ENQ${Date.now().toString().slice(-6)}`, course: `${lead.course} (Copy)`, status: 'new', statusLabel: 'New', stage: 0, stageLabel: 'New', communications: [] };
       this.leads.unshift(copy);
@@ -1791,11 +1854,9 @@ const LeadsModule = {
             <select id="c-status">
               <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New Inquiry</option>
               <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
-              <option value="interested" ${lead.status === 'interested' ? 'selected' : ''}>Interested</option>
               <option value="followup" ${lead.status === 'followup' ? 'selected' : ''}>Follow-up</option>
               <option value="counselling" ${lead.status === 'counselling' ? 'selected' : ''}>Counselling</option>
-              <option value="admission_process" ${lead.status === 'admission_process' ? 'selected' : ''}>Admission Process</option>
-              <option value="converted" ${lead.status === 'converted' ? 'selected' : ''}>Converted</option>
+              <option value="admission_process" ${lead.status === 'admission_process' ? 'selected' : ''}>Admission Form</option>
               <option value="lost" ${lead.status === 'lost' ? 'selected' : ''}>Lost</option>
               <option value="closed" ${lead.status === 'closed' ? 'selected' : ''}>Closed</option>
               <option value="exam" ${lead.status === 'exam' ? 'selected' : ''}>Admission: Exam</option>
@@ -1823,11 +1884,9 @@ const LeadsModule = {
       new: 'New',
       pending: 'Pending',
       contacted: 'Contacted',
-      interested: 'Interested',
       followup: 'Follow-up',
       counselling: 'Counselling',
-      admission_process: 'Admission Process',
-      converted: 'Converted',
+      admission_process: 'Admission Form',
       lost: 'Lost',
       closed: 'Closed',
       exam: 'Exam',
@@ -1842,9 +1901,8 @@ const LeadsModule = {
     if (newStatus === 'new') { lead.stage = 0; lead.stageLabel = 'New'; }
     else if (newStatus === 'contacted') { lead.stage = 1; lead.stageLabel = 'Contacted'; }
     else if (newStatus === 'followup') { lead.stage = 3; lead.stageLabel = 'Follow-up'; }
-    else if (newStatus === 'interested' || newStatus === 'counselling') { lead.stage = 2; lead.stageLabel = 'Counselling'; }
+    else if (newStatus === 'counselling') { lead.stage = 2; lead.stageLabel = 'Counselling'; }
     else if (newStatus === 'admission_process') { lead.stage = 6; lead.stageLabel = 'Admission'; }
-    else if (newStatus === 'converted') { lead.stage = 8; lead.stageLabel = 'Student Created'; }
     else if (newStatus === 'lost') { lead.stage = 5; lead.stageLabel = 'Closed'; }
     else if (newStatus === 'exam' || newStatus === 'interview') { lead.stage = 3; lead.stageLabel = 'Form Sent'; }
     else if (newStatus === 'admission_confirmed' || newStatus === 'admission_rejected') { lead.stage = 4; lead.stageLabel = 'Admission'; }
@@ -1857,10 +1915,15 @@ const LeadsModule = {
   },
 
   archiveLead(id) {
+    if (!this.can('inquiryList', 'delete')) {
+      this.showToast('Archive is Admin-only.', 'warning');
+      return;
+    }
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
     
     if (confirm(`Are you sure you want to archive the lead "${lead.name}"? The lead will disappear from the lists.`)) {
+      this.addAuditRecord(lead, 'Archived inquiry');
       lead.archived = true;
       this.selectedLeads.delete(id);
       this.applyFilters();
@@ -2025,6 +2088,26 @@ const LeadsModule = {
     document.getElementById('import-leads-btn')?.addEventListener('click', () => this.showImportModal());
     document.getElementById('export-leads-btn')?.addEventListener('click', () => this.exportLeads());
     document.getElementById('download-leads-btn')?.addEventListener('click', () => this.exportLeads(null, 'current-leads-download.csv'));
+    this.applyToolbarPermissions();
+  },
+
+  applyToolbarPermissions() {
+    const setVisible = (id, visible) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = visible ? '' : 'none';
+    };
+    setVisible('import-leads-btn', this.can('inquiryList', 'import'));
+    setVisible('mass-admit-btn', this.can('inquiryList', 'convert'));
+    document.querySelectorAll('#batch-actions-wrap button').forEach(btn => {
+      const text = btn.textContent.trim().toLowerCase();
+      const allowed =
+        text.includes('assign') ? this.can('inquiryList', 'assign') :
+        text.includes('segment') ? this.can('inquiryList', 'assign') :
+        text.includes('archive') ? this.can('inquiryList', 'delete') :
+        text.includes('status') ? this.can('inquiryList', 'status') :
+        true;
+      btn.style.display = allowed ? '' : 'none';
+    });
   },
 
   toggleViewMode(mode) {

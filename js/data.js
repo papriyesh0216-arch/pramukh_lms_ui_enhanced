@@ -87,6 +87,22 @@ const LEAD_DATA = [
     stage: 1, stageLabel: 'Contacted',
     communications: []
   },
+  {
+    id: 7, enqNo: 'ENQ1950', name: 'Mehul Shah', phone: '9876001122', whatsapp: '9876001122',
+    email: 'mehul.shah@gmail.com', city: 'Ahmedabad, Gujarat', course: 'UPSC Foundation',
+    mode: 'Classroom', source: 'Website Inquiry Form', campaign: 'UPSC July 2026',
+    inquiryDate: '27-06-2026 10:30 AM', owner: 'Hary Sir', ownerTeam: 'UPSC Team',
+    status: 'followup', statusLabel: 'Follow-up', priority: 'medium',
+    leadScore: 76, leadAge: '1 Day', academicStatus: 'Graduation Running',
+    query: 'Needs counselling for weekday batch timing.', assignedTo: 'Hary Sir',
+    assignedDate: '27-06-2026 10:45 AM', timeAgo: '1 hr ago', isHot: false,
+    followupDate: '28-06-2026', followupTime: '04:00 PM', followupType: 'Call',
+    followupPurpose: 'Confirm batch timing and scholarship eligibility.',
+    stage: 3, stageLabel: 'Follow-up',
+    communications: [
+      { type: 'call', day: '27', month: 'Jun', title: 'Initial Call Connected', desc: 'Student asked for UPSC weekday batch details.', time: '10:50 AM', by: 'Hary Sir' }
+    ]
+  },
 ];
 
 const COUNSELOR_DATA = [
@@ -95,6 +111,7 @@ const COUNSELOR_DATA = [
   { name: 'Pooja Shah', initials: 'PS', color: '#F59E0B', assigned: 80, contacted: 65, interested: 28, admissions: 9, rate: 11.3 },
   { name: 'Apurva Jani', initials: 'AJ', color: '#8B5CF6', assigned: 65, contacted: 50, interested: 20, admissions: 7, rate: 10.8 },
   { name: 'Jignesh Trivedi', initials: 'JT', color: '#F97316', assigned: 55, contacted: 42, interested: 18, admissions: 5, rate: 9.1 },
+  { name: 'Hary Sir', initials: 'HS', color: '#0EA5E9', assigned: 42, contacted: 30, interested: 14, admissions: 4, rate: 9.5 },
 ];
 
 const FOLLOWUP_CALENDAR_DATA = {

@@ -20,7 +20,6 @@ const DashboardModule = {
     this.renderAlerts();
     this.renderCounselorTable();
     this.renderLeadJourneyAnalytics();
-    this.renderOperationalReports();
     this.renderMiniCalendar();
     this.renderTasks();
     this.renderRecentActivities();
@@ -31,20 +30,29 @@ const DashboardModule = {
       this.renderFunnelChart();
     }, 100);
     this.setupDateFilter();
+    this.setupJourneyCourseFilter();
     this.setupMiniCalNav();
     this.setupMiniCalRedirect();
   },
 
   renderKPIs() {
+    const scopedLeads = window.AuthModule ? AuthModule.applyScope(window.APP_DATA?.LEAD_DATA || []).filter(l => !l.archived) : (window.APP_DATA?.LEAD_DATA || []);
+    const total = scopedLeads.length;
+    const assigned = scopedLeads.filter(l => l.assignedTo && l.assignedTo !== 'Unassigned').length;
+    const unassigned = total - assigned;
+    const followups = scopedLeads.filter(l => l.followupDate).length;
+    const counselling = scopedLeads.filter(l => /counselling/i.test(l.stageLabel || l.statusLabel || '')).length;
+    const converted = scopedLeads.filter(l => ['admission_confirmed', 'converted'].includes(l.status)).length;
+    const lost = scopedLeads.filter(l => ['lost', 'closed', 'admission_rejected'].includes(l.status)).length;
     const kpis = [
-      { cls: 'kpi-leads', icon: 'fa-users', label: 'Total Leads', value: '2,350', date: 'This Month', growth: '+18%', up: true },
-      { cls: 'kpi-calls', icon: 'fa-user-plus', label: 'New Leads', value: '987', date: 'New Inquiry', growth: '+11%', up: true },
-      { cls: 'kpi-admissions', icon: 'fa-user-check', label: 'Assigned Leads', value: '2,214', date: 'Active owners', growth: '+8%', up: true },
-      { cls: 'kpi-rate', icon: 'fa-user-clock', label: 'Unassigned Leads', value: '136', date: 'Needs action', growth: '-4%', up: true },
-      { cls: 'kpi-followup', icon: 'fa-calendar-day', label: 'Follow-ups Due Today', value: '41', date: 'Today', growth: '+6%', up: false },
-      { cls: 'kpi-counselling', icon: 'fa-comments', label: 'Counselling Scheduled', value: '28', date: 'Today', growth: '+9%', up: true },
-      { cls: 'kpi-converted', icon: 'fa-graduation-cap', label: 'Admissions Converted', value: '94', date: 'This Month', growth: '+20%', up: true },
-      { cls: 'kpi-lost', icon: 'fa-user-times', label: 'Lost Leads', value: '47', date: 'This Month', growth: '-2%', up: true },
+      { cls: 'kpi-leads', icon: 'fa-users', label: 'Total Leads', value: total.toLocaleString(), date: window.AuthModule?.profile?.scopeLine || 'This Month', growth: '+18%', up: true },
+      { cls: 'kpi-calls', icon: 'fa-user-plus', label: 'New Leads', value: scopedLeads.filter(l => ['new', 'pending'].includes(l.status)).length.toLocaleString(), date: 'New Inquiry', growth: '+11%', up: true },
+      { cls: 'kpi-admissions', icon: 'fa-user-check', label: 'Assigned Leads', value: assigned.toLocaleString(), date: 'Active owners', growth: '+8%', up: true },
+      { cls: 'kpi-rate', icon: 'fa-user-clock', label: 'Unassigned Leads', value: unassigned.toLocaleString(), date: 'Needs action', growth: '-4%', up: true },
+      { cls: 'kpi-followup', icon: 'fa-calendar-day', label: 'Follow-ups Due Today', value: followups.toLocaleString(), date: 'Today', growth: '+6%', up: false },
+      { cls: 'kpi-counselling', icon: 'fa-comments', label: 'Counselling Scheduled', value: counselling.toLocaleString(), date: 'Today', growth: '+9%', up: true },
+      { cls: 'kpi-converted', icon: 'fa-graduation-cap', label: 'Admissions Converted', value: converted.toLocaleString(), date: 'This Month', growth: '+20%', up: true },
+      { cls: 'kpi-lost', icon: 'fa-user-times', label: 'Lost Leads', value: lost.toLocaleString(), date: 'This Month', growth: '-2%', up: true },
     ];
     const container = document.getElementById('kpi-row');
     if (!container) return;
@@ -68,6 +76,16 @@ const DashboardModule = {
   renderLeadJourneyAnalytics() {
     const container = document.getElementById('dashboard-journey-analytics');
     if (!container) return;
+    const selectedCourse = document.getElementById('dashboard-journey-course')?.value || 'all';
+    const scopedLeads = window.AuthModule ? AuthModule.applyScope(window.APP_DATA?.LEAD_DATA || []).filter(l => !l.archived) : (window.APP_DATA?.LEAD_DATA || []);
+    const baseTotal = Math.max((window.APP_DATA?.LEAD_DATA || []).filter(l => !l.archived).length, 1);
+    const scopeFactor = Math.max(scopedLeads.length / baseTotal, scopedLeads.length ? 0.08 : 0);
+    const courseFactor = {
+      all: 1,
+      upsc: 0.42,
+      gpsc: 0.31,
+      sankalp: 0.18
+    }[selectedCourse] || 1;
     const stages = [
       { name: 'Inquiry Created', count: 2350, pct: 100, state: 'done' },
       { name: 'Lead Assigned', count: 2214, pct: 94, state: 'done' },
@@ -75,7 +93,7 @@ const DashboardModule = {
       { name: 'Follow-up', count: 987, pct: 42, state: 'current' },
       { name: 'Counselling', count: 423, pct: 18, state: 'current' },
       { name: 'Qualified Lead', count: 235, pct: 10, state: 'upcoming' },
-      { name: 'Admission Process Started', count: 146, pct: 6, state: 'upcoming' },
+      { name: 'Admission Form Started', count: 146, pct: 6, state: 'upcoming' },
       { name: 'Fee Paid', count: 104, pct: 4, state: 'upcoming' },
       { name: 'Student Created', count: 94, pct: 4, state: 'upcoming' }
     ];
@@ -84,7 +102,7 @@ const DashboardModule = {
       <div class="journey-analytics-step ${stage.state}">
         <div class="journey-step-head">
           <span>${stage.name}</span>
-          <strong>${stage.count.toLocaleString()}</strong>
+          <strong>${Math.max(scopedLeads.length ? 1 : 0, Math.round(stage.count * scopeFactor * courseFactor)).toLocaleString()}</strong>
         </div>
         <div class="journey-progress-track">
           <div class="journey-progress-fill" style="width:${stage.pct}%"></div>
@@ -94,32 +112,10 @@ const DashboardModule = {
     `).join('');
   },
 
-  renderOperationalReports() {
-    const container = document.getElementById('dashboard-report-grid');
-    if (!container) return;
-    const reports = [
-      { icon: 'fa-list-check', title: 'Daily Inquiry Report', value: '126', meta: 'New inquiries today' },
-      { icon: 'fa-chart-pie', title: 'Status-wise Inquiry Report', value: '8', meta: 'Active lead statuses' },
-      { icon: 'fa-clock', title: 'Overdue Follow-ups', value: '23', meta: 'Requires escalation' },
-      { icon: 'fa-calendar-check', title: 'Completed Follow-ups', value: '78', meta: 'Completed today' },
-      { icon: 'fa-comments', title: 'Counselling Conversion', value: '22.2%', meta: 'Converted after counselling' },
-      { icon: 'fa-user-check', title: 'Counselor-wise Assigned', value: '2,214', meta: 'Owned inquiries' },
-      { icon: 'fa-route', title: 'Stage-wise Inquiry Count', value: '9', meta: 'Journey stages tracked' },
-      { icon: 'fa-hourglass-half', title: 'Avg. Time Per Stage', value: '2.4d', meta: 'Operational bottleneck view' },
-      { icon: 'fa-hourglass-end', title: 'Lead Aging', value: '47', meta: 'Inquiries older than 3 days' },
-      { icon: 'fa-bullhorn', title: 'Source Distribution', value: '6', meta: 'Active inquiry sources' }
-    ];
-
-    container.innerHTML = reports.map(report => `
-      <div class="report-tile">
-        <div class="report-icon"><i class="fas ${report.icon}"></i></div>
-        <div>
-          <div class="report-title">${report.title}</div>
-          <div class="report-value">${report.value}</div>
-          <div class="report-meta">${report.meta}</div>
-        </div>
-      </div>
-    `).join('');
+  setupJourneyCourseFilter() {
+    document.getElementById('dashboard-journey-course')?.addEventListener('change', () => {
+      this.renderLeadJourneyAnalytics();
+    });
   },
 
   renderMetrics() {
@@ -171,7 +167,13 @@ const DashboardModule = {
     const container = document.getElementById('counselor-table-body');
     if (!container) return;
     const colors = ['#4F6EF7','#10B981','#F59E0B','#8B5CF6','#F97316'];
-    container.innerHTML = window.APP_DATA.COUNSELOR_DATA.map((c, i) => `
+    const auth = window.DEMO_AUTH || {};
+    const rows = (window.APP_DATA.COUNSELOR_DATA || []).filter(c => {
+      if (auth.role === 'counselor') return c.name === auth.user;
+      if (auth.role === 'hod') return ['Bharat Sir', 'Hary Sir'].includes(c.name);
+      return true;
+    });
+    container.innerHTML = rows.map((c, i) => `
       <tr>
         <td>
           <div class="counselor-cell">
@@ -369,7 +371,7 @@ const DashboardModule = {
       { type: 'task-follow', icon: 'fa-user-check', name: 'Assigned to Bharat Sir', course: 'Manual assignment', time: '09:24 AM' },
       { type: 'task-chat', icon: 'fa-calendar-check', name: 'Follow-up completed', course: 'Outcome: Interested', time: '09:18 AM' },
       { type: 'task-email', icon: 'fa-comments', name: 'Counselling scheduled', course: 'Parent meeting requested', time: '09:05 AM' },
-      { type: 'task-call', icon: 'fa-graduation-cap', name: 'Converted to admission', course: 'Admission Process Started', time: '08:57 AM' }
+      { type: 'task-call', icon: 'fa-graduation-cap', name: 'Converted to admission', course: 'Admission Form Started', time: '08:57 AM' }
     ];
     container.innerHTML = items.map(item => `
       <div class="task-item">

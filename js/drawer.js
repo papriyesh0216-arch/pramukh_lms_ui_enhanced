@@ -39,6 +39,19 @@ const DrawerModule = {
 
   runLeadAction(action) {
     if (!this.currentLead) return;
+    const permissionByAction = {
+      edit: 'edit',
+      followup: 'followup',
+      counselling: 'followup',
+      changeclass: 'status',
+      lost: 'markLost',
+      history: 'view'
+    };
+    const required = permissionByAction[action];
+    if (required && !AuthModule.can('inquiryDetails', required)) {
+      LeadsModule.showToast('This action is not available for the current role.', 'warning');
+      return;
+    }
     if (action === 'history') {
       LeadsModule.showFollowupHistory(this.currentLead.id);
       return;
@@ -71,6 +84,16 @@ const DrawerModule = {
 
   quickAction(type) {
     if (!this.currentLead) return;
+    const permissionByType = { admission: 'convert', counselling: 'followup', note: 'note' };
+    const required = permissionByType[type];
+    if (required && !AuthModule.can('inquiryDetails', required)) {
+      LeadsModule.showToast('This action is not available for the current role.', 'warning');
+      return;
+    }
+    if (type === 'admission' && ['lost', 'closed'].includes(this.currentLead.status)) {
+      LeadsModule.showToast('Reopen inquiry first before converting.', 'warning');
+      return;
+    }
     const labels = {
       brochure: 'Brochure sent',
       fee: 'Fee structure shared',
@@ -82,7 +105,7 @@ const DrawerModule = {
     if (type === 'counselling') return this.runLeadAction('counselling');
     if (type === 'admission') {
       this.currentLead.status = 'admission_process';
-      this.currentLead.statusLabel = 'Admission Process';
+      this.currentLead.statusLabel = 'Admission Form';
       this.currentLead.stage = 6;
     }
     LeadsModule.recordTimelineAction(this.currentLead, labels[type] || 'Quick Action', `${labels[type] || 'Quick action'} from drawer.`);
@@ -94,6 +117,10 @@ const DrawerModule = {
   open(id) {
     const lead = this.findLead(id);
     if (!lead) return;
+    if (!AuthModule.isInScope(lead)) {
+      LeadsModule.showToast('This inquiry is outside the current role scope.', 'warning');
+      return;
+    }
     this.currentLead = lead;
     this.applyDrawerWidth();
     this.renderDrawer(lead);
@@ -298,7 +325,7 @@ const DrawerModule = {
       'Follow-up',
       'Counselling',
       'Qualified Lead',
-      'Admission Process Started',
+      'Admission Form Started',
       'Fee Paid',
       'Student Created'
     ];
@@ -477,6 +504,27 @@ const DrawerModule = {
         <div class="score-detail-value">${s.val}/${s.max}</div>
       </div>
     `).join('');
+    this.applyPermissionState(lead);
+  },
+
+  applyPermissionState(lead) {
+    const setVisible = (id, visible) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = visible ? '' : 'none';
+    };
+    setVisible('drawer-add-followup-btn', AuthModule.can('inquiryDetails', 'followup'));
+    setVisible('drawer-schedule-meeting-btn', AuthModule.can('inquiryDetails', 'followup'));
+    setVisible('drawer-more-actions-btn', AuthModule.can('inquiryDetails', 'status'));
+    setVisible('drawer-edit-lead-btn', AuthModule.can('inquiryDetails', 'edit'));
+    setVisible('drawer-mark-lost-btn', AuthModule.can('inquiryDetails', 'markLost'));
+    document.querySelectorAll('[data-drawer-quick]').forEach(btn => {
+      const type = btn.dataset.drawerQuick;
+      const required = { admission: 'convert', counselling: 'followup', note: 'note' }[type];
+      const allowed = !required || AuthModule.can('inquiryDetails', required);
+      const blockedByLost = type === 'admission' && ['lost', 'closed'].includes(lead.status);
+      btn.classList.toggle('is-disabled', !allowed || blockedByLost);
+      btn.title = blockedByLost ? 'Reopen inquiry first' : (!allowed ? 'Not available for this role' : '');
+    });
   }
 };
 

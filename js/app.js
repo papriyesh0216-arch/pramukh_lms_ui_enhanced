@@ -2,6 +2,174 @@
 // APP.JS — Router, Navigation, Screen Switching
 // ============================================================
 
+const AuthModule = {
+  roles: {
+    admin: {
+      label: 'Admin',
+      user: 'Bharat Sir',
+      initials: 'BS',
+      department: 'Global',
+      scope: 'Global',
+      roleLine: 'Admin',
+      scopeLine: 'Global access'
+    },
+    hod: {
+      label: 'Head of Department',
+      user: 'Ramesh Sir',
+      initials: 'RS',
+      department: 'UPSC Team',
+      scope: 'Department',
+      roleLine: 'HOD',
+      scopeLine: 'UPSC Team'
+    },
+    counselor: {
+      label: 'Counselor',
+      user: 'Hary Sir',
+      initials: 'HS',
+      department: 'UPSC Team',
+      scope: 'Assigned Only',
+      roleLine: 'Counselor',
+      scopeLine: 'Assigned only'
+    }
+  },
+
+  perms: {
+    admin: {
+      inquiryList: ['view','create','edit','delete','assign','reassign','export','import','saveFilter','markLost','convert','note','followup','status','audit'],
+      inquiryDetails: ['view','edit','assign','reassign','markLost','convert','note','followup','status','audit'],
+      assignment: ['view','create','edit','delete','assign','reassign','export'],
+      segmentation: ['view','create','edit','delete','assign','reassign','export'],
+      reports: ['view','export'],
+      settings: ['view','edit'],
+      audit: ['view']
+    },
+    hod: {
+      inquiryList: ['view','create','edit','assign','reassign','export','import','saveFilter','markLost','convert','note','followup','status'],
+      inquiryDetails: ['view','edit','assign','reassign','markLost','convert','note','followup','status'],
+      assignment: ['view','create','edit','assign','reassign','export'],
+      segmentation: ['view','create','edit','delete','assign','reassign','export'],
+      reports: ['view','export'],
+      settings: ['view'],
+      audit: []
+    },
+    counselor: {
+      inquiryList: ['view','create','edit','export','saveFilter','markLost','convert','note','followup','status'],
+      inquiryDetails: ['view','edit','markLost','convert','note','followup','status'],
+      assignment: ['view'],
+      segmentation: ['view'],
+      reports: ['view','export'],
+      settings: [],
+      audit: []
+    }
+  },
+
+  init() {
+    const savedRole = localStorage.getItem('pa-demo-role') || 'admin';
+    this.setRole(this.roles[savedRole] ? savedRole : 'admin', false);
+    this.renderSwitcher();
+  },
+
+  get role() {
+    return window.DEMO_AUTH?.role || 'admin';
+  },
+
+  get profile() {
+    return this.roles[this.role] || this.roles.admin;
+  },
+
+  setRole(role, persist = true) {
+    const profile = this.roles[role] || this.roles.admin;
+    window.DEMO_AUTH = {
+      role,
+      user: profile.user,
+      department: profile.department,
+      scope: profile.scope
+    };
+    window.DEMO_PERMS = this.perms;
+    if (persist) localStorage.setItem('pa-demo-role', role);
+    this.applyTopbar();
+  },
+
+  can(module, action) {
+    return (this.perms[this.role]?.[module] || []).includes(action);
+  },
+
+  applyScope(rows = []) {
+    const auth = window.DEMO_AUTH || {};
+    if (auth.role === 'admin') return rows;
+    if (auth.role === 'hod') {
+      return rows.filter(row => (row.ownerTeam || row.department || '') === auth.department);
+    }
+    return rows.filter(row => (row.assignedTo || row.owner || '') === auth.user);
+  },
+
+  isInScope(row) {
+    return this.applyScope([row]).length === 1;
+  },
+
+  renderSwitcher() {
+    const container = document.getElementById('role-switcher-wrap');
+    if (!container) return;
+    container.innerHTML = `
+      <label class="role-switcher-label" for="role-switcher">Role</label>
+      <select class="role-switcher-select" id="role-switcher" aria-label="Switch demo role">
+        <option value="admin">Admin - Bharat Sir</option>
+        <option value="hod">HOD - Ramesh Sir</option>
+        <option value="counselor">Counselor - Hary Sir</option>
+      </select>
+      <span class="scope-badge" id="scope-badge"></span>
+    `;
+    const select = document.getElementById('role-switcher');
+    if (select) {
+      select.value = this.role;
+      select.addEventListener('change', () => {
+        this.setRole(select.value);
+        this.refreshRoleViews();
+      });
+    }
+    this.applyTopbar();
+  },
+
+  applyTopbar() {
+    const profile = this.profile;
+    const avatar = document.querySelector('.user-avatar');
+    const name = document.querySelector('.user-name');
+    const role = document.querySelector('.user-role');
+    const badge = document.getElementById('scope-badge');
+    if (avatar) avatar.textContent = profile.initials;
+    if (name) name.textContent = profile.user;
+    if (role) role.textContent = profile.roleLine;
+    if (badge) badge.textContent = profile.scopeLine;
+    document.getElementById('audit-btn')?.classList.toggle('is-hidden', !this.can('audit', 'view'));
+  },
+
+  refreshRoleViews() {
+    this.renderSwitcher();
+    LeadsModule?.selectedLeads?.clear?.();
+    LeadsModule?.renderStatusBar?.();
+    LeadsModule?.applyFilters?.();
+    LeadsModule?.applyToolbarPermissions?.();
+    LeadsModule?.updateStatusBarCounts?.();
+    DashboardModule?.renderKPIs?.();
+    DashboardModule?.renderLeadJourneyAnalytics?.();
+    DashboardModule?.renderCounselorTable?.();
+    SegmentationModule?.applyRolePermissions?.();
+    SegmentationModule?.renderSegmentList?.();
+    SegmentationModule?.renderAssignmentUsers?.();
+    SegmentationModule?.renderAssignmentQueue?.();
+    SegmentationModule?.renderAssignmentReports?.();
+    DrawerModule?.close?.();
+    LeadsModule?.showToast?.(`Switched to ${this.profile.label} view`, 'info');
+  }
+};
+
+function can(module, action) {
+  return AuthModule.can(module, action);
+}
+
+window.AuthModule = AuthModule;
+window.can = can;
+
 const App = {
   currentScreen: 'dashboard',
   expandedLeads: new Set(),
@@ -25,6 +193,7 @@ const App = {
   },
 
   init() {
+    AuthModule.init();
     this.setupNavigation();
     this.setupTopbar();
     this.setupResponsiveShell();
@@ -38,6 +207,7 @@ const App = {
     CalendarModule.init();
     DrawerModule.init();
     DialerModule.init();
+    AuthModule.refreshRoleViews();
   },
 
   setupNavigation() {
@@ -293,35 +463,8 @@ const App = {
   },
 
   setupGlobalButtons() {
-    document.getElementById('dashboard-filter-btn')?.addEventListener('click', () => {
-      this.showScreen('leads');
-      document.getElementById('leads-filter-panel').style.display = 'flex';
-      document.getElementById('filter-toggle-btn')?.classList.add('active');
-    });
-    document.getElementById('dashboard-add-lead-btn')?.addEventListener('click', () => {
-      this.showScreen('leads');
-      LeadsModule.showAddEditModal();
-    });
-    document.getElementById('dashboard-qa-add')?.addEventListener('click', () => {
-      this.showScreen('leads');
-      LeadsModule.showAddEditModal();
-    });
-    document.getElementById('dashboard-qa-list')?.addEventListener('click', () => this.showScreen('leads'));
-    document.getElementById('dashboard-qa-assign')?.addEventListener('click', () => this.showScreen('segmentation'));
-    document.getElementById('dashboard-qa-followup')?.addEventListener('click', () => {
-      this.showScreen('leads');
-      const lead = LeadsModule.filteredLeads?.[0] || LeadsModule.leads?.[0];
-      if (lead) LeadsModule.showManageFollowup(lead.id);
-    });
-    document.getElementById('dashboard-qa-counselling')?.addEventListener('click', () => {
-      this.showScreen('leads');
-      const lead = LeadsModule.filteredLeads?.[0] || LeadsModule.leads?.[0];
-      if (lead) LeadsModule.showCounsellingModal(lead.id);
-    });
+    document.getElementById('audit-btn')?.addEventListener('click', () => this.showAuditLog());
     document.getElementById('dashboard-print-btn')?.addEventListener('click', () => window.print());
-    document.getElementById('dashboard-report-pdf')?.addEventListener('click', () => this.exportDashboardReport('pdf'));
-    document.getElementById('dashboard-report-excel')?.addEventListener('click', () => this.exportDashboardReport('excel'));
-    document.getElementById('dashboard-report-csv')?.addEventListener('click', () => this.exportDashboardReport('csv'));
     document.getElementById('counselor-download-btn')?.addEventListener('click', () => this.exportCounselorReport());
     document.getElementById('tasks-view-all-link')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -333,30 +476,51 @@ const App = {
     });
   },
 
-  exportDashboardReport(format = 'csv') {
-    if (format === 'pdf') {
-      window.print();
-      LeadsModule.showToast('Print dialog opened for PDF export', 'info');
-      return;
-    }
-    const rows = Array.from(document.querySelectorAll('#dashboard-report-grid .seg-report-card, #dashboard-report-grid .report-tile')).map(card => {
-      const title = card.querySelector('.report-title, .seg-report-label')?.textContent?.trim() || '';
-      const value = card.querySelector('.report-value, .seg-report-value')?.textContent?.trim() || '';
-      const meta = card.querySelector('.report-meta, .seg-report-meta')?.textContent?.trim() || '';
-      return { title, value, meta };
-    });
-    const csv = ['Report,Value,Details'].concat(rows.map(r => [r.title, r.value, r.meta].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))).join('\n');
-    LeadsModule.downloadTextFile(`dashboard-report.${format === 'excel' ? 'xls' : 'csv'}`, csv, 'text/csv');
-    LeadsModule.showToast(`Dashboard ${format.toUpperCase()} export prepared`, 'success');
-  },
-
   exportCounselorReport() {
-    const rows = window.APP_DATA.COUNSELOR_DATA || [];
+    const auth = window.DEMO_AUTH || {};
+    const rows = (window.APP_DATA.COUNSELOR_DATA || []).filter(c => {
+      if (auth.role === 'admin' || auth.role === 'hod') return true;
+      return c.name === auth.user;
+    });
     const csv = ['Counselor,Assigned,Contacted,Interested,Admissions,Conversion'].concat(rows.map(c => [
       c.name, c.assigned, c.contacted, c.interested, c.admissions, `${c.rate}%`
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))).join('\n');
     LeadsModule.downloadTextFile('counselor-performance.csv', csv, 'text/csv');
     LeadsModule.showToast('Counselor report downloaded', 'success');
+  },
+
+  showAuditLog() {
+    if (!AuthModule.can('audit', 'view')) return;
+    const records = JSON.parse(localStorage.getItem('paAuditDeleted') || '[]');
+    const rows = records.length ? records.map(item => `
+      <tr>
+        <td>${item.enqNo}</td>
+        <td>${item.name}</td>
+        <td>${item.action}</td>
+        <td>${item.by}</td>
+        <td>${item.at}</td>
+      </tr>
+    `).join('') : `
+      <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No audit records yet.</td></tr>
+    `;
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card" style="max-width:760px">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-shield-halved" style="color:var(--primary)"></i> Admin Audit Log</span>
+          <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="custom-modal-body">
+          <table class="data-table">
+            <thead><tr><th>Inquiry Reference No.</th><th>Name</th><th>Action</th><th>By</th><th>Date/Time</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   }
 };
 
@@ -435,6 +599,32 @@ const SegmentationModule = {
     this.renderAssignmentQueue();
     this.switchTab('segments');
     this.setSegmentType('static');
+    this.applyRolePermissions();
+  },
+
+  isReadOnly() {
+    return !AuthModule.can('segmentation', 'edit');
+  },
+
+  applyRolePermissions() {
+    const readOnly = this.isReadOnly();
+    if (this.segmentForm) {
+      this.segmentForm.querySelectorAll('input, select, button').forEach(el => {
+        const isExport = el.textContent?.trim() === 'Export';
+        el.disabled = readOnly && !isExport;
+      });
+      this.segmentForm.classList.toggle('is-readonly', readOnly);
+    }
+    document.querySelectorAll('.segment-action-chip').forEach(btn => {
+      const label = btn.textContent.trim().toLowerCase();
+      const allowed = label.includes('export') || !readOnly;
+      btn.style.display = allowed ? '' : 'none';
+    });
+    document.querySelectorAll('.assignment-filter-btn').forEach(btn => {
+      btn.disabled = false;
+    });
+    const buildPanel = document.getElementById('segmentation-build');
+    if (buildPanel) buildPanel.classList.toggle('is-disabled-panel', readOnly);
   },
 
   setupForm() {
@@ -472,6 +662,10 @@ const SegmentationModule = {
 
 
   createSegment() {
+    if (!AuthModule.can('segmentation', 'create')) {
+      this.showFormStatus('Counselor can view segments but cannot create or modify them.', true);
+      return;
+    }
     if (!this.segmentNameInput || !this.segmentCriteriaInput) return;
     const name = this.segmentNameInput.value.trim();
     const baseCriteria = this.segmentCriteriaInput.value.trim();
@@ -577,6 +771,7 @@ const SegmentationModule = {
   },
 
   editSelectedSegment() {
+    if (!AuthModule.can('segmentation', 'edit')) return this.showFormStatus('This role can view segments only.', true);
     const segment = this.segments.find(s => s.id === this.selectedSegmentId) || this.segments.find(s => !s.archived);
     if (!segment) return this.showFormStatus('No segment selected to edit.', true);
     this.selectedSegmentId = segment.id;
@@ -587,6 +782,7 @@ const SegmentationModule = {
   },
 
   duplicateSelectedSegment() {
+    if (!AuthModule.can('segmentation', 'create')) return this.showFormStatus('This role can view segments only.', true);
     const segment = this.segments.find(s => s.id === this.selectedSegmentId) || this.segments.find(s => !s.archived);
     if (!segment) return this.showFormStatus('No segment selected to duplicate.', true);
     const copy = { ...segment, id: Date.now(), name: `${segment.name} Copy`, createdAt: this.formatDate(new Date()), archived: false };
@@ -598,6 +794,7 @@ const SegmentationModule = {
   },
 
   archiveSelectedSegment() {
+    if (!AuthModule.can('segmentation', 'delete')) return this.showFormStatus('This role can view segments only.', true);
     const segment = this.segments.find(s => s.id === this.selectedSegmentId) || this.segments.find(s => !s.archived);
     if (!segment) return this.showFormStatus('No segment selected to archive.', true);
     this.toggleArchive(segment.id);
@@ -750,6 +947,7 @@ const SegmentationModule = {
 
   renderSegmentList() {
     if (!this.segmentListContainer || !this.segmentArchiveListContainer) return;
+    const readOnly = this.isReadOnly();
     const activeSegments = this.segments.filter(s => !s.archived);
     const archivedSegments = this.segments.filter(s => s.archived);
 
@@ -762,15 +960,15 @@ const SegmentationModule = {
         ? segment.assignedUsers.map(user => `
             <span class="segment-assigned-pill">
               ${user}
-              <button type="button" class="pill-remove" onclick="SegmentationModule.removeAssignment('${user}', ${segment.id}, event)">&times;</button>
+              ${readOnly ? '' : `<button type="button" class="pill-remove" onclick="SegmentationModule.removeAssignment('${user}', ${segment.id}, event)">&times;</button>`}
             </span>
           `).join('')
         : '<span class="segment-assigned-pill muted">Unassigned</span>';
       return `
-          <div class="segment-card-item" draggable="true" data-segment-id="${segment.id}">
+          <div class="segment-card-item" draggable="${!readOnly}" data-segment-id="${segment.id}">
             <div class="segment-card-top">
               <div class="segment-card-title">${segment.name}</div>
-              <button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Archive</button>
+              ${readOnly ? '' : `<button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Archive</button>`}
             </div>
             <div class="segment-card-meta">${segment.description}</div>
             <div class="segment-card-details">
@@ -786,9 +984,9 @@ const SegmentationModule = {
             <div class="segment-card-criteria">${segment.criteria}</div>
             <div class="segment-card-footer">
               <span>Created ${segment.createdAt}</span>
-              <button type="button" class="segment-card-action" onclick="SegmentationModule.renameSegment(${segment.id}, event)">Rename</button>
+              ${readOnly ? '' : `<button type="button" class="segment-card-action" onclick="SegmentationModule.renameSegment(${segment.id}, event)">Rename</button>`}
               <button type="button" class="segment-card-action" onclick="SegmentationModule.viewSegmentDetails(${segment.id}, event)">View Details</button>
-              <button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Activate/Deactivate</button>
+              ${readOnly ? '' : `<button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Activate/Deactivate</button>`}
             </div>
           </div>
         `;
@@ -804,15 +1002,15 @@ const SegmentationModule = {
         ? segment.assignedUsers.map(user => `
             <span class="segment-assigned-pill">
               ${user}
-              <button type="button" class="pill-remove" onclick="SegmentationModule.removeAssignment('${user}', ${segment.id}, event)">&times;</button>
+              ${readOnly ? '' : `<button type="button" class="pill-remove" onclick="SegmentationModule.removeAssignment('${user}', ${segment.id}, event)">&times;</button>`}
             </span>
           `).join('')
         : '<span class="segment-assigned-pill muted">Unassigned</span>';
       return `
-          <div class="segment-card-item archived" draggable="true" data-segment-id="${segment.id}">
+          <div class="segment-card-item archived" draggable="${!readOnly}" data-segment-id="${segment.id}">
             <div class="segment-card-top">
               <div class="segment-card-title">${segment.name}</div>
-              <button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Restore</button>
+              ${readOnly ? '' : `<button type="button" class="segment-card-action" onclick="SegmentationModule.toggleArchive(${segment.id}, event)">Restore</button>`}
             </div>
             <div class="segment-card-meta">${segment.description}</div>
             <div class="segment-card-details">
@@ -847,6 +1045,7 @@ const SegmentationModule = {
 
   renameSegment(segmentId, event) {
     if (event) event.stopPropagation();
+    if (!AuthModule.can('segmentation', 'edit')) return this.showToast('This role can view segments only.');
     const segment = this.segments.find(s => s.id === segmentId);
     if (!segment) return;
     segment.name = `${segment.name} (Renamed)`;
@@ -863,6 +1062,7 @@ const SegmentationModule = {
 
   toggleArchive(segmentId, event) {
     if (event) event.stopPropagation();
+    if (!AuthModule.can('segmentation', 'delete')) return this.showToast('This role can view segments only.');
     const segment = this.segments.find(s => s.id === segmentId);
     if (!segment) return;
     segment.archived = !segment.archived;
@@ -889,11 +1089,12 @@ const SegmentationModule = {
       const assignedSegments = this.segments
         .filter(segment => segment.assignedUsers?.includes(user.name) && !segment.archived)
         .map(segment => ({ id: segment.id, name: segment.name }));
+      const readOnly = this.isReadOnly();
       const assignedPills = assignedSegments.length
         ? assignedSegments.map(segment => `
             <span class="assignment-pill">
               ${segment.name}
-              <button type="button" class="pill-remove" onclick="SegmentationModule.removeAssignment('${user.name}', ${segment.id}, event)">&times;</button>
+              ${readOnly ? '' : `<button type="button" class="pill-remove" onclick="SegmentationModule.removeAssignment('${user.name}', ${segment.id}, event)">&times;</button>`}
             </span>
           `).join('')
         : '<span class="assignment-pill muted">No segments</span>';
@@ -913,6 +1114,7 @@ const SegmentationModule = {
 
   renderAssignmentQueue() {
     if (!this.assignmentSegmentQueue) return;
+    const readOnly = this.isReadOnly();
     const activeSegments = this.segments.filter(segment => !segment.archived);
     if (!activeSegments.length) {
       this.assignmentSegmentQueue.innerHTML = `<div class="empty-state">No active segment cards yet. Create a segment to begin assignment.</div>`;
@@ -922,7 +1124,7 @@ const SegmentationModule = {
     this.assignmentSegmentQueue.innerHTML = activeSegments.map(segment => {
       const assignedNames = segment.assignedUsers && segment.assignedUsers.length ? segment.assignedUsers.join(', ') : 'Unassigned';
       return `
-        <div class="assignment-segment-card" draggable="true" data-segment-id="${segment.id}">
+        <div class="assignment-segment-card" draggable="${!readOnly}" data-segment-id="${segment.id}">
           <div class="assignment-user-name">${segment.name}</div>
           <div class="assignment-segment-meta">${assignedNames}</div>
           <div class="assignment-segment-date">${segment.criteria}</div>
@@ -933,6 +1135,7 @@ const SegmentationModule = {
   },
 
   bindSegmentDrag() {
+    if (this.isReadOnly()) return;
     const dragCards = document.querySelectorAll('.assignment-segment-card, .segment-card-item[draggable="true"]');
     dragCards.forEach(card => {
       card.addEventListener('dragstart', (e) => {
@@ -949,6 +1152,7 @@ const SegmentationModule = {
   },
 
   bindArchiveDrop() {
+    if (this.isReadOnly()) return;
     const activeDrop = this.segmentActiveGrid;
     const archiveDrop = this.segmentArchiveGrid;
     if (!activeDrop || !archiveDrop) return;
@@ -979,6 +1183,7 @@ const SegmentationModule = {
   },
 
   bindAssignmentDrop() {
+    if (this.isReadOnly()) return;
     if (!this.assignmentUserList) return;
     this.assignmentUserList.querySelectorAll('.assignment-user-card').forEach(card => {
       card.addEventListener('dragover', (e) => {
@@ -1001,6 +1206,7 @@ const SegmentationModule = {
   },
 
   assignSegmentToUser(segmentId, userName) {
+    if (!AuthModule.can('segmentation', 'assign')) return this.showToast('This role can view assignments only.');
     const segment = this.segments.find(s => s.id === segmentId);
     if (!segment) return;
     if (!segment.assignedUsers) segment.assignedUsers = [];
@@ -1019,6 +1225,7 @@ const SegmentationModule = {
       event.stopPropagation();
       event.preventDefault();
     }
+    if (!AuthModule.can('segmentation', 'assign')) return this.showToast('This role can view assignments only.');
     const segment = this.segments.find(s => s.id === segmentId);
     if (!segment || !segment.assignedUsers) return;
     segment.assignedUsers = segment.assignedUsers.filter(user => user !== userName);

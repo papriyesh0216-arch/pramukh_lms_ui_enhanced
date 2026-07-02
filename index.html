@@ -89,6 +89,10 @@
       <div class="topbar-spacer"></div>
       <div id="page-section-title" style="font-size:12px;color:var(--text-muted);font-weight:500"></div>
       <div class="topbar-actions">
+        <div class="role-switcher-wrap" id="role-switcher-wrap"></div>
+        <button class="topbar-icon-btn audit-btn is-hidden" title="Audit Log" id="audit-btn">
+          <i class="fas fa-shield-halved"></i>
+        </button>
         <button id="theme-toggle" class="topbar-icon-btn" title="Toggle theme" aria-label="Toggle theme">
           <i class="fas fa-sun" id="theme-icon"></i>
         </button>
@@ -100,7 +104,7 @@
           <div class="user-avatar">BS</div>
           <div class="user-info">
             <div class="user-name">Bharat Sir</div>
-            <div class="user-role">Counselor</div>
+            <div class="user-role">Admin</div>
           </div>
           <i class="fas fa-chevron-down" style="font-size:10px;color:var(--text-muted);margin-left:4px"></i>
         </div>
@@ -117,37 +121,32 @@
         <div class="dashboard-header dashboard-hero-header" id="dashboard-overview">
           <div class="dashboard-title-wrap">
             <div class="section-eyebrow">Student Inquiry Dashboard</div>
-            <h1>Lead Management <span>Command Center</span></h1>
+            <h1>Lead Managment <span>System</span></h1>
             <div class="dashboard-welcome">
               Inquiry tracking, assignment, follow-ups, counselling, reports, and admission conversion analytics.
             </div>
           </div>
           <div class="dashboard-controls">
+            <select class="chart-filter-select" id="dashboard-journey-course">
+              <option value="all">All Courses</option>
+              <option value="upsc">UPSC Foundation</option>
+              <option value="gpsc">GPSC Class 1-2</option>
+              <option value="sankalp">Sankalp Programme</option>
+            </select>
             <button class="date-filter-btn" id="date-filter-btn">
               <i class="fas fa-calendar-alt"></i> Custom Date
-            </button>
-            <button class="btn btn-outline btn-sm" id="dashboard-filter-btn">
-              <i class="fas fa-filter"></i> Filters
-            </button>
-            <button class="btn btn-primary btn-sm" id="dashboard-add-lead-btn">
-              <i class="fas fa-plus"></i> Add Inquiry
             </button>
           </div>
         </div>
 
-        <div class="dashboard-quick-actions-strip" aria-label="Dashboard quick actions">
-          <button class="dashboard-quick-action" id="dashboard-qa-add"><i class="fas fa-plus"></i><span>Add Inquiry</span></button>
-          <button class="dashboard-quick-action" id="dashboard-qa-list"><i class="fas fa-list"></i><span>View All Leads</span></button>
-          <button class="dashboard-quick-action" id="dashboard-qa-assign"><i class="fas fa-user-check"></i><span>Assign Leads</span></button>
-          <button class="dashboard-quick-action" id="dashboard-qa-followup"><i class="fas fa-calendar-plus"></i><span>Create Follow-up</span></button>
-          <button class="dashboard-quick-action" id="dashboard-qa-counselling"><i class="fas fa-comments"></i><span>Schedule Counselling</span></button>
-        </div>
+        <!-- KPI Counts Row -->
+        <div class="kpi-row" id="kpi-row"></div>
 
         <section class="dashboard-operations-section dashboard-command-panel" id="dashboard-journey">
           <div class="section-heading-row command-panel-head">
             <div>
               <div class="section-eyebrow">Operational Command Center</div>
-              <h2>Lead Journey, Reports &amp; Analytics</h2>
+              <h2>Lead Journey Analytics</h2>
               <p>Monitor every lead from inquiry creation to final admission conversion.</p>
             </div>
             <div class="section-actions">
@@ -167,37 +166,8 @@
               </div>
               <div class="journey-analytics" id="dashboard-journey-analytics"></div>
             </div>
-
-            <div class="ops-analytics-card report-card command-card">
-              <div class="chart-card-header">
-                <div>
-                  <div class="chart-card-title"><i class="fas fa-chart-line"></i> Reports &amp; Analytics</div>
-                  <div class="chart-card-subtitle">Inquiry, follow-up, counselling, assignment, and journey reports.</div>
-                </div>
-                <div class="report-export-actions">
-                  <button class="btn btn-outline btn-sm" id="dashboard-report-pdf"><i class="fas fa-file-pdf"></i> PDF</button>
-                  <button class="btn btn-outline btn-sm" id="dashboard-report-excel"><i class="fas fa-file-excel"></i> Excel</button>
-                  <button class="btn btn-outline btn-sm" id="dashboard-report-csv"><i class="fas fa-file-csv"></i> CSV</button>
-                </div>
-              </div>
-              <div class="report-filter-row">
-                <select class="chart-filter-select"><option>Date Range</option><option>Today</option><option>This Week</option><option>This Month</option></select>
-                <select class="chart-filter-select"><option>All Courses</option><option>UPSC Foundation</option><option>GPSC Class 1-2</option><option>Sankalp Programme</option></select>
-                <select class="chart-filter-select"><option>All Counselors</option><option>Bharat Sir</option><option>Vivek Sir</option><option>Pooja Shah</option></select>
-                <select class="chart-filter-select"><option>All Sources</option><option>Website Inquiry Form</option><option>Walk-In Inquiry</option><option>WhatsApp Inquiry</option></select>
-                <select class="chart-filter-select"><option>All Statuses</option><option>New Inquiry</option><option>Counselling</option><option>Converted</option><option>Lost</option></select>
-                <select class="chart-filter-select"><option>All Branches</option><option>Ahmedabad</option><option>Surat</option><option>Rajkot</option></select>
-                <select class="chart-filter-select"><option>All Learning Modes</option><option>Classroom</option><option>Online</option><option>Residential</option></select>
-                <select class="chart-filter-select"><option>All Academic Status</option><option>Graduation Running</option><option>Graduation Completed</option><option>HSC Completed</option></select>
-                <select class="chart-filter-select"><option>All Cities</option><option>Ahmedabad</option><option>Surat</option><option>Rajkot</option></select>
-              </div>
-              <div class="report-grid" id="dashboard-report-grid"></div>
-            </div>
           </div>
         </section>
-
-        <!-- KPI Counts Row -->
-        <div class="kpi-row" id="kpi-row"></div>
 
         <!-- Main Dashboard Grid -->
         <div class="dashboard-grid" id="dashboard-insights">
@@ -388,7 +358,7 @@
       <!-- Status Bar -->
       <div class="status-bar" id="status-bar"></div>
 
-      <!-- Sub Status Bar (hidden initially, shown when Admission Form is active) -->
+      <!-- Sub Status Bar (hidden initially, shown when Admission is active) -->
       <div class="status-sub-bar" id="status-sub-bar" style="display:none;background:var(--bg-subtle);border-bottom:1px solid var(--border);padding:6px 20px;gap:8px;align-items:center;flex-shrink:0">
         <span style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-right:8px">Form Type:</span>
         <div class="status-sub-tab active" data-substatus="exam" onclick="LeadsModule.setSubStatus('exam', this)">Exam <span class="status-count" id="count-exam">0</span></div>
@@ -968,8 +938,8 @@
     </div>
     <div class="drawer-actions">
       <button class="btn btn-primary btn-sm" id="drawer-add-followup-btn"><i class="fas fa-plus"></i> Add Follow-Up</button>
-      <button class="btn btn-outline btn-sm" id="drawer-schedule-meeting-btn"><i class="fas fa-calendar-check"></i> Schedule Meeting</button>
-      <button class="btn btn-outline btn-sm" id="drawer-more-actions-btn"><i class="fas fa-ellipsis-h"></i> More Actions</button>
+      <button class="btn btn-outline btn-sm" id="drawer-schedule-meeting-btn"><i class="fas fa-calendar-check"></i> Schedule Counselling</button>
+      <button class="btn btn-outline btn-sm" id="drawer-more-actions-btn"><i class="fas fa-ellipsis-h"></i> Change status</button>
       <button class="drawer-close-btn" id="drawer-close-btn"><i class="fas fa-times"></i></button>
     </div>
   </div>
@@ -1132,7 +1102,7 @@
 
         <!-- Mark as Lost -->
         <button class="mark-lost-btn" id="drawer-mark-lost-btn">
-          <i class="fas fa-user-times"></i> Mark as Lost / Not Interested
+          <i class="fas fa-user-times"></i> Mark as Lost
         </button>
 
       </div>
