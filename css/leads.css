@@ -1565,6 +1565,9 @@ body.dark #theme-toggle .fa-moon { color: var(--warning); }
   gap: 4px;
   margin-bottom: 14px;
 }
+.form-field[hidden] {
+  display: none !important;
+}
 .form-field.full {
   grid-column: 1 / 3;
 }

@@ -124,6 +124,13 @@
                 Inquiry Form
               </div>
             </div>
+            <div
+              class="nav-subitem"
+              onclick="window.location.href='ams.html'"
+            >
+              <i class="fas fa-building-columns" style="width: 12px; color: inherit"></i>
+              Open Admission System
+            </div>
           </div>
         </nav>
 
@@ -221,12 +228,20 @@
                   id="dashboard-journey-course"
                 >
                   <option value="all">All Courses</option>
-                  <option value="upsc">UPSC Foundation</option>
-                  <option value="gpsc">GPSC Class 1-2</option>
-                  <option value="sankalp">Sankalp Programme</option>
+                  <option value="upsc">UPSC</option>
+                  <option value="gpsc">GPSC-Class1,2</option>
+                  <option value="class3">Class -3</option>
+                  <option value="sankalp">Sankalp</option>
+                  <option value="sampurn">Sampurn</option>
                 </select>
                 <button class="date-filter-btn" id="date-filter-btn">
                   <i class="fas fa-calendar-alt"></i> Custom Date
+                </button>
+                <button
+                  class="btn btn-primary btn-sm"
+                  onclick="window.location.href='ams.html'"
+                >
+                  <i class="fas fa-building-columns"></i> Open AMS
                 </button>
               </div>
             </div>
@@ -806,12 +821,13 @@
                 onchange="LeadsModule.applyFilters()"
               >
                 <option value="all">All Courses</option>
-                <option value="UPSC Foundation">UPSC Foundation</option>
-                <option value="GPSC (Class 1 & 2) - Foundation">
-                  GPSC Foundation
-                </option>
-                <option value="GPSC Class 1-2">GPSC Class 1-2</option>
-                <option value="Sankalp Programme">Sankalp Programme</option>
+                <option value="General Inquiry">General Inquiry</option>
+                <option value="UPSC">UPSC</option>
+                <option value="GPSC-Class1,2">GPSC-Class1,2</option>
+                <option value="GPSC">GPSC</option>
+                <option value="Class -3">Class -3</option>
+                <option value="Sankalp">Sankalp</option>
+                <option value="Sampurn">Sampurn</option>
               </select>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px">
@@ -935,7 +951,7 @@
                   color: var(--text-muted);
                   text-transform: uppercase;
                 "
-                >Learning Mode</label
+                >Mode Of Learning</label
               >
               <select
                 id="filter-mode"
@@ -950,10 +966,9 @@
                 onchange="LeadsModule.applyFilters()"
               >
                 <option value="all">All Modes</option>
-                <option value="Classroom">Classroom</option>
                 <option value="Online">Online</option>
-                <option value="Residential Mode">Residential Mode</option>
-                <option value="Hybrid">Hybrid</option>
+                <option value="residental">residental</option>
+                <option value="Class">Class</option>
               </select>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px">
@@ -979,13 +994,11 @@
                 onchange="LeadsModule.applyFilters()"
               >
                 <option value="all">All Academic Status</option>
-                <option value="HSC Running">HSC Running</option>
-                <option value="HSC Completed">HSC Completed</option>
-                <option value="Graduation Running">Graduation Running</option>
-                <option value="Graduation Completed">
-                  Graduation Completed
+                <option value="School Student">School Student</option>
+                <option value="College Student">College Student</option>
+                <option value="Graducation Completed">
+                  Graducation Completed
                 </option>
-                <option value="Post Graduation">Post Graduation</option>
               </select>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px">
@@ -996,12 +1009,12 @@
                   color: var(--text-muted);
                   text-transform: uppercase;
                 "
-                >City</label
+                >District</label
               >
               <input
                 type="text"
-                id="filter-city"
-                placeholder="City"
+                id="filter-district"
+                placeholder="District"
                 style="
                   padding: 6px 10px;
                   border: 1px solid var(--border);
@@ -2167,6 +2180,7 @@
         });
     </script>
 
+    <script src="js/indian-locations.js"></script>
     <script src="js/data.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/leads.js"></script>

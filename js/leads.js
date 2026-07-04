@@ -27,6 +27,7 @@ const LeadsModule = {
   init() {
     this.leads = [...window.APP_DATA.LEAD_DATA];
     this.injectMockLeads();
+    this.normalizeInquiryLeadData();
     this.filteredLeads = [...this.leads];
     this.selectedLeads.clear();
     
@@ -43,11 +44,11 @@ const LeadsModule = {
       const extraLeads = [
         {
           id: 10, enqNo: 'ENQ1001', name: 'Amit Kumar', phone: '9988776655', whatsapp: '9988776655',
-          email: 'amit.kumar@gmail.com', city: 'Surat, Gujarat', course: 'UPSC Foundation',
-          mode: 'Classroom', source: 'Instagram Ad', campaign: 'UPSC May 2026',
+          email: 'amit.kumar@gmail.com', state: 'Gujarat', district: 'Surat', city: 'Surat, Gujarat', course: 'UPSC',
+          batch: 'Foundation', mode: 'Class', source: 'Instagram Ad', campaign: 'UPSC May 2026',
           inquiryDate: '26-06-2026 10:00 AM', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
           status: 'exam', statusLabel: 'Exam Scheduled', priority: 'medium',
-          leadScore: 75, leadAge: '0 Days', academicStatus: 'Graduation Running',
+          leadScore: 75, leadAge: '0 Days', academicStatus: 'College Student',
           query: 'Exam syllabus.', assignedTo: 'Bharat Sir',
           assignedDate: '26-06-2026 10:00 AM', timeAgo: '7 hrs ago', isHot: false,
           stage: 3, stageLabel: 'Form Sent',
@@ -55,11 +56,12 @@ const LeadsModule = {
         },
         {
           id: 11, enqNo: 'ENQ1002', name: 'Priya Sharma', phone: '9911223344', whatsapp: '9911223344',
-          email: 'priya.sharma@gmail.com', city: 'Rajkot, Gujarat', course: 'GPSC Class 1-2',
+          email: 'priya.sharma@gmail.com', state: 'Gujarat', district: 'Rajkot', city: 'Rajkot, Gujarat', course: 'GPSC-Class1,2',
           mode: 'Online', source: 'Website', campaign: '-',
           inquiryDate: '25-06-2026 11:30 AM', owner: 'Vivek Sir', ownerTeam: 'GPSC Team',
           status: 'interview', statusLabel: 'Interview Scheduled', priority: 'high',
-          leadScore: 82, leadAge: '1 Day', academicStatus: 'Post Graduation',
+          batch: 'Foundation',
+          leadScore: 82, leadAge: '1 Day', academicStatus: 'College Student',
           query: 'Interview prep.', assignedTo: 'Vivek Sir',
           assignedDate: '25-06-2026 11:30 AM', timeAgo: '1 day ago', isHot: true,
           stage: 3, stageLabel: 'Form Sent',
@@ -67,11 +69,11 @@ const LeadsModule = {
         },
         {
           id: 12, enqNo: 'ENQ1003', name: 'Rohan Mehta', phone: '9822334455', whatsapp: '9822334455',
-          email: 'rohan.mehta@gmail.com', city: 'Ahmedabad, Gujarat', course: 'Sankalp Programme',
-          mode: 'Residential Mode', source: 'Seminar', campaign: '-',
+          email: 'rohan.mehta@gmail.com', state: 'Gujarat', district: 'Ahmedabad', city: 'Ahmedabad, Gujarat', course: 'Sankalp',
+          batch: '', mode: '', source: 'Seminar', campaign: '-',
           inquiryDate: '24-06-2026 09:15 AM', owner: 'Pooja Shah', ownerTeam: 'Sankalp Team',
           status: 'admission_confirmed', statusLabel: 'Admission Confirmed', priority: 'high',
-          leadScore: 95, leadAge: '2 Days', academicStatus: 'Graduation Completed',
+          leadScore: 95, leadAge: '2 Days', academicStatus: 'Graducation Completed',
           query: 'Fees paid.', assignedTo: 'Pooja Shah',
           assignedDate: '24-06-2026 09:15 AM', timeAgo: '2 days ago', isHot: false,
           stage: 4, stageLabel: 'Admission',
@@ -79,11 +81,11 @@ const LeadsModule = {
         },
         {
           id: 13, enqNo: 'ENQ1004', name: 'Kunal Patel', phone: '9733445566', whatsapp: '9733445566',
-          email: 'kunal.patel@gmail.com', city: 'Vadodara, Gujarat', course: 'UPSC Foundation',
-          mode: 'Classroom', source: 'Walk-in', campaign: '-',
+          email: 'kunal.patel@gmail.com', state: 'Gujarat', district: 'Vadodara', city: 'Vadodara, Gujarat', course: 'UPSC',
+          batch: 'Foundation', mode: 'Class', source: 'Walk-in', campaign: '-',
           inquiryDate: '23-06-2026 04:00 PM', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
           status: 'admission_rejected', statusLabel: 'Admission Rejected', priority: 'low',
-          leadScore: 40, leadAge: '3 Days', academicStatus: 'Graduation Completed',
+          leadScore: 40, leadAge: '3 Days', academicStatus: 'Graducation Completed',
           query: 'Could not pass test.', assignedTo: 'Bharat Sir',
           assignedDate: '23-06-2026 04:00 PM', timeAgo: '3 days ago', isHot: false,
           stage: 4, stageLabel: 'Admission',
@@ -91,11 +93,12 @@ const LeadsModule = {
         },
         {
           id: 14, enqNo: 'ENQ1005', name: 'Divya Shah', phone: '9644556677', whatsapp: '9644556677',
-          email: 'divya.shah@gmail.com', city: 'Surat, Gujarat', course: 'GPSC Class 1-2',
+          email: 'divya.shah@gmail.com', state: 'Gujarat', district: 'Surat', city: 'Surat, Gujarat', course: 'GPSC-Class1,2',
           mode: 'Online', source: 'Google Ads', campaign: '-',
           inquiryDate: '22-06-2026 12:00 PM', owner: 'Jignesh Trivedi', ownerTeam: 'Admin',
           status: 'closed', statusLabel: 'Closed', priority: 'low',
-          leadScore: 30, leadAge: '4 Days', academicStatus: 'HSC Completed',
+          batch: 'Foundation',
+          leadScore: 30, leadAge: '4 Days', academicStatus: 'School Student',
           query: 'Not interested anymore.', assignedTo: 'Jignesh Trivedi',
           assignedDate: '22-06-2026 12:00 PM', timeAgo: '4 days ago', isHot: false,
           stage: 5, stageLabel: 'Closed',
@@ -110,6 +113,81 @@ const LeadsModule = {
   syncAppDataLeads() {
     if (!window.APP_DATA) return;
     window.APP_DATA.LEAD_DATA = this.leads;
+    this.syncAdmissionShortlist();
+  },
+
+  syncAdmissionShortlist() {
+    const admissionStatuses = ['admission_process', 'converted', 'exam', 'interview', 'admission_confirmed', 'admission_rejected'];
+    const shortlist = this.leads.filter(lead => (
+      lead.shortlistedForAdmission ||
+      admissionStatuses.includes((lead.status || '').toLowerCase())
+    ));
+    try {
+      localStorage.setItem('paAdmissionShortlist', JSON.stringify(shortlist));
+    } catch (e) {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
+  },
+
+  normalizeInquiryLeadData() {
+    this.leads.forEach((lead) => {
+      lead.state = this.getLeadState(lead);
+      lead.district = this.getLeadDistrict(lead);
+      lead.academicStatus = this.normalizeAcademicStatus(lead.academicStatus);
+      lead.course = this.normalizeInquiryCourse(lead.course);
+      lead.mode = this.normalizeLearningMode(lead.mode, lead.course);
+      if (!this.courseNeedsBatchMode(lead.course)) {
+        lead.batch = '';
+        lead.mode = '';
+      } else if (!lead.batch) {
+        lead.batch = 'Foundation';
+      }
+    });
+    this.syncAppDataLeads();
+  },
+
+  getLeadState(lead) {
+    if (lead?.state) return lead.state;
+    const cityText = String(lead?.city || '');
+    const locations = typeof INDIAN_STATE_DISTRICTS !== 'undefined' ? INDIAN_STATE_DISTRICTS : {};
+    const state = Object.keys(locations).find((item) => cityText.toLowerCase().includes(item.toLowerCase()));
+    return state || 'Gujarat';
+  },
+
+  getLeadDistrict(lead) {
+    if (lead?.district) return lead.district;
+    const cityText = String(lead?.city || '').split(',')[0].trim();
+    return cityText && cityText !== '-' ? cityText : 'Ahmedabad';
+  },
+
+  normalizeAcademicStatus(status) {
+    if (['School Student', 'College Student', 'Graducation Completed'].includes(status)) return status;
+    if (['HSC Running', 'HSC Completed'].includes(status)) return 'School Student';
+    if (status === 'Graduation Completed') return 'Graducation Completed';
+    return 'College Student';
+  },
+
+  normalizeInquiryCourse(course) {
+    if (['General Inquiry', 'UPSC', 'GPSC-Class1,2', 'GPSC', 'Class -3', 'Sankalp', 'Sampurn'].includes(course)) return course;
+    if (String(course || '').includes('GPSC-Class 1,2')) return 'GPSC-Class1,2';
+    if (String(course || '').includes('GPSC Class 1-2')) return 'GPSC-Class1,2';
+    if (String(course || '').includes('GPSC')) return 'GPSC';
+    if (String(course || '').includes('Class -3')) return 'Class -3';
+    if (String(course || '').includes('Sankalp')) return 'Sankalp';
+    if (String(course || '').includes('Sampurn')) return 'Sampurn';
+    if (String(course || '').includes('UPSC') || String(course || '').includes('IAS')) return 'UPSC';
+    return 'General Inquiry';
+  },
+
+  normalizeLearningMode(mode, course) {
+    if (!this.courseNeedsBatchMode(course)) return '';
+    if (mode === 'Online') return 'Online';
+    if (mode === 'residental' || mode === 'Residential Mode') return 'residental';
+    return 'Class';
+  },
+
+  courseNeedsBatchMode(course) {
+    return ['UPSC', 'GPSC-Class1,2', 'GPSC', 'Class -3'].includes(course);
   },
 
   applyRoleScope(rows) {
@@ -261,7 +339,7 @@ const LeadsModule = {
     this.filterCounselor = document.getElementById('filter-counselor')?.value || this.filterCounselor || 'all';
     this.filterMode = document.getElementById('filter-mode')?.value || this.filterMode || 'all';
     this.filterAcademicStatus = document.getElementById('filter-academic-status')?.value || this.filterAcademicStatus || 'all';
-    this.filterCity = document.getElementById('filter-city')?.value || this.filterCity || '';
+    this.filterCity = document.getElementById('filter-district')?.value || this.filterCity || '';
     this.filterInquiryDate = document.getElementById('filter-inquiry-date')?.value || this.filterInquiryDate || '';
     this.filterFollowupDate = document.getElementById('filter-followup-date')?.value || this.filterFollowupDate || '';
     this.filterSegment = document.getElementById('filter-segment')?.value || this.filterSegment || 'all';
@@ -276,8 +354,8 @@ const LeadsModule = {
       result = result.filter(l => l.academicStatus === this.filterAcademicStatus);
     }
     if (this.filterCity) {
-      const city = this.filterCity.toLowerCase();
-      result = result.filter(l => (l.city || '').toLowerCase().includes(city));
+      const district = this.filterCity.toLowerCase();
+      result = result.filter(l => this.getLeadDistrict(l).toLowerCase().includes(district));
     }
     if (this.filterInquiryDate) {
       result = result.filter(l => this.dateKey(l.inquiryDate) === this.filterInquiryDate);
@@ -510,8 +588,12 @@ const LeadsModule = {
                 <span class="detail-value">${lead.phone}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">City</span>
-                <span class="detail-value">${lead.city}</span>
+                <span class="detail-label">State</span>
+                <span class="detail-value">${this.getLeadState(lead)}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">District</span>
+                <span class="detail-value">${this.getLeadDistrict(lead)}</span>
               </div>
             </div>
             <div class="lead-detail-col">
@@ -524,8 +606,12 @@ const LeadsModule = {
                 <span class="detail-value">${lead.academicStatus}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Course Interested</span>
+                <span class="detail-label">Inquiry For</span>
                 <span class="detail-value">${lead.course}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Batch Selection</span>
+                <span class="detail-value">${lead.batch || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Any Query</span>
@@ -534,7 +620,7 @@ const LeadsModule = {
             </div>
             <div class="lead-detail-col">
               <div class="detail-row">
-                <span class="detail-label">Preferred Learning Mode</span>
+                <span class="detail-label">Mode Of Learning</span>
                 <span class="detail-value">${lead.mode}</span>
               </div>
               <div class="detail-row">
@@ -733,10 +819,10 @@ const LeadsModule = {
 
   exportLeads(ids = null, filename = 'leads-export.csv') {
     const rows = ids ? this.applyRoleScope(this.leads).filter(l => ids.includes(l.id)) : this.filteredLeads;
-    const headers = ['Enquiry No', 'Name', 'Phone', 'Email', 'City', 'Course', 'Source', 'Status', 'Assigned To', 'Inquiry Date'];
+    const headers = ['Enquiry No', 'Name', 'Phone', 'Email', 'State', 'District', 'Inquiry For', 'Batch Selection', 'Mode Of Learning', 'Source', 'Status', 'Assigned To', 'Inquiry Date'];
     const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [headers.map(escape).join(',')].concat(rows.map(lead => [
-      lead.enqNo, lead.name, lead.phone, lead.email, lead.city, lead.course, lead.source, lead.statusLabel, lead.assignedTo || lead.owner || 'Unassigned', lead.inquiryDate
+      lead.enqNo, lead.name, lead.phone, lead.email, this.getLeadState(lead), this.getLeadDistrict(lead), lead.course, lead.batch || '', lead.mode || '', lead.source, lead.statusLabel, lead.assignedTo || lead.owner || 'Unassigned', lead.inquiryDate
     ].map(escape).join(','))).join('\n');
     this.downloadTextFile(filename, csv, 'text/csv');
     this.showToast(`${rows.length} lead(s) exported`, 'success');
@@ -802,7 +888,7 @@ const LeadsModule = {
             <label>CSV File</label>
             <input type="file" id="lead-import-file" accept=".csv,text/csv">
           </div>
-          <div style="font-size:12px;color:var(--text-muted)">Expected columns: name, phone, email, city, course, source.</div>
+          <div style="font-size:12px;color:var(--text-muted)">Expected columns: name, phone, email, state, district, course, source.</div>
         </div>
         <div class="custom-modal-footer">
           <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
@@ -825,6 +911,9 @@ const LeadsModule = {
       const created = lines.slice(1).map((line, index) => {
         const cells = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         const get = key => cells[headers.indexOf(key)] || '';
+        const state = get('state') || 'Gujarat';
+        const district = get('district') || 'Ahmedabad';
+        const course = this.normalizeInquiryCourse(get('course') || 'General Inquiry');
         return {
           id: maxId + index + 1,
           enqNo: `ENQ${Date.now().toString().slice(-5)}${index}`,
@@ -832,9 +921,12 @@ const LeadsModule = {
           phone: get('phone'),
           whatsapp: get('phone'),
           email: get('email'),
-          city: get('city') || '-',
-          course: get('course') || 'UPSC Foundation',
-          mode: 'Classroom',
+          state,
+          district,
+          city: `${district}, ${state}`,
+          course,
+          batch: this.courseNeedsBatchMode(course) ? 'Foundation' : '',
+          mode: this.courseNeedsBatchMode(course) ? 'Class' : '',
           source: get('source') || 'Excel Import',
           campaign: '-',
           inquiryDate: new Date().toLocaleString('en-IN'),
@@ -845,7 +937,7 @@ const LeadsModule = {
           priority: 'medium',
           leadScore: 50,
           leadAge: '0 Days',
-          academicStatus: 'Graduation Running',
+          academicStatus: 'College Student',
           query: 'Imported lead.',
           assignedTo: 'Unassigned',
           assignedDate: '-',
@@ -857,6 +949,7 @@ const LeadsModule = {
         };
       });
       this.leads.unshift(...created);
+      this.normalizeInquiryLeadData();
       this.syncAppDataLeads();
       document.querySelector('.custom-modal-overlay')?.remove();
       this.applyFilters();
@@ -963,7 +1056,7 @@ const LeadsModule = {
       const el = document.getElementById(id);
       if (el) el.value = 'all';
     });
-    ['filter-city', 'filter-inquiry-date', 'filter-followup-date'].forEach(id => {
+    ['filter-district', 'filter-inquiry-date', 'filter-followup-date'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -1057,12 +1150,15 @@ const LeadsModule = {
     } else if (type === 'counselling') {
       this.showCounsellingModal(id);
     } else if (type === 'convert') {
-      lead.status = 'converted';
-      lead.statusLabel = 'Admission';
-      lead.stage = 8;
-      this.recordTimelineAction(lead, 'Admission Form Started', 'Inquiry converted to admission workflow.');
+      lead.status = 'admission_process';
+      lead.statusLabel = 'Admission Form';
+      lead.stage = 6;
+      lead.stageLabel = 'Admission';
+      lead.shortlistedForAdmission = true;
+      this.recordTimelineAction(lead, 'Shortlisted for Admission', 'Inquiry moved to admission form workflow.');
       this.applyFilters();
-      this.showToast(`${lead.name} converted to admission`, 'success');
+      this.updateStatusBarCounts();
+      this.showToast(`${lead.name} shortlisted for admission form`, 'success');
     } else if (type === 'lost') {
       this.showLostReasonModal(id);
     } else if (type === 'archive') {
@@ -1353,17 +1449,89 @@ const LeadsModule = {
     };
   },
 
+  setupLeadLocationFields(selectedState = '', selectedDistrict = '') {
+    const stateSelect = document.getElementById('m-state');
+    const districtSelect = document.getElementById('m-district');
+    if (!stateSelect || !districtSelect || typeof INDIAN_STATE_DISTRICTS === 'undefined') return;
+
+    Object.keys(INDIAN_STATE_DISTRICTS).forEach((state) => {
+      stateSelect.insertAdjacentHTML('beforeend', `<option value="${state}">${state}</option>`);
+    });
+
+    const renderDistricts = () => {
+      const districts = INDIAN_STATE_DISTRICTS[stateSelect.value] || [];
+      districtSelect.innerHTML = '<option value="">Select District</option>';
+      districts.forEach((district) => {
+        districtSelect.insertAdjacentHTML('beforeend', `<option value="${district}">${district}</option>`);
+      });
+      districtSelect.disabled = districts.length === 0;
+      districtSelect.value = districts.includes(selectedDistrict) ? selectedDistrict : '';
+    };
+
+    stateSelect.addEventListener('change', () => {
+      selectedDistrict = '';
+      renderDistricts();
+    });
+    stateSelect.value = selectedState;
+    renderDistricts();
+  },
+
+  setupLeadInquiryFields() {
+    document.querySelectorAll('input[name="m-inquiry-type"]').forEach((input) => {
+      input.addEventListener('change', () => this.updateLeadInquiryFields());
+    });
+    document.getElementById('m-course')?.addEventListener('change', () => this.updateLeadInquiryFields());
+    this.updateLeadInquiryFields();
+  },
+
+  updateLeadInquiryFields() {
+    const inquiryType = document.querySelector('input[name="m-inquiry-type"]:checked')?.value || 'General Inquiry';
+    const courseSelect = document.getElementById('m-course');
+    const batchSelect = document.getElementById('m-batch');
+    const modeInputs = Array.from(document.querySelectorAll('input[name="m-mode"]'));
+    const query = document.getElementById('m-query');
+    const queryLabel = document.getElementById('m-query-label');
+    const isCourseInquiry = inquiryType === 'Course Inquiry';
+    const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
+
+    document.getElementById('m-course-wrap').hidden = !isCourseInquiry;
+    document.getElementById('m-batch-wrap').hidden = !isCourseInquiry || !needsBatchMode;
+    document.getElementById('m-mode-wrap').hidden = !isCourseInquiry || !needsBatchMode;
+    document.getElementById('m-query-wrap').hidden = false;
+
+    if (courseSelect) {
+      courseSelect.required = isCourseInquiry;
+      if (!isCourseInquiry) courseSelect.value = '';
+    }
+    if (batchSelect) {
+      batchSelect.required = isCourseInquiry && needsBatchMode;
+      if (!needsBatchMode) batchSelect.value = '';
+    }
+    modeInputs.forEach((input) => {
+      input.required = isCourseInquiry && needsBatchMode;
+      if (!needsBatchMode) input.checked = false;
+    });
+    if (query) {
+      query.required = !isCourseInquiry;
+    }
+    if (queryLabel) {
+      queryLabel.textContent = isCourseInquiry ? 'Any Specific Query (Optional)' : 'Any Specific Query *';
+    }
+  },
+
   showAddEditModal(lead = null) {
     const isEdit = lead !== null;
     const title = isEdit ? 'Edit Lead Details' : 'Add New Inquiry';
     const name = isEdit ? lead.name : '';
     const phone = isEdit ? lead.phone : '';
     const email = isEdit ? lead.email : '';
-    const pincode = isEdit ? (lead.pincode || '') : '';
-    const city = isEdit ? lead.city : '';
-    const academicStatus = isEdit ? lead.academicStatus : 'Graduation Running';
-    const course = isEdit ? lead.course : 'UPSC Foundation';
-    const mode = isEdit ? lead.mode : 'Classroom';
+    const state = isEdit ? this.getLeadState(lead) : '';
+    const district = isEdit ? this.getLeadDistrict(lead) : '';
+    const academicStatus = isEdit ? this.normalizeAcademicStatus(lead.academicStatus) : 'College Student';
+    const course = isEdit ? this.normalizeInquiryCourse(lead.course) : '';
+    const batch = isEdit ? (lead.batch || '') : '';
+    const mode = isEdit ? this.normalizeLearningMode(lead.mode, course) : '';
+    const inquiryType = isEdit && course !== 'General Inquiry' ? 'Course Inquiry' : 'General Inquiry';
     const query = isEdit ? lead.query : '';
 
     const overlay = document.createElement('div');
@@ -1390,46 +1558,73 @@ const LeadsModule = {
                 <input type="email" id="m-email" value="${email}" required placeholder="email@gmail.com">
               </div>
               <div class="form-field">
-                <label>Pincode *</label>
-                <input type="text" id="m-pincode" value="${pincode}" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit pincode">
+                <label>State *</label>
+                <select id="m-state" required>
+                  <option value="">Select State</option>
+                </select>
               </div>
               <div class="form-field">
-                <label>City *</label>
-                <input type="text" id="m-city" value="${city}" required placeholder="City name">
+                <label>District *</label>
+                <select id="m-district" required disabled>
+                  <option value="">Select District</option>
+                </select>
               </div>
               <div class="form-field">
                 <label>Academic Status *</label>
                 <select id="m-academic-status" required>
-                  <option value="HSC Running" ${academicStatus === 'HSC Running' ? 'selected' : ''}>HSC Running</option>
-                  <option value="HSC Completed" ${academicStatus === 'HSC Completed' ? 'selected' : ''}>HSC Completed</option>
-                  <option value="Graduation Running" ${academicStatus === 'Graduation Running' ? 'selected' : ''}>Graduation Running</option>
-                  <option value="Graduation Completed" ${academicStatus === 'Graduation Completed' ? 'selected' : ''}>Graduation Completed</option>
-                  <option value="Post Graduation" ${academicStatus === 'Post Graduation' ? 'selected' : ''}>Post Graduation</option>
+                  <option value="School Student" ${academicStatus === 'School Student' ? 'selected' : ''}>School Student</option>
+                  <option value="College Student" ${academicStatus === 'College Student' ? 'selected' : ''}>College Student</option>
+                  <option value="Graducation Completed" ${academicStatus === 'Graducation Completed' ? 'selected' : ''}>Graducation Completed</option>
                 </select>
               </div>
               <div class="form-field span-2">
-                <label>Inquiry For (Course Selection) *</label>
-                <div class="radio-card-grid cols-3">
-                  ${this.renderCourseOption('UPSC Foundation', 'Foundation batch', course)}
-                  ${this.renderCourseOption('GPSC Class 1-2', 'Class 1-2 preparation', course)}
-                  ${this.renderCourseOption('Sankalp Programme', 'Residential preparation', course)}
-                  ${this.renderCourseOption('IAS/IPS Coaching', 'Advanced civil services', course)}
-                  ${this.renderCourseOption('Interview Prep', 'Interview guidance', course)}
-                  ${this.renderCourseOption('Other', 'Counselor to confirm', course)}
+                <label>Inquiry For *</label>
+                <div class="radio-card-grid cols-2">
+                  <label class="radio-card">
+                    <input type="radio" name="m-inquiry-type" value="General Inquiry" ${inquiryType === 'General Inquiry' ? 'checked' : ''} required>
+                    <span class="radio-mark"></span>
+                    <span><span class="radio-title">General inquiry</span><span class="radio-subtitle">Ask a specific question</span></span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="m-inquiry-type" value="Course Inquiry" ${inquiryType === 'Course Inquiry' ? 'checked' : ''} required>
+                    <span class="radio-mark"></span>
+                    <span><span class="radio-title">Course Inquiry</span><span class="radio-subtitle">Select course details</span></span>
+                  </label>
                 </div>
               </div>
-              <div class="form-field span-2">
-                <label>Preferred Learning Mode *</label>
+              <div class="form-field span-2" id="m-course-wrap" hidden>
+                <label>Course *</label>
+                <select id="m-course">
+                  <option value="">Select Course</option>
+                  <option value="UPSC" ${course === 'UPSC' ? 'selected' : ''}>UPSC</option>
+                  <option value="GPSC-Class1,2" ${course === 'GPSC-Class1,2' ? 'selected' : ''}>GPSC-Class1,2</option>
+                  <option value="GPSC" ${course === 'GPSC' ? 'selected' : ''}>GPSC</option>
+                  <option value="Class -3" ${course === 'Class -3' ? 'selected' : ''}>Class -3</option>
+                  <option value="Sankalp" ${course === 'Sankalp' ? 'selected' : ''}>Sankalp</option>
+                  <option value="Sampurn" ${course === 'Sampurn' ? 'selected' : ''}>Sampurn</option>
+                </select>
+              </div>
+              <div class="form-field" id="m-batch-wrap" hidden>
+                <label>Batch Selection *</label>
+                <select id="m-batch">
+                  <option value="">Select Batch</option>
+                  <option value="Foundation" ${batch === 'Foundation' ? 'selected' : ''}>Foundation</option>
+                  <option value="mentorship" ${batch === 'mentorship' ? 'selected' : ''}>mentorship</option>
+                  <option value="Interview" ${batch === 'Interview' ? 'selected' : ''}>Interview</option>
+                  <option value="mains" ${batch === 'mains' ? 'selected' : ''}>mains</option>
+                </select>
+              </div>
+              <div class="form-field" id="m-mode-wrap" hidden>
+                <label>Mode Of Learning *</label>
                 <div class="radio-inline-group">
-                  ${this.renderModeOption('Classroom', mode)}
                   ${this.renderModeOption('Online', mode)}
-                  ${this.renderModeOption('Residential Mode', mode)}
-                  ${this.renderModeOption('Hybrid', mode)}
+                  ${this.renderModeOption('residental', mode)}
+                  ${this.renderModeOption('Class', mode)}
                 </div>
               </div>
-              <div class="form-field full">
-                <label>Any Specific Query (Optional)</label>
-                <textarea id="m-query" rows="3" placeholder="Write questions, timing preference, or course doubts...">${query}</textarea>
+              <div class="form-field full" id="m-query-wrap">
+                <label id="m-query-label">Any Specific Query *</label>
+                <textarea id="m-query" rows="3" required placeholder="Write your query...">${query}</textarea>
               </div>
             </div>
             <input type="submit" style="display:none" id="submit-hidden-btn">
@@ -1442,6 +1637,8 @@ const LeadsModule = {
       </div>
     `;
     document.body.appendChild(overlay);
+    this.setupLeadLocationFields(state, district);
+    this.setupLeadInquiryFields();
   },
 
   saveLeadForm(leadId) {
@@ -1449,13 +1646,17 @@ const LeadsModule = {
     const name = document.getElementById('m-name').value.trim();
     const phone = document.getElementById('m-phone').value.trim();
     const email = document.getElementById('m-email').value.trim();
-    const pincode = document.getElementById('m-pincode').value.trim();
-    const city = document.getElementById('m-city').value.trim();
+    const state = document.getElementById('m-state').value;
+    const district = document.getElementById('m-district').value;
     const academicStatus = document.getElementById('m-academic-status').value;
-    const course = document.querySelector('input[name="m-course"]:checked')?.value;
+    const inquiryType = document.querySelector('input[name="m-inquiry-type"]:checked')?.value;
+    const selectedCourse = document.getElementById('m-course').value;
+    const course = inquiryType === 'Course Inquiry' ? selectedCourse : 'General Inquiry';
+    const batch = document.getElementById('m-batch').value;
     const mode = document.querySelector('input[name="m-mode"]:checked')?.value;
     const query = document.getElementById('m-query').value.trim();
-    if (!name || !phone || !email || !pincode || !city || !academicStatus || !course || !mode) return;
+    const requiresBatchMode = inquiryType === 'Course Inquiry' && this.courseNeedsBatchMode(course);
+    if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (inquiryType === 'General Inquiry' && !query) || (inquiryType === 'Course Inquiry' && !selectedCourse) || (requiresBatchMode && (!batch || !mode))) return;
 
     if (isEdit) {
       const lead = this.leads.find(l => l.id === leadId);
@@ -1464,10 +1665,14 @@ const LeadsModule = {
         lead.phone = phone;
         lead.whatsapp = phone;
         lead.email = email;
-        lead.pincode = pincode;
-        lead.city = city;
+        lead.state = state;
+        lead.district = district;
+        lead.city = `${district}, ${state}`;
+        lead.pincode = '';
+        lead.inquiryType = inquiryType;
         lead.course = course;
-        lead.mode = mode;
+        lead.batch = requiresBatchMode ? batch : '';
+        lead.mode = requiresBatchMode ? mode : '';
         lead.academicStatus = academicStatus;
         lead.query = query;
         if (!lead.utm) lead.utm = this.buildUtmTracking('CRM Add Inquiry');
@@ -1483,10 +1688,14 @@ const LeadsModule = {
         phone,
         whatsapp: phone,
         email,
-        pincode,
-        city,
+        pincode: '',
+        state,
+        district,
+        city: `${district}, ${state}`,
+        inquiryType,
         course,
-        mode,
+        batch: requiresBatchMode ? batch : '',
+        mode: requiresBatchMode ? mode : '',
         source: 'Inquiry Form',
         campaign: 'direct_inquiry',
         utm: this.buildUtmTracking('CRM Add Inquiry'),
@@ -1821,14 +2030,16 @@ const LeadsModule = {
     if (!lead) return;
     
     if (confirm(`Are you sure you want to convert the inquiry "${lead.name}" to admission?`)) {
-      lead.status = 'admission_confirmed';
-      lead.statusLabel = 'Admission Confirmed';
-      lead.stage = 4;
+      lead.status = 'admission_process';
+      lead.statusLabel = 'Admission Form';
+      lead.stage = 6;
       lead.stageLabel = 'Admission';
+      lead.shortlistedForAdmission = true;
+      this.recordTimelineAction(lead, 'Shortlisted for Admission', 'Admission form workflow started.');
       
       this.applyFilters();
       this.updateStatusBarCounts();
-      this.showToast(`Inquiry ${lead.name} converted to admission!`, 'success');
+      this.showToast(`Inquiry ${lead.name} shortlisted for admission form.`, 'success');
     }
   },
 
@@ -1897,6 +2108,7 @@ const LeadsModule = {
     
     lead.status = newStatus;
     lead.statusLabel = statusLabels[newStatus];
+    lead.shortlistedForAdmission = ['admission_process', 'exam', 'interview', 'admission_confirmed', 'admission_rejected'].includes(newStatus);
     
     if (newStatus === 'new') { lead.stage = 0; lead.stageLabel = 'New'; }
     else if (newStatus === 'contacted') { lead.stage = 1; lead.stageLabel = 'Contacted'; }
@@ -1912,6 +2124,7 @@ const LeadsModule = {
     document.querySelector('.custom-modal-overlay')?.remove();
     this.applyFilters();
     this.updateStatusBarCounts();
+    this.syncAppDataLeads();
   },
 
   archiveLead(id) {
@@ -2056,16 +2269,17 @@ const LeadsModule = {
       ids.forEach(id => {
         const lead = this.leads.find(l => l.id === id);
         if (!lead) return;
-        lead.status = 'admission_confirmed';
-        lead.statusLabel = 'Admission Confirmed';
-        lead.stage = 4;
+        lead.status = 'admission_process';
+        lead.statusLabel = 'Admission Form';
+        lead.stage = 6;
         lead.stageLabel = 'Admission';
-        this.recordTimelineAction(lead, 'Mass Admission Confirmed', 'Lead confirmed through mass admission action.');
+        lead.shortlistedForAdmission = true;
+        this.recordTimelineAction(lead, 'Mass Admission Shortlist', 'Lead shortlisted for admission form workflow.');
       });
       this.selectedLeads.clear();
       this.applyFilters();
       this.updateStatusBarCounts();
-      this.showToast(`${ids.length} lead(s) moved to Admission Confirmed`, 'success');
+      this.showToast(`${ids.length} lead(s) shortlisted for admission form`, 'success');
     });
 
     // Add lead

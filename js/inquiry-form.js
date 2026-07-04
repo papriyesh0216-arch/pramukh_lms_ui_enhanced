@@ -7,6 +7,8 @@ const InquiryFormPage = {
 
   init() {
     this.setupTheme();
+    this.setupLocationFields();
+    this.setupInquiryFields();
     this.setupForm();
   },
 
@@ -61,6 +63,74 @@ const InquiryFormPage = {
     }
   },
 
+  setupLocationFields() {
+    const stateSelect = document.getElementById('i-state');
+    const districtSelect = document.getElementById('i-district');
+    if (!stateSelect || !districtSelect || typeof INDIAN_STATE_DISTRICTS === 'undefined') return;
+
+    Object.keys(INDIAN_STATE_DISTRICTS).forEach((state) => {
+      stateSelect.insertAdjacentHTML('beforeend', `<option value="${state}">${state}</option>`);
+    });
+
+    stateSelect.addEventListener('change', () => {
+      const districts = INDIAN_STATE_DISTRICTS[stateSelect.value] || [];
+      districtSelect.innerHTML = '<option value="">Select District</option>';
+      districts.forEach((district) => {
+        districtSelect.insertAdjacentHTML('beforeend', `<option value="${district}">${district}</option>`);
+      });
+      districtSelect.disabled = districts.length === 0;
+      districtSelect.value = '';
+    });
+  },
+
+  setupInquiryFields() {
+    const typeInputs = Array.from(document.querySelectorAll('input[name="inquiryType"]'));
+    const courseSelect = document.getElementById('i-course');
+    if (!typeInputs.length || !courseSelect) return;
+    typeInputs.forEach((input) => input.addEventListener('change', () => this.updateInquiryFields()));
+    courseSelect.addEventListener('change', () => this.updateInquiryFields());
+    this.updateInquiryFields();
+  },
+
+  updateInquiryFields() {
+    const inquiryType = document.querySelector('input[name="inquiryType"]:checked')?.value || 'General Inquiry';
+    const courseSelect = document.getElementById('i-course');
+    const batchSelect = document.getElementById('i-batch');
+    const modeInputs = Array.from(document.querySelectorAll('input[name="mode"]'));
+    const query = document.getElementById('i-query');
+    const queryLabel = document.getElementById('i-query-label');
+    const isCourseInquiry = inquiryType === 'Course Inquiry';
+    const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
+
+    document.getElementById('i-course-wrap').hidden = !isCourseInquiry;
+    document.getElementById('i-batch-wrap').hidden = !isCourseInquiry || !needsBatchMode;
+    document.getElementById('i-mode-wrap').hidden = !isCourseInquiry || !needsBatchMode;
+    document.getElementById('i-query-wrap').hidden = false;
+
+    if (courseSelect) {
+      courseSelect.required = isCourseInquiry;
+      if (!isCourseInquiry) courseSelect.value = '';
+    }
+    if (batchSelect) {
+      batchSelect.required = isCourseInquiry && needsBatchMode;
+      if (!needsBatchMode) batchSelect.value = '';
+    }
+    modeInputs.forEach((input) => {
+      input.required = isCourseInquiry && needsBatchMode;
+      if (!needsBatchMode) input.checked = false;
+    });
+    if (query) {
+      query.required = !isCourseInquiry;
+    }
+    if (queryLabel) {
+      queryLabel.textContent = isCourseInquiry ? 'Any Specific Query (Optional)' : 'Any Specific Query *';
+    }
+  },
+
+  courseNeedsBatchMode(course) {
+    return ['UPSC', 'GPSC-Class1,2', 'GPSC', 'Class -3'].includes(course);
+  },
+
   setupForm() {
     const form = document.getElementById('inquiry-form');
     const statusEl = document.getElementById('inquiry-status');
@@ -71,14 +141,18 @@ const InquiryFormPage = {
       const name = document.getElementById('i-name').value.trim();
       const phone = document.getElementById('i-phone').value.trim();
       const email = document.getElementById('i-email').value.trim();
-      const pincode = document.getElementById('i-pincode').value.trim();
-      const city = document.getElementById('i-city').value.trim();
+      const state = document.getElementById('i-state').value;
+      const district = document.getElementById('i-district').value;
       const academicStatus = document.getElementById('i-academic-status').value;
-      const course = document.querySelector('input[name="course"]:checked')?.value;
+      const inquiryType = document.querySelector('input[name="inquiryType"]:checked')?.value;
+      const course = document.getElementById('i-course').value;
+      const batch = document.getElementById('i-batch').value;
       const mode = document.querySelector('input[name="mode"]:checked')?.value;
       const query = document.getElementById('i-query').value.trim();
+      const requiresCourse = inquiryType === 'Course Inquiry';
+      const requiresBatchMode = requiresCourse && this.courseNeedsBatchMode(course);
 
-      if (!name || !phone || !email || !pincode || !city || !academicStatus || !course || !mode) {
+      if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (!requiresCourse && !query) || (requiresCourse && !course) || (requiresBatchMode && (!batch || !mode))) {
         if (statusEl) {
           statusEl.textContent = 'Please complete all required fields.';
           statusEl.classList.add('error');
@@ -101,11 +175,13 @@ const InquiryFormPage = {
         name,
         phone,
         email,
-        pincode,
-        city,
+        state,
+        district,
         academicStatus,
-        course,
-        mode,
+        inquiryType,
+        course: requiresCourse ? course : 'General Inquiry',
+        batch: requiresBatchMode ? batch : '',
+        mode: requiresBatchMode ? mode : '',
         query,
         createdAt,
         utm: this.getTrackingData()
@@ -113,10 +189,11 @@ const InquiryFormPage = {
 
       this.saveSubmissions(submissions);
       form.reset();
-      const courseDefault = form.querySelector('input[name="course"][value="UPSC Foundation"]');
-      const modeDefault = form.querySelector('input[name="mode"][value="Classroom"]');
-      if (courseDefault) courseDefault.checked = true;
-      if (modeDefault) modeDefault.checked = true;
+      document.getElementById('i-district').innerHTML = '<option value="">Select District</option>';
+      document.getElementById('i-district').disabled = true;
+      const generalDefault = form.querySelector('input[name="inquiryType"][value="General Inquiry"]');
+      if (generalDefault) generalDefault.checked = true;
+      this.updateInquiryFields();
       if (statusEl) {
         statusEl.classList.remove('error');
         statusEl.textContent = 'Inquiry saved successfully.';

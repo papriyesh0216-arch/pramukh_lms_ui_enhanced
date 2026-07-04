@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pramukh Academy - Admission Management System</title>
+    <meta
+      name="description"
+      content="Admission Management System for Pramukh Academy - applications, documents, fees, batches, and onboarding"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="stylesheet" href="css/ams.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-mark">
+            <img
+              src="assets/Logo-04.png"
+              alt="Pramukh Academy"
+              style="width: 44px; height: 44px; object-fit: contain"
+            />
+          </div>
+          <div class="logo-text">
+            Pramukh Academy<span>AMS Suite v1.0</span>
+          </div>
+        </div>
+
+        <div class="sidebar-search">
+          <div class="sidebar-search-wrap">
+            <i class="fas fa-search search-icon"></i>
+            <input class="sidebar-search-input" placeholder="Search AMS menu..." />
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-group">
+            <div
+              class="nav-subitem active"
+              data-screen="ams-dashboard"
+              onclick="AMSApp.showScreen('ams-dashboard')"
+            >
+              <i class="fas fa-building-columns" style="width: 12px; color: inherit"></i>
+              Admission Dashboard
+            </div>
+
+            <div
+              class="nav-subitem"
+              data-screen="ams-students"
+              onclick="AMSApp.showScreen('ams-students')"
+            >
+              <i class="fas fa-users-viewfinder" style="width: 12px; color: inherit"></i>
+              Admission Student List
+            </div>
+
+            <div class="nav-group-title">Admission Operations</div>
+            <div class="nav-subitem nav-sub-subitem-muted">
+              <i class="fas fa-file-signature" style="width: 12px; color: inherit"></i>
+              Application Forms
+            </div>
+            <div class="nav-subitem nav-sub-subitem-muted">
+              <i class="fas fa-folder-open" style="width: 12px; color: inherit"></i>
+              Documents
+            </div>
+            <div class="nav-subitem nav-sub-subitem-muted">
+              <i class="fas fa-receipt" style="width: 12px; color: inherit"></i>
+              Fees &amp; Receipts
+            </div>
+            <div class="nav-subitem nav-sub-subitem-muted">
+              <i class="fas fa-users-rectangle" style="width: 12px; color: inherit"></i>
+              Batch Allocation
+            </div>
+
+            <div class="nav-group-title">Switch System</div>
+            <div class="nav-subitem" onclick="window.location.href='index.html'">
+              <i class="fas fa-chart-line" style="width: 12px; color: inherit"></i>
+              Open LMS System
+            </div>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-help">
+            <div class="help-icon"><i class="fas fa-headset"></i></div>
+            <div class="help-text">
+              <div class="help-title">Need Help?</div>
+              <div class="help-sub">Admission Desk</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-content">
+        <header class="topbar">
+          <div class="topbar-search">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              placeholder="Search admission no., student, course, mobile, document, fee status..."
+              id="global-search"
+            />
+          </div>
+          <div class="topbar-spacer"></div>
+          <div
+            id="page-section-title"
+            style="font-size: 12px; color: var(--text-muted); font-weight: 500"
+          >
+            Admission Dashboard
+          </div>
+          <div class="topbar-actions">
+            <button
+              id="theme-toggle"
+              class="topbar-icon-btn"
+              title="Toggle theme"
+              aria-label="Toggle theme"
+            >
+              <i class="fas fa-sun" id="theme-icon"></i>
+            </button>
+            <button class="topbar-icon-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge">6</span>
+            </button>
+            <div class="topbar-user">
+              <div class="user-avatar">AD</div>
+              <div class="user-info">
+                <div class="user-name">Admission Desk</div>
+                <div class="user-role">AMS Admin</div>
+              </div>
+              <i
+                class="fas fa-chevron-down"
+                style="font-size: 10px; color: var(--text-muted); margin-left: 4px"
+              ></i>
+            </div>
+          </div>
+        </header>
+
+        <div class="screen active" id="screen-ams-dashboard">
+          <div class="content-area ams-content">
+            <div class="ams-header" id="ams-overview">
+              <div>
+                <div class="section-eyebrow">Admission Management System</div>
+                <h1>Admission Dashboard</h1>
+                <p>
+                  Track confirmed admissions from application start through fee
+                  collection, document verification, batch allocation, and
+                  onboarding.
+                </p>
+              </div>
+              <div class="ams-header-actions">
+                <button class="btn btn-outline btn-sm" onclick="window.location.href='index.html'">
+                  <i class="fas fa-chart-line"></i> LMS
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="AMSApp.showScreen('ams-students')">
+                  <i class="fas fa-users-viewfinder"></i> Student List
+                </button>
+              </div>
+            </div>
+
+            <div class="ams-kpi-grid" id="ams-kpi-grid"></div>
+
+            <div class="ams-dashboard-grid">
+              <section class="ams-panel" id="ams-pipeline">
+                <div class="ams-panel-head">
+                  <div>
+                    <h2>Admission Pipeline</h2>
+                    <span>Stage-wise movement from offer to active student</span>
+                  </div>
+                  <span class="badge badge-primary">Live Queue</span>
+                </div>
+                <div class="ams-pipeline-list" id="ams-pipeline-list"></div>
+              </section>
+
+              <section class="ams-panel">
+                <div class="ams-panel-head">
+                  <div>
+                    <h2>Operations Needed</h2>
+                    <span>Core AMS areas to complete before student creation</span>
+                  </div>
+                </div>
+                <div class="ams-ops-grid" id="ams-ops-grid"></div>
+              </section>
+
+              <section class="ams-panel">
+                <div class="ams-panel-head">
+                  <div>
+                    <h2>Upcoming Admission Work</h2>
+                    <span>Interviews, payments, document checks, and onboarding</span>
+                  </div>
+                </div>
+                <div class="ams-task-list" id="ams-task-list"></div>
+              </section>
+
+              <section class="ams-panel">
+                <div class="ams-panel-head">
+                  <div>
+                    <h2>Risk &amp; Exceptions</h2>
+                    <span>Items that need staff attention</span>
+                  </div>
+                </div>
+                <div class="ams-risk-list" id="ams-risk-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-ams-students">
+          <div class="status-bar ams-status-bar" id="ams-status-bar"></div>
+          <div class="content-area ams-content">
+            <div class="page-header">
+              <div>
+                <h1 class="page-title">
+                  <i class="fas fa-users-viewfinder"></i>
+                  Admission Student List
+                </h1>
+                <div class="page-subtitle">
+                  Skeleton list for admitted students, applications, fees,
+                  documents, batches, scholarship, and onboarding state.
+                </div>
+              </div>
+              <div class="ams-header-actions">
+                <button class="btn btn-outline btn-sm" onclick="AMSApp.showScreen('ams-dashboard')">
+                  <i class="fas fa-building-columns"></i> Dashboard
+                </button>
+                <button class="btn btn-primary btn-sm">
+                  <i class="fas fa-plus"></i> New Admission
+                </button>
+              </div>
+            </div>
+
+            <div class="ams-filter-bar">
+              <div class="ams-search">
+                <i class="fas fa-search"></i>
+                <input id="ams-search-input" placeholder="Search student, admission no., course, mobile..." />
+              </div>
+              <select id="ams-status-filter">
+                <option value="all">All Status</option>
+                <option value="form_pending">Form Pending</option>
+                <option value="form_submitted">Form Submitted</option>
+                <option value="document_verification">Document Verification</option>
+                <option value="fee_pending">Fee Pending</option>
+                <option value="batch_allocation">Batch Allocation</option>
+                <option value="onboarded">Onboarded</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <select id="ams-course-filter">
+                <option value="all">All Courses</option>
+                <option value="UPSC Foundation">UPSC Foundation</option>
+                <option value="GPSC Class 1-2">GPSC Class 1-2</option>
+                <option value="Sankalp Programme">Sankalp Programme</option>
+              </select>
+            </div>
+
+            <div class="ams-table-wrap">
+              <table class="data-table ams-table">
+                <thead>
+                  <tr>
+                    <th>Admission</th>
+                    <th>Student</th>
+                    <th>Course / Batch</th>
+                    <th>Application</th>
+                    <th>Documents</th>
+                    <th>Fees</th>
+                    <th>Owner</th>
+                    <th>Next Step</th>
+                  </tr>
+                </thead>
+                <tbody id="ams-student-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <nav
+          class="mobile-bottom-nav"
+          id="mobile-bottom-nav"
+          aria-label="Mobile navigation"
+        ></nav>
+      </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/ams-data.js"></script>
+    <script src="js/ams.js"></script>
+    <script>
+      const AMSApp = {
+        currentScreen: "ams-dashboard",
+        titles: {
+          "ams-dashboard": "Admission Dashboard",
+          "ams-students": "Admission Student List",
+        },
+
+        init() {
+          this.setupTheme();
+          this.showScreen("ams-dashboard");
+          window.AMSModule?.init?.();
+        },
+
+        showScreen(name) {
+          document.querySelectorAll(".screen").forEach((screen) => {
+            screen.classList.remove("active");
+          });
+          document.getElementById(`screen-${name}`)?.classList.add("active");
+          document.querySelectorAll("[data-screen]").forEach((item) => {
+            item.classList.toggle("active", item.dataset.screen === name);
+          });
+          this.currentScreen = name;
+          const title = document.getElementById("page-section-title");
+          if (title) title.textContent = this.titles[name] || "";
+          this.renderMobileBottomNav();
+        },
+
+        renderMobileBottomNav() {
+          const nav = document.getElementById("mobile-bottom-nav");
+          if (!nav) return;
+          const items = [
+            { screen: "ams-dashboard", icon: "fa-building-columns", label: "Dashboard" },
+            { screen: "ams-students", icon: "fa-users-viewfinder", label: "Students" },
+          ];
+          nav.classList.add("mobile-bottom-nav--compact");
+          nav.innerHTML = items
+            .map((item) => `
+              <button class="mobile-bottom-nav__item ${this.currentScreen === item.screen ? "active" : ""}" type="button" data-mobile-screen="${item.screen}">
+                <i class="fas ${item.icon}"></i>
+                <span>${item.label}</span>
+              </button>
+            `)
+            .join("");
+          nav.querySelectorAll("[data-mobile-screen]").forEach((button) => {
+            button.addEventListener("click", () => this.showScreen(button.dataset.mobileScreen));
+          });
+        },
+
+        setupTheme() {
+          const themeToggle = document.getElementById("theme-toggle");
+          const themeIcon = document.getElementById("theme-icon");
+          const saved = localStorage.getItem("pa-theme");
+          const isDark = saved === "dark";
+          document.body.classList.toggle("dark", isDark);
+          if (themeIcon) themeIcon.className = isDark ? "fas fa-moon" : "fas fa-sun";
+          themeToggle?.addEventListener("click", () => {
+            const nowDark = !document.body.classList.contains("dark");
+            document.body.classList.toggle("dark", nowDark);
+            if (themeIcon) themeIcon.className = nowDark ? "fas fa-moon" : "fas fa-sun";
+            localStorage.setItem("pa-theme", nowDark ? "dark" : "light");
+          });
+        },
+      };
+
+      document.addEventListener("DOMContentLoaded", () => AMSApp.init());
+    </script>
+  </body>
+</html>

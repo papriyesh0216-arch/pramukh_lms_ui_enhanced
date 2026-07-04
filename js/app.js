@@ -433,7 +433,9 @@ const App = {
     }
     if (inquirySubmenu) {
       inquirySubmenu.classList.toggle('open', isInquiryScreen);
+      inquirySubmenu.style.maxHeight = isInquiryScreen ? '240px' : '0';
     }
+
   },
 
   showScreen(name) {

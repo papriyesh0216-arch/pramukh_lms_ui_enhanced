@@ -41,7 +41,7 @@
           <div>
             <div class="inquiry-eyebrow">Inquiry Form</div>
             <h1 class="panel-title">Add Inquiry</h1>
-            <p class="panel-subtitle">Capture a student lead with the same field set used in the CRM modal.</p>
+            <p class="panel-subtitle">Capture student inquiry details with the same field set used in the CRM modal.</p>
           </div>
           <div class="inquiry-hero-meta">
             <span class="badge badge-primary">Premium Entry</span>
@@ -53,81 +53,83 @@
           <div class="modal-grid-2">
             <div class="form-field">
               <label>Full Name *</label>
-              <input type="text" id="i-name" required placeholder="Full Name">
+              <input type="text" id="i-name" required >
             </div>
             <div class="form-field">
               <label>Contact No. *</label>
-              <input type="tel" id="i-phone" required placeholder="10-digit number">
+              <input type="tel" id="i-phone" required >
             </div>
             <div class="form-field">
               <label>Email ID *</label>
-              <input type="email" id="i-email" required placeholder="email@gmail.com">
+              <input type="email" id="i-email" required >
             </div>
             <div class="form-field">
-              <label>Pincode *</label>
-              <input type="text" id="i-pincode" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit pincode">
+              <label>State *</label>
+              <select id="i-state" required>
+                <option value="">Select State</option>
+              </select>
             </div>
             <div class="form-field">
-              <label>City *</label>
-              <input type="text" id="i-city" required placeholder="City name">
+              <label>District *</label>
+              <select id="i-district" required disabled>
+                <option value="">Select District</option>
+              </select>
             </div>
             <div class="form-field">
               <label>Academic Status *</label>
               <select id="i-academic-status" required>
-                <option value="HSC Running">HSC Running</option>
-                <option value="HSC Completed">HSC Completed</option>
-                <option value="Graduation Running" selected>Graduation Running</option>
-                <option value="Graduation Completed">Graduation Completed</option>
-                <option value="Post Graduation">Post Graduation</option>
+                <option value="School Student">School Student</option>
+                <option value="College Student" selected>College Student</option>
+                <option value="Graducation Completed">Graducation Completed</option>
               </select>
             </div>
             <div class="form-field span-2">
-              <label>Inquiry For (Course Selection) *</label>
-              <div class="radio-card-grid cols-3">
+              <label>Inquiry For *</label>
+              <div class="radio-card-grid cols-2 inquiry-type-grid">
                 <label class="radio-card">
-                  <input type="radio" name="course" value="UPSC Foundation" checked required>
+                  <input type="radio" name="inquiryType" value="General Inquiry" checked required>
                   <span class="radio-mark"></span>
-                  <span><span class="radio-title">UPSC Foundation</span><span class="radio-subtitle">Foundation batch</span></span>
+                  <span><span class="radio-title">General inquiry</span><span class="radio-subtitle">Ask a specific question</span></span>
                 </label>
                 <label class="radio-card">
-                  <input type="radio" name="course" value="GPSC Class 1-2" required>
+                  <input type="radio" name="inquiryType" value="Course Inquiry" required>
                   <span class="radio-mark"></span>
-                  <span><span class="radio-title">GPSC Class 1-2</span><span class="radio-subtitle">Class 1-2 preparation</span></span>
-                </label>
-                <label class="radio-card">
-                  <input type="radio" name="course" value="Sankalp Programme" required>
-                  <span class="radio-mark"></span>
-                  <span><span class="radio-title">Sankalp Programme</span><span class="radio-subtitle">Residential preparation</span></span>
-                </label>
-                <label class="radio-card">
-                  <input type="radio" name="course" value="IAS/IPS Coaching" required>
-                  <span class="radio-mark"></span>
-                  <span><span class="radio-title">IAS/IPS Coaching</span><span class="radio-subtitle">Advanced civil services</span></span>
-                </label>
-                <label class="radio-card">
-                  <input type="radio" name="course" value="Interview Prep" required>
-                  <span class="radio-mark"></span>
-                  <span><span class="radio-title">Interview Prep</span><span class="radio-subtitle">Interview guidance</span></span>
-                </label>
-                <label class="radio-card">
-                  <input type="radio" name="course" value="Other" required>
-                  <span class="radio-mark"></span>
-                  <span><span class="radio-title">Other</span><span class="radio-subtitle">Counselor to confirm</span></span>
+                  <span><span class="radio-title">Course Inquiry</span><span class="radio-subtitle">Select course details</span></span>
                 </label>
               </div>
             </div>
-            <div class="form-field span-2">
-              <label>Preferred Mode of Learning *</label>
+            <div class="form-field span-2" id="i-course-wrap" hidden>
+              <label>Course *</label>
+              <select id="i-course">
+                <option value="">Select Course</option>
+                <option value="UPSC">UPSC</option>
+                <option value="GPSC-Class1,2">GPSC Class 1&2</option>
+                <option value="Class -3">Class 3</option>
+                <option value="Sankalp">Sankalp (For School Student)</option>
+                <option value="Sampurn">Sampurn (For College Student)</option>
+              </select>
+            </div>
+            <div class="form-field" id="i-batch-wrap" hidden>
+              <label>Batch Selection *</label>
+              <select id="i-batch">
+                <option value="">Select Batch</option>
+                <option value="Foundation">Foundation</option>
+                <option value="mentorship">Mentorship</option>
+                <option value="Interview">Interview</option>
+                <option value="mains">Mains</option>
+              </select>
+            </div>
+            <div class="form-field" id="i-mode-wrap" hidden>
+              <label>Mode Of Learning *</label>
               <div class="radio-inline-group">
-                <label class="radio-pill"><input type="radio" name="mode" value="Classroom" checked required>Classroom</label>
-                <label class="radio-pill"><input type="radio" name="mode" value="Online" required>Online</label>
-                <label class="radio-pill"><input type="radio" name="mode" value="Residential Mode" required>Residential Mode</label>
-                <label class="radio-pill"><input type="radio" name="mode" value="Hybrid" required>Hybrid</label>
+                <label class="radio-pill"><input type="radio" name="mode" value="residental">Residental</label>
+                <label class="radio-pill"><input type="radio" name="mode" value="Class">ClassRoom</label>
+                <label class="radio-pill"><input type="radio" name="mode" value="Online">Online</label>
               </div>
             </div>
-            <div class="form-field full">
-              <label>Any Specific Query (Optional)</label>
-              <textarea id="i-query" rows="3" placeholder="Write questions, timing preference, or course doubts..."></textarea>
+            <div class="form-field full" id="i-query-wrap">
+              <label id="i-query-label">Any Specific Query *</label>
+              <textarea id="i-query" rows="3" required ></textarea>
             </div>
           </div>
 
@@ -140,6 +142,7 @@
     </main>
   </div>
 
+  <script src="js/indian-locations.js"></script>
   <script src="js/inquiry-form.js"></script>
 </body>
 </html>
