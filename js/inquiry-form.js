@@ -91,9 +91,11 @@ const InquiryFormPage = {
   setupInquiryFields() {
     const typeInputs = Array.from(document.querySelectorAll('input[name="inquiryType"]'));
     const courseSelect = document.getElementById('i-course');
+    const academicStatusSelect = document.getElementById('i-academic-status');
     if (!typeInputs.length || !courseSelect) return;
     typeInputs.forEach((input) => input.addEventListener('change', () => this.updateInquiryFields()));
     courseSelect.addEventListener('change', () => this.updateInquiryFields());
+    academicStatusSelect?.addEventListener('change', () => this.updateInquiryFields());
     this.updateInquiryFields();
   },
 
@@ -106,12 +108,13 @@ const InquiryFormPage = {
 
     // Goal 1: If Academic Status is "School Student", default to Course Inquiry and set Course to "Sankalp".
     const academicStatus = document.getElementById('i-academic-status');
-    if (academicStatus && academicStatus.value === 'School Student') {
+    const isSchoolStudent = academicStatus?.value === 'School Student';
+    if (isSchoolStudent) {
       const courseRadio = document.querySelector('input[name="inquiryType"][value="Course Inquiry"]');
       const generalRadio = document.querySelector('input[name="inquiryType"][value="General Inquiry"]');
       if (courseRadio) courseRadio.checked = true;
       if (generalRadio) generalRadio.checked = false;
-      if (courseSelect) courseSelect.value = 'Sankalp';
+      if (courseSelect && courseSelect.value !== 'Sankalp') courseSelect.value = 'Sankalp';
     }
 
     // Re-evaluate inquiryType after mutations above.
@@ -155,17 +158,17 @@ const InquiryFormPage = {
     });
 
     const academicStatusValue = document.getElementById('i-academic-status')?.value;
-    const isSchoolStudent = academicStatusValue === 'School Student';
+    const isSchoolStudentQuery = academicStatusValue === 'School Student';
 
     if (query) {
       // Goal 1: For Course Inquiry make query required only in the School Student default flow.
-      query.required = isCourseInquiry ? isSchoolStudent : true;
+      query.required = isCourseInquiry ? isSchoolStudentQuery : true;
 
     }
 
     if (queryLabel) {
       if (isCourseInquiry) {
-        queryLabel.textContent = isSchoolStudent ? 'Any Specific Query *' : 'Any Specific Query (Optional)';
+        queryLabel.textContent = isSchoolStudentQuery ? 'Any Specific Query *' : 'Any Specific Query (Optional)';
       } else {
         queryLabel.textContent = 'Any Specific Query *';
       }
@@ -262,8 +265,9 @@ const InquiryFormPage = {
 
       // Goal 2: For Class 3, both batch and mode should be optional.
       const isClass3 = requiresCourse && course === 'Class -3';
-      const missingMode = requiresBatchMode && !mode && !isClass3;
-      const missingBatch = requiresBatchMode && !batch && !isClass3;
+      const shouldRequireBatchMode = requiresBatchMode && !isClass3;
+      const missingMode = shouldRequireBatchMode && !mode;
+      const missingBatch = shouldRequireBatchMode && !batch;
 
       if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (!requiresCourse && !query) || (requiresCourse && !course) || missingMode || missingBatch) {
 

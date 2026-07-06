@@ -1378,10 +1378,10 @@ const LeadsModule = {
   updateSortButtonLabel() {
     const button = document.getElementById('sort-toggle-btn');
     if (!button) return;
-    button.classList.remove('icon-only');
-    button.title = this.getSortLabel();
-    button.setAttribute('aria-label', this.getSortLabel());
-    button.innerHTML = `<i class="fas fa-sort-amount-down"></i><span>${this.getSortLabel()}</span>`;
+    const label = this.getSortLabel();
+    this.makeIconOnlyButton(button, label);
+    button.title = label;
+    button.setAttribute('aria-label', label);
   },
 
   buildFilterPanel() {
@@ -1392,19 +1392,19 @@ const LeadsModule = {
     )).join('');
     filterPanel.innerHTML = `
       <div class="filter-field">
-        <label>Search (Name, Number, Email)</label>
-        <input type="text" id="filter-search-input" placeholder="Search name, number, email" oninput="LeadsModule.applyFilters()">
+        <label>Search</label>
+        <input type="text" id="filter-search-input" placeholder="Name, number, email" oninput="LeadsModule.applyFilters()">
       </div>
       <div class="filter-field">
-        <label>Courses</label>
+        <label>Course</label>
         <select id="filter-course" onchange="LeadsModule.applyFilters()">
           <option value="all">All Courses</option>
           <option value="General Inquiry">General Inquiry</option>
           <option value="UPSC">UPSC</option>
           <option value="GPSC-Class1,2">GPSC Class 1&2</option>
           <option value="Class -3">Class 3</option>
-          <option value="Sankalp">Sankalp (For School Student)</option>
-          <option value="Sampurn">Sampurn (For College Student)</option>
+          <option value="Sankalp">Sankalp</option>
+          <option value="Sampurn">Sampurn</option>
         </select>
       </div>
       <div class="filter-field">
@@ -1431,26 +1431,12 @@ const LeadsModule = {
         <input type="text" id="filter-district" placeholder="District" oninput="LeadsModule.applyFilters()">
       </div>
       <div class="filter-field">
-        <label>Mode of Learning</label>
+        <label>Mode</label>
         <select id="filter-mode" onchange="LeadsModule.applyFilters()">
           <option value="all">All Modes</option>
           <option value="residental">Residental</option>
-          <option value="Class">ClassRoom</option>
+          <option value="Class">Classroom</option>
           <option value="Online">Online</option>
-        </select>
-      </div>
-      <div class="filter-field filter-field-wide">
-        <label>Date Range</label>
-        <div class="date-range-filter">
-          <input type="date" id="filter-date-from" onchange="LeadsModule.applyFilters()">
-          <input type="date" id="filter-date-to" onchange="LeadsModule.applyFilters()">
-        </div>
-      </div>
-      <div class="filter-field">
-        <label>Lead Segment</label>
-        <select id="filter-segment" onchange="LeadsModule.applyFilters()">
-          <option value="all">All Segments</option>
-          ${(window.APP_DATA.SEGMENT_DATA || []).filter((segment) => !segment.archived).map((segment) => `<option value="${segment.name}">${segment.name}</option>`).join('')}
         </select>
       </div>
       <div class="filter-field">
@@ -1458,7 +1444,7 @@ const LeadsModule = {
         <input type="text" id="filter-inquiry-number" placeholder="Inquiry number" oninput="LeadsModule.applyFilters()">
       </div>
       <div class="filter-field">
-        <label>Assign Inquiry</label>
+        <label>Assigned To</label>
         <select id="filter-assign-inquiry" onchange="LeadsModule.applyFilters()">
           <option value="all">All Assigned</option>
           <option value="Bharat Sir">Bharat Sir</option>
@@ -2849,6 +2835,7 @@ const LeadsModule = {
       'export-leads-btn': 'Export',
       'download-leads-btn': 'Download',
       'email-all-btn': 'Email All',
+      'sort-toggle-btn': 'Sort Leads',
       'view-toggle-btn': 'Calendar View',
       'collapse-toggle-btn': 'Expand All'
     };
@@ -2971,9 +2958,7 @@ const LeadsModule = {
     const targetMode = this.viewMode === 'row' ? 'calendar' : 'row';
     const icon = targetMode === 'calendar' ? 'fa-calendar-alt' : 'fa-list';
     const label = targetMode === 'calendar' ? 'Calendar View' : 'Row View';
-    button.classList.add('icon-only');
-    button.title = label;
-    button.setAttribute('aria-label', label);
+    this.makeIconOnlyButton(button, label);
     button.innerHTML = `<i class="fas ${icon}"></i>`;
   },
 
