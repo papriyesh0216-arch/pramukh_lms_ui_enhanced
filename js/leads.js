@@ -19,6 +19,12 @@ const LeadsModule = {
   filterMode: 'all',
   filterAcademicStatus: 'all',
   filterCity: '',
+  filterBatch: 'all',
+  filterState: '',
+  filterDateFrom: '',
+  filterDateTo: '',
+  filterInquiryNumber: '',
+  filterAssignInquiry: 'all',
   filterInquiryDate: '',
   filterFollowupDate: '',
   filterSegment: 'all',
@@ -168,10 +174,10 @@ const LeadsModule = {
   },
 
   normalizeInquiryCourse(course) {
-    if (['General Inquiry', 'UPSC', 'GPSC-Class1,2', 'GPSC', 'Class -3', 'Sankalp', 'Sampurn'].includes(course)) return course;
+    if (['General Inquiry', 'UPSC', 'GPSC-Class1,2', 'Class -3', 'Sankalp', 'Sampurn'].includes(course)) return course;
     if (String(course || '').includes('GPSC-Class 1,2')) return 'GPSC-Class1,2';
     if (String(course || '').includes('GPSC Class 1-2')) return 'GPSC-Class1,2';
-    if (String(course || '').includes('GPSC')) return 'GPSC';
+    if (String(course || '').includes('GPSC')) return 'GPSC-Class1,2';
     if (String(course || '').includes('Class -3')) return 'Class -3';
     if (String(course || '').includes('Sankalp')) return 'Sankalp';
     if (String(course || '').includes('Sampurn')) return 'Sampurn';
@@ -181,13 +187,13 @@ const LeadsModule = {
 
   normalizeLearningMode(mode, course) {
     if (!this.courseNeedsBatchMode(course)) return '';
-    if (mode === 'Online') return 'Online';
     if (mode === 'residental' || mode === 'Residential Mode') return 'residental';
+    if (mode === 'Online') return 'Online';
     return 'Class';
   },
 
   courseNeedsBatchMode(course) {
-    return ['UPSC', 'GPSC-Class1,2', 'GPSC', 'Class -3'].includes(course);
+    return ['UPSC', 'GPSC-Class1,2', 'Class -3'].includes(course);
   },
 
   applyRoleScope(rows) {
@@ -339,7 +345,13 @@ const LeadsModule = {
     this.filterCounselor = document.getElementById('filter-counselor')?.value || this.filterCounselor || 'all';
     this.filterMode = document.getElementById('filter-mode')?.value || this.filterMode || 'all';
     this.filterAcademicStatus = document.getElementById('filter-academic-status')?.value || this.filterAcademicStatus || 'all';
+    this.filterBatch = document.getElementById('filter-batch')?.value || this.filterBatch || 'all';
+    this.filterState = document.getElementById('filter-state')?.value || this.filterState || '';
     this.filterCity = document.getElementById('filter-district')?.value || this.filterCity || '';
+    this.filterDateFrom = document.getElementById('filter-date-from')?.value || this.filterDateFrom || '';
+    this.filterDateTo = document.getElementById('filter-date-to')?.value || this.filterDateTo || '';
+    this.filterInquiryNumber = document.getElementById('filter-inquiry-number')?.value || this.filterInquiryNumber || '';
+    this.filterAssignInquiry = document.getElementById('filter-assign-inquiry')?.value || this.filterAssignInquiry || 'all';
     this.filterInquiryDate = document.getElementById('filter-inquiry-date')?.value || this.filterInquiryDate || '';
     this.filterFollowupDate = document.getElementById('filter-followup-date')?.value || this.filterFollowupDate || '';
     this.filterSegment = document.getElementById('filter-segment')?.value || this.filterSegment || 'all';
@@ -350,6 +362,13 @@ const LeadsModule = {
     if (this.filterMode !== 'all') {
       result = result.filter(l => l.mode === this.filterMode);
     }
+    if (this.filterBatch !== 'all') {
+      result = result.filter(l => (l.batch || '') === this.filterBatch);
+    }
+    if (this.filterState) {
+      const state = this.filterState.toLowerCase();
+      result = result.filter(l => this.getLeadState(l).toLowerCase().includes(state));
+    }
     if (this.filterAcademicStatus !== 'all') {
       result = result.filter(l => l.academicStatus === this.filterAcademicStatus);
     }
@@ -359,6 +378,22 @@ const LeadsModule = {
     }
     if (this.filterInquiryDate) {
       result = result.filter(l => this.dateKey(l.inquiryDate) === this.filterInquiryDate);
+    }
+    if (this.filterDateFrom || this.filterDateTo) {
+      result = result.filter(l => {
+        const inquiryDate = this.dateKey(l.inquiryDate);
+        if (!inquiryDate) return false;
+        if (this.filterDateFrom && inquiryDate < this.filterDateFrom) return false;
+        if (this.filterDateTo && inquiryDate > this.filterDateTo) return false;
+        return true;
+      });
+    }
+    if (this.filterInquiryNumber) {
+      const inquiryNumber = this.filterInquiryNumber.toLowerCase();
+      result = result.filter(l => (l.enqNo || '').toLowerCase().includes(inquiryNumber));
+    }
+    if (this.filterAssignInquiry !== 'all') {
+      result = result.filter(l => this.filterAssignInquiry === 'Unassigned' ? !l.assignedTo || l.assignedTo === 'Unassigned' : (l.assignedTo || l.owner) === this.filterAssignInquiry);
     }
     if (this.filterFollowupDate) {
       result = result.filter(l => this.dateKey(l.followupDate) === this.filterFollowupDate);
@@ -687,10 +722,12 @@ const LeadsModule = {
     if (!toggleBtn) return;
     if (cards.length > 0 && expanded.length === cards.length) {
       this.allExpanded = true;
-      toggleBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Collapse All';
+      toggleBtn.innerHTML = '<i class="fas fa-compress-alt"></i>';
+      this.makeIconOnlyButton(toggleBtn, 'Collapse All');
     } else {
       this.allExpanded = false;
-      toggleBtn.innerHTML = '<i class="fas fa-expand-alt"></i> Expand All';
+      toggleBtn.innerHTML = '<i class="fas fa-expand-alt"></i>';
+      this.makeIconOnlyButton(toggleBtn, 'Expand All');
     }
   },
 
@@ -1008,14 +1045,107 @@ const LeadsModule = {
     this.showToast(`Sorted by ${opt.replace('-', ' ')}`, 'info');
   },
 
+  buildFilterPanel() {
+    const filterPanel = document.getElementById('leads-filter-panel');
+    if (!filterPanel) return;
+    const stateOptions = Object.keys(typeof INDIAN_STATE_DISTRICTS !== 'undefined' ? INDIAN_STATE_DISTRICTS : {}).map((state) => (
+      `<option value="${state}">${state}</option>`
+    )).join('');
+    filterPanel.innerHTML = `
+      <div class="filter-field">
+        <label>Search (Name, Number, Email)</label>
+        <input type="text" id="filter-search-input" placeholder="Search name, number, email" oninput="LeadsModule.applyFilters()">
+      </div>
+      <div class="filter-field">
+        <label>Courses</label>
+        <select id="filter-course" onchange="LeadsModule.applyFilters()">
+          <option value="all">All Courses</option>
+          <option value="General Inquiry">General Inquiry</option>
+          <option value="UPSC">UPSC</option>
+          <option value="GPSC-Class1,2">GPSC Class 1&2</option>
+          <option value="Class -3">Class 3</option>
+          <option value="Sankalp">Sankalp (For School Student)</option>
+          <option value="Sampurn">Sampurn (For College Student)</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>Batch</label>
+        <select id="filter-batch" onchange="LeadsModule.applyFilters()">
+          <option value="all">All Batches</option>
+          <option value="Foundation">Foundation</option>
+          <option value="mentorship">Mentorship</option>
+          <option value="Interview">Interview</option>
+          <option value="mains">Mains</option>
+          <option value="master-batch">Master batch</option>
+          <option value="others">Other</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>State</label>
+        <select id="filter-state" onchange="LeadsModule.applyFilters()">
+          <option value="">All States</option>
+          ${stateOptions}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>District</label>
+        <input type="text" id="filter-district" placeholder="District" oninput="LeadsModule.applyFilters()">
+      </div>
+      <div class="filter-field">
+        <label>Mode of Learning</label>
+        <select id="filter-mode" onchange="LeadsModule.applyFilters()">
+          <option value="all">All Modes</option>
+          <option value="residental">Residental</option>
+          <option value="Class">ClassRoom</option>
+          <option value="Online">Online</option>
+        </select>
+      </div>
+      <div class="filter-field filter-field-wide">
+        <label>Date Range</label>
+        <div class="date-range-filter">
+          <input type="date" id="filter-date-from" onchange="LeadsModule.applyFilters()">
+          <input type="date" id="filter-date-to" onchange="LeadsModule.applyFilters()">
+        </div>
+      </div>
+      <div class="filter-field">
+        <label>Lead Segment</label>
+        <select id="filter-segment" onchange="LeadsModule.applyFilters()">
+          <option value="all">All Segments</option>
+          ${(window.APP_DATA.SEGMENT_DATA || []).filter((segment) => !segment.archived).map((segment) => `<option value="${segment.name}">${segment.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>Inquiry Number</label>
+        <input type="text" id="filter-inquiry-number" placeholder="Inquiry number" oninput="LeadsModule.applyFilters()">
+      </div>
+      <div class="filter-field">
+        <label>Assign Inquiry</label>
+        <select id="filter-assign-inquiry" onchange="LeadsModule.applyFilters()">
+          <option value="all">All Assigned</option>
+          <option value="Bharat Sir">Bharat Sir</option>
+          <option value="Vivek Sir">Vivek Sir</option>
+          <option value="Pooja Shah">Pooja Shah</option>
+          <option value="Jignesh Trivedi">Jignesh Trivedi</option>
+          <option value="Unassigned">Unassigned</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-outline btn-sm" onclick="LeadsModule.resetFilters()">Reset</button>
+      </div>
+    `;
+  },
+
   setupFilters() {
+    this.buildFilterPanel();
     const filterBtn = document.getElementById('filter-toggle-btn');
     const filterPanel = document.getElementById('leads-filter-panel');
     if (filterBtn && filterPanel) {
+      filterPanel.classList.add('is-hidden');
+      filterBtn.classList.remove('active');
       filterBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const isHidden = filterPanel.style.display === 'none';
-        filterPanel.style.display = isHidden ? 'flex' : 'none';
+        const isHidden = filterPanel.classList.contains('is-hidden');
+        filterPanel.classList.toggle('is-hidden', !isHidden);
         filterBtn.classList.toggle('active', isHidden);
       });
     }
@@ -1039,6 +1169,12 @@ const LeadsModule = {
     this.filterMode = 'all';
     this.filterAcademicStatus = 'all';
     this.filterCity = '';
+    this.filterBatch = 'all';
+    this.filterState = '';
+    this.filterDateFrom = '';
+    this.filterDateTo = '';
+    this.filterInquiryNumber = '';
+    this.filterAssignInquiry = 'all';
     this.filterInquiryDate = '';
     this.filterFollowupDate = '';
     this.filterSegment = 'all';
@@ -1052,11 +1188,11 @@ const LeadsModule = {
     const searchInput = document.getElementById('filter-search-input');
     if (searchInput) searchInput.value = '';
 
-    ['filter-counselor', 'filter-mode', 'filter-academic-status', 'filter-segment'].forEach(id => {
+    ['filter-counselor', 'filter-mode', 'filter-academic-status', 'filter-segment', 'filter-batch', 'filter-assign-inquiry'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = 'all';
     });
-    ['filter-district', 'filter-inquiry-date', 'filter-followup-date'].forEach(id => {
+    ['filter-district', 'filter-state', 'filter-date-from', 'filter-date-to', 'filter-inquiry-number', 'filter-inquiry-date', 'filter-followup-date'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -1428,11 +1564,11 @@ const LeadsModule = {
     `;
   },
 
-  renderModeOption(value, selected) {
+  renderModeOption(value, selected, label = value) {
     return `
       <label class="radio-pill">
         <input type="radio" name="m-mode" value="${value}" ${selected === value ? 'checked' : ''} required>
-        ${value}
+        ${label}
       </label>
     `;
   },
@@ -1481,10 +1617,29 @@ const LeadsModule = {
       input.addEventListener('change', () => this.updateLeadInquiryFields());
     });
     document.getElementById('m-course')?.addEventListener('change', () => this.updateLeadInquiryFields());
+    document.getElementById('m-academic-status')?.addEventListener('change', () => {
+      this.applyLeadAcademicStatusDefaults();
+      this.updateLeadInquiryFields();
+    });
+    this.applyLeadAcademicStatusDefaults();
     this.updateLeadInquiryFields();
   },
 
+  applyLeadAcademicStatusDefaults() {
+    const academicStatus = document.getElementById('m-academic-status')?.value;
+    const courseInquiry = document.querySelector('input[name="m-inquiry-type"][value="Course Inquiry"]');
+    const generalInquiry = document.querySelector('input[name="m-inquiry-type"][value="General Inquiry"]');
+    const courseSelect = document.getElementById('m-course');
+    if (academicStatus !== 'School Student' || !courseInquiry || !courseSelect) return;
+
+    courseInquiry.checked = true;
+    if (generalInquiry) generalInquiry.checked = false;
+    courseSelect.value = 'Sankalp';
+  },
+
   updateLeadInquiryFields() {
+    const form = document.getElementById('add-lead-form');
+    const optionalForm = form?.dataset.optional === 'true';
     const inquiryType = document.querySelector('input[name="m-inquiry-type"]:checked')?.value || 'General Inquiry';
     const courseSelect = document.getElementById('m-course');
     const batchSelect = document.getElementById('m-batch');
@@ -1493,6 +1648,9 @@ const LeadsModule = {
     const queryLabel = document.getElementById('m-query-label');
     const isCourseInquiry = inquiryType === 'Course Inquiry';
     const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
+    const academicStatus = document.getElementById('m-academic-status')?.value;
+    const isSchoolStudent = academicStatus === 'School Student';
+    const isClass3Course = isCourseInquiry && courseSelect?.value === 'Class -3';
 
     document.getElementById('m-course-wrap').hidden = !isCourseInquiry;
     document.getElementById('m-batch-wrap').hidden = !isCourseInquiry || !needsBatchMode;
@@ -1500,27 +1658,61 @@ const LeadsModule = {
     document.getElementById('m-query-wrap').hidden = false;
 
     if (courseSelect) {
-      courseSelect.required = isCourseInquiry;
+      courseSelect.required = !optionalForm && isCourseInquiry;
       if (!isCourseInquiry) courseSelect.value = '';
     }
     if (batchSelect) {
-      batchSelect.required = isCourseInquiry && needsBatchMode;
+      this.renderLeadBatchOptions(batchSelect, courseSelect?.value);
+      batchSelect.required = !optionalForm && isCourseInquiry && needsBatchMode && !isClass3Course;
       if (!needsBatchMode) batchSelect.value = '';
     }
     modeInputs.forEach((input) => {
-      input.required = isCourseInquiry && needsBatchMode;
+      input.required = !optionalForm && isCourseInquiry && needsBatchMode && !isClass3Course;
       if (!needsBatchMode) input.checked = false;
     });
     if (query) {
-      query.required = !isCourseInquiry;
+      query.required = !optionalForm && (isCourseInquiry ? isSchoolStudent : true);
     }
     if (queryLabel) {
-      queryLabel.textContent = isCourseInquiry ? 'Any Specific Query (Optional)' : 'Any Specific Query *';
+      if (optionalForm) {
+        queryLabel.textContent = 'Any Specific Query (Optional)';
+      } else if (isCourseInquiry) {
+        queryLabel.textContent = isSchoolStudent ? 'Any Specific Query *' : 'Any Specific Query (Optional)';
+      } else {
+        queryLabel.textContent = 'Any Specific Query *';
+      }
     }
+  },
+
+  getLeadBatchOptions(course) {
+    if (course === 'Class -3') {
+      return [
+        { value: 'master-batch', label: 'Master batch' },
+        { value: 'others', label: 'Other' }
+      ];
+    }
+    return [
+      { value: 'Foundation', label: 'Foundation' },
+      { value: 'mentorship', label: 'Mentorship' },
+      { value: 'Interview', label: 'Interview' },
+      { value: 'mains', label: 'Mains' }
+    ];
+  },
+
+  renderLeadBatchOptions(batchSelect, course) {
+    const selected = batchSelect.value;
+    const options = this.getLeadBatchOptions(course);
+    batchSelect.innerHTML = '<option value="">Select Batch</option>' + options.map((option) => (
+      `<option value="${option.value}">${option.label}</option>`
+    )).join('');
+    batchSelect.value = options.some((option) => option.value === selected) ? selected : '';
   },
 
   showAddEditModal(lead = null) {
     const isEdit = lead !== null;
+    const optionalForm = !isEdit;
+    const requiredMark = optionalForm ? '' : ' *';
+    const requiredAttr = optionalForm ? '' : ' required';
     const title = isEdit ? 'Edit Lead Details' : 'Add New Inquiry';
     const name = isEdit ? lead.name : '';
     const phone = isEdit ? lead.phone : '';
@@ -1543,88 +1735,87 @@ const LeadsModule = {
           <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
         </div>
         <div class="custom-modal-body">
-          <form id="add-lead-form" onsubmit="event.preventDefault(); LeadsModule.saveLeadForm(${isEdit ? lead.id : 'null'})">
+          <form id="add-lead-form" data-optional="${optionalForm ? 'true' : 'false'}" onsubmit="event.preventDefault(); LeadsModule.saveLeadForm(${isEdit ? lead.id : 'null'})">
             <div class="modal-grid-2">
               <div class="form-field">
-                <label>Full Name *</label>
-                <input type="text" id="m-name" value="${name}" required placeholder="Full Name">
+                <label>Full Name${requiredMark}</label>
+                <input type="text" id="m-name" value="${name}"${requiredAttr} placeholder="Full Name">
               </div>
               <div class="form-field">
-                <label>Contact No. *</label>
-                <input type="tel" id="m-phone" value="${phone}" required placeholder="10-digit number">
+                <label>Contact No.${requiredMark}</label>
+                <input type="tel" id="m-phone" value="${phone}"${requiredAttr} placeholder="10-digit number">
               </div>
               <div class="form-field">
-                <label>Email ID *</label>
-                <input type="email" id="m-email" value="${email}" required placeholder="email@gmail.com">
+                <label>Email ID${requiredMark}</label>
+                <input type="email" id="m-email" value="${email}"${requiredAttr} placeholder="email@gmail.com">
               </div>
               <div class="form-field">
-                <label>State *</label>
-                <select id="m-state" required>
+                <label>State${requiredMark}</label>
+                <select id="m-state"${requiredAttr}>
                   <option value="">Select State</option>
                 </select>
               </div>
               <div class="form-field">
-                <label>District *</label>
-                <select id="m-district" required disabled>
+                <label>District${requiredMark}</label>
+                <select id="m-district"${requiredAttr} disabled>
                   <option value="">Select District</option>
                 </select>
               </div>
               <div class="form-field">
-                <label>Academic Status *</label>
-                <select id="m-academic-status" required>
+                <label>Academic Status${requiredMark}</label>
+                <select id="m-academic-status"${requiredAttr}>
                   <option value="School Student" ${academicStatus === 'School Student' ? 'selected' : ''}>School Student</option>
                   <option value="College Student" ${academicStatus === 'College Student' ? 'selected' : ''}>College Student</option>
                   <option value="Graducation Completed" ${academicStatus === 'Graducation Completed' ? 'selected' : ''}>Graducation Completed</option>
                 </select>
               </div>
               <div class="form-field span-2">
-                <label>Inquiry For *</label>
+                <label>Inquiry For${requiredMark}</label>
                 <div class="radio-card-grid cols-2">
                   <label class="radio-card">
-                    <input type="radio" name="m-inquiry-type" value="General Inquiry" ${inquiryType === 'General Inquiry' ? 'checked' : ''} required>
+                    <input type="radio" name="m-inquiry-type" value="General Inquiry" ${inquiryType === 'General Inquiry' ? 'checked' : ''}${requiredAttr}>
                     <span class="radio-mark"></span>
                     <span><span class="radio-title">General inquiry</span><span class="radio-subtitle">Ask a specific question</span></span>
                   </label>
                   <label class="radio-card">
-                    <input type="radio" name="m-inquiry-type" value="Course Inquiry" ${inquiryType === 'Course Inquiry' ? 'checked' : ''} required>
+                    <input type="radio" name="m-inquiry-type" value="Course Inquiry" ${inquiryType === 'Course Inquiry' ? 'checked' : ''}${requiredAttr}>
                     <span class="radio-mark"></span>
                     <span><span class="radio-title">Course Inquiry</span><span class="radio-subtitle">Select course details</span></span>
                   </label>
                 </div>
               </div>
               <div class="form-field span-2" id="m-course-wrap" hidden>
-                <label>Course *</label>
+                <label>Course${requiredMark}</label>
                 <select id="m-course">
                   <option value="">Select Course</option>
                   <option value="UPSC" ${course === 'UPSC' ? 'selected' : ''}>UPSC</option>
-                  <option value="GPSC-Class1,2" ${course === 'GPSC-Class1,2' ? 'selected' : ''}>GPSC-Class1,2</option>
-                  <option value="GPSC" ${course === 'GPSC' ? 'selected' : ''}>GPSC</option>
-                  <option value="Class -3" ${course === 'Class -3' ? 'selected' : ''}>Class -3</option>
-                  <option value="Sankalp" ${course === 'Sankalp' ? 'selected' : ''}>Sankalp</option>
-                  <option value="Sampurn" ${course === 'Sampurn' ? 'selected' : ''}>Sampurn</option>
+                  <option value="GPSC-Class1,2" ${course === 'GPSC-Class1,2' ? 'selected' : ''}>GPSC Class 1&2</option>
+                  <option value="Class -3" ${course === 'Class -3' ? 'selected' : ''}>Class 3</option>
+                  <option value="Sankalp" ${course === 'Sankalp' ? 'selected' : ''}>Sankalp (For School Student)</option>
+                  <option value="Sampurn" ${course === 'Sampurn' ? 'selected' : ''}>Sampurn (For College Student)</option>
                 </select>
               </div>
               <div class="form-field" id="m-batch-wrap" hidden>
-                <label>Batch Selection *</label>
+                <label>Batch Selection${requiredMark}</label>
                 <select id="m-batch">
                   <option value="">Select Batch</option>
                   <option value="Foundation" ${batch === 'Foundation' ? 'selected' : ''}>Foundation</option>
-                  <option value="mentorship" ${batch === 'mentorship' ? 'selected' : ''}>mentorship</option>
+                  <option value="mentorship" ${batch === 'mentorship' ? 'selected' : ''}>Mentorship</option>
                   <option value="Interview" ${batch === 'Interview' ? 'selected' : ''}>Interview</option>
-                  <option value="mains" ${batch === 'mains' ? 'selected' : ''}>mains</option>
+                  <option value="mains" ${batch === 'mains' ? 'selected' : ''}>Mains</option>
                 </select>
               </div>
               <div class="form-field" id="m-mode-wrap" hidden>
-                <label>Mode Of Learning *</label>
+                <label>Mode Of Learning${requiredMark}</label>
                 <div class="radio-inline-group">
-                  ${this.renderModeOption('Online', mode)}
-                  ${this.renderModeOption('residental', mode)}
-                  ${this.renderModeOption('Class', mode)}
+                  ${this.renderModeOption('residental', mode, 'Residental')}
+                  ${this.renderModeOption('Class', mode, 'ClassRoom')}
+                  ${this.renderModeOption('Online', mode, 'Online')}
                 </div>
               </div>
               <div class="form-field full" id="m-query-wrap">
-                <label id="m-query-label">Any Specific Query *</label>
-                <textarea id="m-query" rows="3" required placeholder="Write your query...">${query}</textarea>
+                <label id="m-query-label">${optionalForm ? 'Any Specific Query (Optional)' : 'Any Specific Query *'}</label>
+                <textarea id="m-query" rows="3"${requiredAttr} placeholder="Write your query...">${query}</textarea>
               </div>
             </div>
             <input type="submit" style="display:none" id="submit-hidden-btn">
@@ -1656,7 +1847,11 @@ const LeadsModule = {
     const mode = document.querySelector('input[name="m-mode"]:checked')?.value;
     const query = document.getElementById('m-query').value.trim();
     const requiresBatchMode = inquiryType === 'Course Inquiry' && this.courseNeedsBatchMode(course);
-    if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (inquiryType === 'General Inquiry' && !query) || (inquiryType === 'Course Inquiry' && !selectedCourse) || (requiresBatchMode && (!batch || !mode))) return;
+    const optionalForm = !isEdit && document.getElementById('add-lead-form')?.dataset.optional === 'true';
+    const isSchoolStudent = academicStatus === 'School Student';
+    const isClass3Course = inquiryType === 'Course Inquiry' && course === 'Class -3';
+    if (!optionalForm && (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (inquiryType === 'General Inquiry' && !query) || (inquiryType === 'Course Inquiry' && !selectedCourse) || (requiresBatchMode && !isClass3Course && (!batch || !mode)) || (inquiryType === 'Course Inquiry' && isSchoolStudent && !query))) return;
+    const displayLocation = district && state ? `${district}, ${state}` : district || state || '-';
 
     if (isEdit) {
       const lead = this.leads.find(l => l.id === leadId);
@@ -1667,7 +1862,7 @@ const LeadsModule = {
         lead.email = email;
         lead.state = state;
         lead.district = district;
-        lead.city = `${district}, ${state}`;
+        lead.city = displayLocation;
         lead.pincode = '';
         lead.inquiryType = inquiryType;
         lead.course = course;
@@ -1691,7 +1886,7 @@ const LeadsModule = {
         pincode: '',
         state,
         district,
-        city: `${district}, ${state}`,
+        city: displayLocation,
         inquiryType,
         course,
         batch: requiresBatchMode ? batch : '',
@@ -2225,7 +2420,60 @@ const LeadsModule = {
     }
   },
 
+  makeIconOnlyButton(button, label) {
+    if (!button) return;
+    const icon = button.querySelector('i');
+    button.classList.add('icon-only');
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.innerHTML = '';
+    if (icon) button.appendChild(icon);
+  },
+
+  normalizeToolbarButtons() {
+    const toolbarLabels = {
+      'filter-toggle-btn': 'Filters',
+      'refresh-btn': 'Refresh',
+      'add-lead-btn': 'Add New Inquiry',
+      'import-leads-btn': 'Mass Import',
+      'export-leads-btn': 'Export',
+      'download-leads-btn': 'Download',
+      'email-all-btn': 'Email All',
+      'sort-toggle-btn': 'Sort',
+      'row-view-btn': 'Row View',
+      'calendar-view-btn': 'Calendar View',
+      'collapse-toggle-btn': 'Expand All'
+    };
+    Object.entries(toolbarLabels).forEach(([id, label]) => {
+      this.makeIconOnlyButton(document.getElementById(id), label);
+    });
+  },
+
+  normalizeBulkToolbar() {
+    const actionLabels = {
+      email: 'Email',
+      status: 'Status',
+      segment: 'Segment',
+      export: 'Export Selected',
+      archive: 'Archive'
+    };
+
+    document.querySelectorAll('#batch-actions-wrap button').forEach((btn) => {
+      const action = btn.getAttribute('onclick')?.match(/batchAction\('([^']+)'\)/)?.[1];
+      if (!action || action === 'whatsapp' || action === 'assign') {
+        btn.remove();
+        return;
+      }
+      btn.dataset.batchAction = action;
+      this.makeIconOnlyButton(btn, actionLabels[action] || action);
+    });
+  },
+
   setupToolbar() {
+    document.getElementById('mass-admit-btn')?.remove();
+    this.normalizeToolbarButtons();
+    this.normalizeBulkToolbar();
+
     // View mode toggles
     const rowBtn = document.getElementById('row-view-btn');
     const calendarBtn = document.getElementById('calendar-view-btn');
@@ -2242,8 +2490,9 @@ const LeadsModule = {
         if (this.viewMode === 'calendar') return;
         this.allExpanded = !this.allExpanded;
         toggleBtn.innerHTML = this.allExpanded
-          ? '<i class="fas fa-compress-alt"></i> Collapse All'
-          : '<i class="fas fa-expand-alt"></i> Expand All';
+          ? '<i class="fas fa-compress-alt"></i>'
+          : '<i class="fas fa-expand-alt"></i>';
+        this.makeIconOnlyButton(toggleBtn, this.allExpanded ? 'Collapse All' : 'Expand All');
         document.querySelectorAll('.lead-card').forEach((card) => {
           const id = parseInt(card.id.replace('lead-card-', ''));
           const body = document.getElementById(`lead-body-${id}`);
@@ -2261,25 +2510,6 @@ const LeadsModule = {
       this.applyFilters();
       this.updateStatusBarCounts();
       this.showToast('Leads refreshed successfully!', 'success');
-    });
-
-    // Mass admission
-    document.getElementById('mass-admit-btn')?.addEventListener('click', () => {
-      const ids = this.selectedLeads.size ? Array.from(this.selectedLeads) : this.filteredLeads.map(l => l.id);
-      ids.forEach(id => {
-        const lead = this.leads.find(l => l.id === id);
-        if (!lead) return;
-        lead.status = 'admission_process';
-        lead.statusLabel = 'Admission Form';
-        lead.stage = 6;
-        lead.stageLabel = 'Admission';
-        lead.shortlistedForAdmission = true;
-        this.recordTimelineAction(lead, 'Mass Admission Shortlist', 'Lead shortlisted for admission form workflow.');
-      });
-      this.selectedLeads.clear();
-      this.applyFilters();
-      this.updateStatusBarCounts();
-      this.showToast(`${ids.length} lead(s) shortlisted for admission form`, 'success');
     });
 
     // Add lead
@@ -2311,14 +2541,12 @@ const LeadsModule = {
       if (el) el.style.display = visible ? '' : 'none';
     };
     setVisible('import-leads-btn', this.can('inquiryList', 'import'));
-    setVisible('mass-admit-btn', this.can('inquiryList', 'convert'));
     document.querySelectorAll('#batch-actions-wrap button').forEach(btn => {
-      const text = btn.textContent.trim().toLowerCase();
+      const action = btn.dataset.batchAction || '';
       const allowed =
-        text.includes('assign') ? this.can('inquiryList', 'assign') :
-        text.includes('segment') ? this.can('inquiryList', 'assign') :
-        text.includes('archive') ? this.can('inquiryList', 'delete') :
-        text.includes('status') ? this.can('inquiryList', 'status') :
+        action === 'segment' ? this.can('inquiryList', 'assign') :
+        action === 'archive' ? this.can('inquiryList', 'delete') :
+        action === 'status' ? this.can('inquiryList', 'status') :
         true;
       btn.style.display = allowed ? '' : 'none';
     });

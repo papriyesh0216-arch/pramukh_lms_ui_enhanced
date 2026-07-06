@@ -121,6 +121,59 @@ body.dark #theme-toggle .fa-moon { color: var(--warning); }
 .toolbar-btn.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
 .toolbar-btn.active i { color: var(--primary); }
 
+.toolbar-btn.icon-only {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+.toolbar-btn.icon-only i {
+  font-size: 12px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-field label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.filter-field input,
+.filter-field select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 11.5px;
+  outline: none;
+  width: 160px;
+}
+.filter-field-wide {
+  width: 230px;
+}
+.date-range-filter {
+  display: flex;
+  gap: 6px;
+}
+.date-range-filter input {
+  width: 112px;
+}
+.filter-actions {
+  display: flex;
+  align-self: flex-end;
+  gap: 8px;
+}
+.leads-filter-panel.is-hidden {
+  display: none !important;
+}
+
 /* Special action buttons */
 .btn-add-lead {
   background: linear-gradient(135deg, var(--primary), var(--purple));
@@ -136,19 +189,6 @@ body.dark #theme-toggle .fa-moon { color: var(--warning); }
   color: var(--text-white);
 }
 .btn-add-lead i { color: var(--text-white) !important; }
-
-.btn-mass-admit {
-  background: var(--success);
-  color: var(--text-on-accent);
-  border-color: var(--success);
-}
-.btn-mass-admit:hover {
-  background: var(--success);
-  border-color: var(--success);
-  color: var(--text-white);
-  transform: translateY(-1px);
-}
-.btn-mass-admit i { color: var(--text-on-accent) !important; }
 
 /* Lead Results Info */
 .leads-info-bar {

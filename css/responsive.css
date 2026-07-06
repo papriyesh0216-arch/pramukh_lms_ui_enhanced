@@ -1202,60 +1202,81 @@
     width: 100%;
   }
 
-  .toolbar-left,
-  .toolbar-right {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  #screen-leads .leads-toolbar {
+    display: flex;
+    grid-template-columns: none;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
-  .toolbar-left > *,
-  .toolbar-right > *,
-  .toolbar-btn,
-  .btn-add-lead,
-  .toolbar-view-toggle,
-  #batch-actions-wrap {
+  #screen-leads .toolbar-left,
+  #screen-leads .toolbar-right {
+    display: flex;
+    grid-template-columns: none;
+    width: auto;
+    min-width: max-content;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  #screen-leads .toolbar-left > *,
+  #screen-leads .toolbar-right > *,
+  #screen-leads .toolbar-btn,
+  #screen-leads .btn-add-lead,
+  #screen-leads .toolbar-view-toggle,
+  #screen-leads #batch-actions-wrap {
     min-width: 0;
-    max-width: 100%;
+    max-width: none;
   }
 
-  .toolbar-view-toggle,
-  #batch-actions-wrap,
-  .toolbar-divider {
-    grid-column: 1 / -1;
+  #screen-leads .toolbar-view-toggle,
+  #screen-leads #batch-actions-wrap,
+  #screen-leads .toolbar-divider {
+    grid-column: auto;
   }
 
-  .toolbar-btn {
-    width: 100%;
+  #screen-leads .toolbar-btn {
+    width: auto;
     min-height: 36px;
-    padding-inline: 8px;
-    white-space: normal;
-    line-height: 1.2;
+    padding-inline: 10px;
+    white-space: nowrap;
+    line-height: 1;
   }
 
-  .btn-add-lead {
-    min-height: 44px;
+  #screen-leads .btn-add-lead {
+    min-height: 36px;
   }
 
-  .leads-filter-panel {
-    display: grid !important;
+  #screen-leads .leads-filter-panel {
     grid-template-columns: minmax(0, 1fr);
     overflow: visible;
   }
 
-  .leads-filter-panel select,
-  .leads-filter-panel input,
-  .quick-search-input {
+  #screen-leads .leads-filter-panel.is-hidden {
+    display: none !important;
+  }
+
+  #screen-leads .leads-filter-panel:not(.is-hidden) {
+    display: grid !important;
+  }
+
+  #screen-leads .leads-filter-panel select,
+  #screen-leads .leads-filter-panel input,
+  #screen-leads .quick-search-input {
     min-width: 0;
     max-width: 100%;
   }
 
-  .quick-search-bar {
+  #screen-leads .quick-search-bar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .quick-search-bar #saved-filter-btn,
-  .quick-search-wrap {
+  #screen-leads .quick-search-bar #saved-filter-btn,
+  #screen-leads .quick-search-wrap {
     grid-column: 1 / -1;
   }
 

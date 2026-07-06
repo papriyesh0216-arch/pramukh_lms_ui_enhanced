@@ -13,6 +13,8 @@ const InquiryFormPage = {
     this.setupForm();
     this.cacheDefaultBatchOptions();
     this.syncBatchOptionsWithCourse();
+    // Apply Goal 1 defaults immediately on load
+    this.updateInquiryFields();
   },
 
   setupTheme() {
@@ -106,14 +108,19 @@ const InquiryFormPage = {
     const academicStatus = document.getElementById('i-academic-status');
     if (academicStatus && academicStatus.value === 'School Student') {
       const courseRadio = document.querySelector('input[name="inquiryType"][value="Course Inquiry"]');
+      const generalRadio = document.querySelector('input[name="inquiryType"][value="General Inquiry"]');
       if (courseRadio) courseRadio.checked = true;
+      if (generalRadio) generalRadio.checked = false;
       if (courseSelect) courseSelect.value = 'Sankalp';
     }
 
+    // Re-evaluate inquiryType after mutations above.
     const finalInquiryType = document.querySelector('input[name="inquiryType"]:checked')?.value || 'General Inquiry';
     const isCourseInquiry = finalInquiryType === 'Course Inquiry';
+
     const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
     const isClass3Course = isCourseInquiry && courseSelect?.value === 'Class -3';
+
 
     // Ensure batch options are synced whenever course changes
     this.syncBatchOptionsWithCourse();
@@ -147,20 +154,23 @@ const InquiryFormPage = {
       if (!needsBatchMode) input.checked = false;
     });
 
+    const academicStatusValue = document.getElementById('i-academic-status')?.value;
+    const isSchoolStudent = academicStatusValue === 'School Student';
+
     if (query) {
-      // Goal 1: For Course Inquiry, query should be optional.
-      query.required = !isCourseInquiry;
+      // Goal 1: For Course Inquiry make query required only in the School Student default flow.
+      query.required = isCourseInquiry ? isSchoolStudent : true;
+
     }
 
     if (queryLabel) {
-      queryLabel.textContent = isCourseInquiry ? 'Any Specific Query (Optional)' : 'Any Specific Query *';
+      if (isCourseInquiry) {
+        queryLabel.textContent = isSchoolStudent ? 'Any Specific Query *' : 'Any Specific Query (Optional)';
+      } else {
+        queryLabel.textContent = 'Any Specific Query *';
+      }
     }
 
-    // Ensure query placeholder requirement text aligns with required attribute.
-    // (Goal 1/2: query should not be forced for Course Inquiry.)
-    if (isCourseInquiry && query) {
-      query.required = false;
-    }
   },
 
 
@@ -203,8 +213,9 @@ const InquiryFormPage = {
 
       const opt2 = document.createElement('option');
       opt2.value = 'others';
-      opt2.textContent = 'Others (Please Specify in Remarks)';
+      opt2.textContent = 'Other';
       batchSelect.appendChild(opt2);
+
 
       // Keep selection if still valid (otherwise reset)
       const isValid = Array.from(batchSelect.options).some((o) => o.value === batchSelect.value);
