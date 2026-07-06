@@ -4,6 +4,7 @@
 
 .sidebar {
   width: var(--sidebar-width);
+
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
   display: flex;
@@ -341,3 +342,101 @@
 .sidebar-help {
   border-radius: 14px;
 }
+
+/* Sidebar collapse/expand */
+
+body.sidebar-collapsed {
+  --sidebar-width: 78px;
+}
+
+body.sidebar-collapsed .logo-text,
+body.sidebar-collapsed .sidebar-search,
+body.sidebar-collapsed .help-text,
+body.sidebar-collapsed .nav-subitem,
+body.sidebar-collapsed .nav-sub-subitem,
+body.sidebar-collapsed .nav-subitem[data-submenu] i:last-child {
+  display: none !important;
+}
+
+body.sidebar-collapsed .nav-subitem,
+body.sidebar-collapsed .nav-sub-subitem {
+  justify-content: center;
+}
+
+body.sidebar-collapsed .sidebar-help,
+body.sidebar-collapsed .nav-subitem,
+body.sidebar-collapsed .nav-sub-subitem {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+body.sidebar-collapsed .sidebar-collapse-btn {
+  justify-content: center;
+}
+
+body.sidebar-collapsed .sidebar-account-popup {
+  max-width: 220px;
+}
+
+/* Sidebar profile popup */
+.sidebar-account-popup {
+  position: relative;
+  margin-top: 10px;
+  border: 1px solid var(--sidebar-border);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.sidebar-account-popup[aria-hidden="true"] {
+  display: none;
+}
+
+.account-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.account-popup-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-popup-close {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.account-popup-close:hover {
+  background: var(--bg-subtle);
+}
+
+.account-popup-body {
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-popup-section-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+

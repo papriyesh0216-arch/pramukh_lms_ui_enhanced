@@ -1214,3 +1214,41 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+// Sidebar profile popup controls
+App.toggleSidebarProfilePopup = function () {
+  const popup = document.getElementById('account-settings-popup');
+
+  if (!popup) return;
+  const isHidden = popup.getAttribute('aria-hidden') === 'true';
+  popup.setAttribute('aria-hidden', String(!isHidden));
+};
+
+
+App.closeSidebarProfilePopup = function () {
+  const popup = document.getElementById('account-settings-popup');
+  if (!popup) return;
+  popup.setAttribute('aria-hidden', 'true');
+};
+
+// Sidebar collapse/expand (icon-only)
+App.toggleSidebarCollapsed = function () {
+  document.body.classList.toggle('sidebar-collapsed');
+  try { localStorage.setItem('pa-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch (e) {}
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    if (localStorage.getItem('pa-sidebar-collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+  } catch (e) {}
+});
+
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('account-settings-popup');
+  if (!popup) return;
+  const opener = e.target.closest('#sidebar-profile-btn');
+  const insidePopup = e.target.closest('#account-settings-popup');
+  if (opener || insidePopup) return;
+  App.closeSidebarProfilePopup();
+});
+

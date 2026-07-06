@@ -1454,6 +1454,15 @@ const LeadsModule = {
           <option value="Unassigned">Unassigned</option>
         </select>
       </div>
+      <div class="filter-field">
+        <label>Date From</label>
+        <input type="date" id="filter-date-from" onchange="LeadsModule.applyFilters()">
+      </div>
+
+      <div class="filter-field">
+        <label>Date To</label>
+        <input type="date" id="filter-date-to" onchange="LeadsModule.applyFilters()">
+      </div>
       <div class="filter-actions">
         <button class="btn btn-outline btn-sm" onclick="LeadsModule.resetFilters()">Reset</button>
       </div>
@@ -1465,6 +1474,7 @@ const LeadsModule = {
     const filterBtn = document.getElementById('filter-toggle-btn');
     const filterPanel = document.getElementById('leads-filter-panel');
     if (filterBtn && filterPanel) {
+      filterPanel.style.display = '';
       filterPanel.classList.add('is-hidden');
       filterBtn.classList.remove('active');
       filterBtn.addEventListener('click', (e) => {
