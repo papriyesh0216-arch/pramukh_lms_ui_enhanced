@@ -4,12 +4,15 @@
 
 const InquiryFormPage = {
   storageKey: 'pa-inquiry-submissions',
+  defaultBatchOptions: null,
 
   init() {
     this.setupTheme();
     this.setupLocationFields();
     this.setupInquiryFields();
     this.setupForm();
+    this.cacheDefaultBatchOptions();
+    this.syncBatchOptionsWithCourse();
   },
 
   setupTheme() {
@@ -93,14 +96,27 @@ const InquiryFormPage = {
   },
 
   updateInquiryFields() {
-    const inquiryType = document.querySelector('input[name="inquiryType"]:checked')?.value || 'General Inquiry';
     const courseSelect = document.getElementById('i-course');
     const batchSelect = document.getElementById('i-batch');
     const modeInputs = Array.from(document.querySelectorAll('input[name="mode"]'));
     const query = document.getElementById('i-query');
     const queryLabel = document.getElementById('i-query-label');
-    const isCourseInquiry = inquiryType === 'Course Inquiry';
+
+    // Goal 1: If Academic Status is "School Student", default to Course Inquiry and set Course to "Sankalp".
+    const academicStatus = document.getElementById('i-academic-status');
+    if (academicStatus && academicStatus.value === 'School Student') {
+      const courseRadio = document.querySelector('input[name="inquiryType"][value="Course Inquiry"]');
+      if (courseRadio) courseRadio.checked = true;
+      if (courseSelect) courseSelect.value = 'Sankalp';
+    }
+
+    const finalInquiryType = document.querySelector('input[name="inquiryType"]:checked')?.value || 'General Inquiry';
+    const isCourseInquiry = finalInquiryType === 'Course Inquiry';
     const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
+    const isClass3Course = isCourseInquiry && courseSelect?.value === 'Class -3';
+
+    // Ensure batch options are synced whenever course changes
+    this.syncBatchOptionsWithCourse();
 
     document.getElementById('i-course-wrap').hidden = !isCourseInquiry;
     document.getElementById('i-batch-wrap').hidden = !isCourseInquiry || !needsBatchMode;
@@ -111,19 +127,100 @@ const InquiryFormPage = {
       courseSelect.required = isCourseInquiry;
       if (!isCourseInquiry) courseSelect.value = '';
     }
+
     if (batchSelect) {
-      batchSelect.required = isCourseInquiry && needsBatchMode;
+      // Goal 2: For Class 3, batch should NOT be mandatory.
+      batchSelect.required = isCourseInquiry && needsBatchMode && !isClass3Course;
+
       if (!needsBatchMode) batchSelect.value = '';
+
+      // If current selection is no longer valid after option sync, reset.
+      if (needsBatchMode && batchSelect.value) {
+        const isValid = Array.from(batchSelect.options).some((o) => o.value === batchSelect.value);
+        if (!isValid) batchSelect.value = '';
+      }
     }
+
     modeInputs.forEach((input) => {
-      input.required = isCourseInquiry && needsBatchMode;
+      // Goal 2: For Class 3, mode should also be optional.
+      input.required = isCourseInquiry && needsBatchMode && !isClass3Course;
       if (!needsBatchMode) input.checked = false;
     });
+
     if (query) {
+      // Goal 1: For Course Inquiry, query should be optional.
       query.required = !isCourseInquiry;
     }
+
     if (queryLabel) {
       queryLabel.textContent = isCourseInquiry ? 'Any Specific Query (Optional)' : 'Any Specific Query *';
+    }
+
+    // Ensure query placeholder requirement text aligns with required attribute.
+    // (Goal 1/2: query should not be forced for Course Inquiry.)
+    if (isCourseInquiry && query) {
+      query.required = false;
+    }
+  },
+
+
+
+  cacheDefaultBatchOptions() {
+    try {
+      const batchSelect = document.getElementById('i-batch');
+      if (!batchSelect) return;
+      // Preserve the original HTML options so we can switch back for non-Class-3 courses
+      this.defaultBatchOptions = Array.from(batchSelect.options).map((o) => ({
+        value: o.value,
+        text: o.textContent
+      }));
+    } catch (e) {
+      this.defaultBatchOptions = null;
+    }
+  },
+
+  syncBatchOptionsWithCourse() {
+    const courseSelect = document.getElementById('i-course');
+    const batchSelect = document.getElementById('i-batch');
+    if (!courseSelect || !batchSelect) return;
+
+    const course = courseSelect.value;
+
+    // Requirement: When user selects Class 3, show only:
+    // "Master batch" & "Others (Please Specify in Remarks)"
+    if (course === 'Class -3') {
+      batchSelect.innerHTML = '';
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select Batch';
+      batchSelect.appendChild(placeholder);
+
+      const opt1 = document.createElement('option');
+      opt1.value = 'master-batch';
+      opt1.textContent = 'Master batch';
+      batchSelect.appendChild(opt1);
+
+      const opt2 = document.createElement('option');
+      opt2.value = 'others';
+      opt2.textContent = 'Others (Please Specify in Remarks)';
+      batchSelect.appendChild(opt2);
+
+      // Keep selection if still valid (otherwise reset)
+      const isValid = Array.from(batchSelect.options).some((o) => o.value === batchSelect.value);
+      if (!isValid) batchSelect.value = '';
+      return;
+    }
+
+    // Revert to default batch options for other courses
+    if (this.defaultBatchOptions) {
+      batchSelect.innerHTML = '';
+      this.defaultBatchOptions.forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.text;
+        batchSelect.appendChild(opt);
+      });
     }
   },
 
@@ -152,7 +249,14 @@ const InquiryFormPage = {
       const requiresCourse = inquiryType === 'Course Inquiry';
       const requiresBatchMode = requiresCourse && this.courseNeedsBatchMode(course);
 
-      if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (!requiresCourse && !query) || (requiresCourse && !course) || (requiresBatchMode && (!batch || !mode))) {
+      // Goal 2: For Class 3, both batch and mode should be optional.
+      const isClass3 = requiresCourse && course === 'Class -3';
+      const missingMode = requiresBatchMode && !mode && !isClass3;
+      const missingBatch = requiresBatchMode && !batch && !isClass3;
+
+      if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (!requiresCourse && !query) || (requiresCourse && !course) || missingMode || missingBatch) {
+
+
         if (statusEl) {
           statusEl.textContent = 'Please complete all required fields.';
           statusEl.classList.add('error');
