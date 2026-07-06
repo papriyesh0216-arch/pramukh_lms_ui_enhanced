@@ -546,7 +546,7 @@
           <!-- Status Bar -->
           <div class="status-bar" id="status-bar"></div>
 
-          <!-- Sub Status Bar (hidden initially, shown when Admission is active) -->
+          <!-- Stage Status Bar -->
           <div
             class="status-sub-bar"
             id="status-sub-bar"
@@ -559,48 +559,7 @@
               align-items: center;
               flex-shrink: 0;
             "
-          >
-            <span
-              style="
-                font-size: 10px;
-                font-weight: 700;
-                color: var(--text-muted);
-                text-transform: uppercase;
-                margin-right: 8px;
-              "
-              >Form Type:</span
-            >
-            <div
-              class="status-sub-tab active"
-              data-substatus="exam"
-              onclick="LeadsModule.setSubStatus('exam', this)"
-            >
-              Exam <span class="status-count" id="count-exam">0</span>
-            </div>
-            <div
-              class="status-sub-tab"
-              data-substatus="interview"
-              onclick="LeadsModule.setSubStatus('interview', this)"
-            >
-              Interview <span class="status-count" id="count-interview">0</span>
-            </div>
-            <div
-              class="status-sub-tab"
-              data-substatus="admission_confirmed"
-              onclick="LeadsModule.setSubStatus('admission_confirmed', this)"
-            >
-              Admission Confirmed
-              <span class="status-count" id="count-admission_confirmed">0</span>
-            </div>
-            <div
-              class="status-sub-tab"
-              data-substatus="admission_rejected"
-              onclick="LeadsModule.setSubStatus('admission_rejected', this)"
-            >
-              Admission Rejected
-              <span class="status-count" id="count-admission_rejected">0</span>
-            </div>
-          </div>
+          ></div>
 
           <!-- Toolbar -->
           <div class="leads-toolbar">
@@ -699,9 +658,9 @@
                 </button>
                 <button
                   class="toolbar-btn"
-                  onclick="LeadsModule.batchAction('status')"
+                  onclick="LeadsModule.batchAction('stages')"
                 >
-                  <i class="fas fa-tags"></i> Status
+                  <i class="fas fa-tags"></i> Stages
                 </button>
                 <button
                   class="toolbar-btn"
@@ -730,18 +689,11 @@
             <div class="toolbar-right">
               <div class="toolbar-view-toggle">
                 <button
-                  class="toolbar-btn active"
-                  id="row-view-btn"
-                  title="Row View"
-                >
-                  <i class="fas fa-list"></i> Row View
-                </button>
-                <button
                   class="toolbar-btn"
-                  id="calendar-view-btn"
+                  id="view-toggle-btn"
                   title="Calendar View"
                 >
-                  <i class="fas fa-calendar-alt"></i> Calendar View
+                  <i class="fas fa-calendar-alt"></i>
                 </button>
               </div>
               <!-- Collapse/Expand All (single toggle button) -->

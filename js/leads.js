@@ -6,7 +6,7 @@ const LeadsModule = {
   leads: [],
   filteredLeads: [],
   activeStatus: 'all',
-  activeSubStatus: 'exam',
+  activeSubStatus: 'called',
   viewMode: 'row',
   allExpanded: false,
   currentPage: 1,
@@ -28,7 +28,7 @@ const LeadsModule = {
   filterInquiryDate: '',
   filterFollowupDate: '',
   filterSegment: 'all',
-  sortOption: 'date-newest',
+  sortOption: 'created-desc',
 
   init() {
     this.leads = [...window.APP_DATA.LEAD_DATA];
@@ -123,9 +123,10 @@ const LeadsModule = {
   },
 
   syncAdmissionShortlist() {
-    const admissionStatuses = ['admission_process', 'converted', 'exam', 'interview', 'admission_confirmed', 'admission_rejected'];
+    const admissionStatuses = ['admission_process', 'converted', 'exam', 'interview', 'admission_confirmed', 'admission_rejected', 'admission_form', 'form_submission', 'form_submitted'];
     const shortlist = this.leads.filter(lead => (
       lead.shortlistedForAdmission ||
+      lead.stageKey === 'admission_form' ||
       admissionStatuses.includes((lead.status || '').toLowerCase())
     ));
     try {
@@ -148,6 +149,9 @@ const LeadsModule = {
       } else if (!lead.batch) {
         lead.batch = 'Foundation';
       }
+      this.normalizeLeadStageData(lead);
+      lead.createdAt = lead.createdAt || lead.inquiryDate;
+      lead.modifiedAt = lead.modifiedAt || lead.assignedDate || lead.inquiryDate;
     });
     this.syncAppDataLeads();
   },
@@ -196,6 +200,113 @@ const LeadsModule = {
     return ['UPSC', 'GPSC-Class1,2', 'Class -3'].includes(course);
   },
 
+  getStageDefinitions() {
+    return [
+      { key: 'all', label: 'All' },
+      { key: 'pending', label: 'Pending' },
+      { key: 'voicecall', label: 'Voicecall' },
+      { key: 'hot_lead', label: 'Hot Lead' },
+      { key: 'cold_lead', label: 'Cold Lead' },
+      { key: 'counselling', label: 'Counselling' },
+      { key: 'admission_form', label: 'Admission Form' },
+      { key: 'closed', label: 'Closed' }
+    ];
+  },
+
+  getStageStatusDefinitions(stageKey) {
+    const statuses = {
+      voicecall: [
+        { key: 'called', label: 'Called' },
+        { key: 'not_connected', label: 'Not Connected' },
+        { key: 'switched_off', label: 'Switched Off' },
+        { key: 'schedule', label: 'Schedule' }
+      ],
+      counselling: [
+        { key: 'reschedules', label: 'Reschedules' },
+        { key: 'conducted', label: 'Conducted' },
+        { key: 'schedule', label: 'Schedule' }
+      ],
+      admission_form: [
+        { key: 'form_submitted', label: 'Form Submitted' },
+        { key: 'form_submission', label: 'Form Submission' }
+      ]
+    };
+    return statuses[stageKey] || [];
+  },
+
+  formatStageLabel(stageKey) {
+    return this.getStageDefinitions().find((stage) => stage.key === stageKey)?.label || 'Pending';
+  },
+
+  formatStageStatusLabel(stageKey, stageStatusKey) {
+    return this.getStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label || '';
+  },
+
+  normalizeLeadStageData(lead) {
+    const stageKey = this.getLeadStatusKey(lead);
+    const stageStatus = this.getLeadSubStatusKey(lead);
+    lead.stageKey = stageKey;
+    lead.stageStatus = stageStatus;
+    lead.status = lead.status || stageKey;
+    lead.statusLabel = this.formatStageLabel(stageKey);
+    lead.stageLabel = this.formatStageLabel(stageKey);
+    lead.stageStatusLabel = this.formatStageStatusLabel(stageKey, stageStatus);
+    lead.shortlistedForAdmission = stageKey === 'admission_form';
+  },
+
+  getSortOptions() {
+    return [
+      { key: 'created-asc', label: 'Created Date: Ascending' },
+      { key: 'created-desc', label: 'Created Date: Descending' },
+      { key: 'modified-asc', label: 'Modified Date: Ascending' },
+      { key: 'modified-desc', label: 'Modified Date: Descending' },
+      { key: 'name-az', label: 'Name: A to Z' },
+      { key: 'name-za', label: 'Name: Z to A' }
+    ];
+  },
+
+  getSortLabel(key = this.sortOption) {
+    return this.getSortOptions().find((option) => option.key === key)?.label || 'Created Date: Descending';
+  },
+
+  parseDateTimeValue(value = '') {
+    if (!value || value === '-') return 0;
+    const normalized = String(value).trim();
+    const direct = Date.parse(normalized);
+    if (!Number.isNaN(direct)) return direct;
+
+    const match = normalized.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:,\s*|\s+)?(\d{1,2}):(\d{2})(?:\s*([AP]M))?/i);
+    if (!match) return 0;
+
+    const [, day, month, year, hourRaw, minute, meridiem] = match;
+    let hour = Number(hourRaw);
+    if (meridiem) {
+      const upper = meridiem.toUpperCase();
+      if (upper === 'PM' && hour < 12) hour += 12;
+      if (upper === 'AM' && hour === 12) hour = 0;
+    }
+    return new Date(Number(year), Number(month) - 1, Number(day), hour, Number(minute)).getTime();
+  },
+
+  getLeadCreatedAt(lead) {
+    return this.parseDateTimeValue(lead?.createdAt || lead?.inquiryDate) || Number(lead?.id) || 0;
+  },
+
+  getLeadModifiedAt(lead) {
+    return this.parseDateTimeValue(lead?.modifiedAt || lead?.updatedAt || lead?.assignedDate || lead?.inquiryDate) || this.getLeadCreatedAt(lead);
+  },
+
+  stampLeadModified(lead, stamp = new Date()) {
+    if (!lead) return;
+    lead.modifiedAt = stamp.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  },
+
   applyRoleScope(rows) {
     return window.AuthModule ? AuthModule.applyScope(rows) : rows;
   },
@@ -206,68 +317,109 @@ const LeadsModule = {
 
   getLeadStatusKey(lead) {
     if (lead.archived) return null;
-    const stageLabel = (lead.stageLabel || '').toLowerCase();
-    const status = (lead.status || '').toLowerCase();
-    const priority = (lead.priority || '').toLowerCase();
-    
-    // Check Admission Form sub-statuses
-    if (status === 'exam' || status === 'interview' || status === 'admission_confirmed' || status === 'admission_rejected' || status === 'admissionconfirmed' || status === 'admissionrejected') {
+    if (lead.stageKey && lead.stageKey !== 'all') return lead.stageKey;
+    const stageLabel = String(lead.stageLabel || '').toLowerCase().replace(/[\s_-]/g, '');
+    const status = String(lead.status || '').toLowerCase().replace(/[\s_-]/g, '');
+    const priority = String(lead.priority || '').toLowerCase();
+
+    if (['closed', 'lost', 'notinterested', 'converted', 'admissionconfirmed', 'admissionrejected'].includes(status) || stageLabel === 'closed') {
+      return 'closed';
+    }
+    if (['admissionprocess', 'admissionform', 'exam', 'interview', 'formsubmission', 'formsubmitted'].includes(status) || stageLabel === 'admission') {
       return 'admission_form';
     }
-    if (status === 'converted' || status === 'admission_confirmed' || stageLabel === 'student created') return 'admission_form';
-    if (status === 'lost' || status === 'not_interested') return 'lost';
-    if (status === 'closed') return 'closed';
-    if (status === 'admission_process' || stageLabel === 'admission') return 'admission_process';
-    if (stageLabel === 'counselling' || status === 'counselling') {
+    if (['counselling', 'reschedules', 'reschedule', 'conducted'].includes(status) || stageLabel === 'counselling') {
       return 'counselling';
     }
-    if (status === 'followup' || lead.followupDate) return 'followup';
-    if (status === 'interested') return priority === 'high' || lead.isHot ? 'hotlead' : 'interested';
-    if (priority === 'low') return 'coldlead';
-    if (status === 'contacted' || stageLabel === 'contacted') return 'contacted';
-    if (status === 'pending') return 'pending';
-    return 'new'; // default
+    if (priority === 'high' || lead.isHot || status === 'hotlead') {
+      return 'hot_lead';
+    }
+    if (priority === 'low' || status === 'coldlead') {
+      return 'cold_lead';
+    }
+    if (['voicecall', 'called', 'notconnected', 'switchedoff', 'schedule', 'contacted', 'followup'].includes(status) || lead.followupDate) {
+      return 'voicecall';
+    }
+    return 'pending';
   },
 
   getLeadSubStatusKey(lead) {
-    const status = (lead.status || '').toLowerCase();
-    if (status === 'exam') return 'exam';
-    if (status === 'interview') return 'interview';
-    if (status === 'admission_confirmed' || status === 'admissionconfirmed') return 'admission_confirmed';
-    if (status === 'admission_rejected' || status === 'admissionrejected') return 'admission_rejected';
-    return null;
+    if (lead.stageStatus) return lead.stageStatus;
+    const stageKey = this.getLeadStatusKey(lead);
+    const status = String(lead.status || '').toLowerCase().replace(/[\s_-]/g, '');
+    const statusLabel = String(lead.statusLabel || '').toLowerCase().replace(/[\s_-]/g, '');
+
+    if (stageKey === 'voicecall') {
+      if (['called'].includes(status) || statusLabel === 'called') return 'called';
+      if (['notconnected'].includes(status) || statusLabel === 'notconnected') return 'not_connected';
+      if (['switchedoff'].includes(status) || statusLabel === 'switchedoff') return 'switched_off';
+      if (lead.followupDate || ['voicecall', 'contacted', 'followup', 'schedule', 'scheduled'].includes(status)) return 'schedule';
+    }
+    if (stageKey === 'counselling') {
+      if (['conducted'].includes(status) || statusLabel === 'conducted') return 'conducted';
+      if (['reschedule', 'reschedules', 'rescheduled'].includes(status) || statusLabel.startsWith('reschedule')) return 'reschedules';
+      return 'schedule';
+    }
+    if (stageKey === 'admission_form') {
+      if (['formsubmitted', 'converted'].includes(status) || statusLabel === 'formsubmitted') return 'form_submitted';
+      return 'form_submission';
+    }
+    return '';
   },
 
   renderStatusBar() {
-    const statuses = [
-      { key: 'all', label: 'All' },
-      { key: 'new', label: 'New Inquiry' },
-      { key: 'contacted', label: 'Contacted' },
-      { key: 'followup', label: 'Follow-up' },
-      { key: 'counselling', label: 'Counselling' },
-      { key: 'hotlead', label: 'Hot Lead' },
-      { key: 'coldlead', label: 'Cold Lead' },
-      { key: 'admission_process', label: 'Admission Form' },
-      { key: 'lost', label: 'Lost' },
-      { key: 'closed', label: 'Closed' },
-      { key: 'admission_form', label: 'Admission' }
-    ];
     const container = document.getElementById('status-bar');
     if (!container) return;
-    container.innerHTML = statuses.map(s => `
+    container.innerHTML = this.getStageDefinitions().map(s => `
       <div class="status-tab ${s.key === this.activeStatus ? 'active' : ''}" 
            data-status="${s.key}" id="status-tab-${s.key}" onclick="LeadsModule.setStatus('${s.key}', this)">
         ${s.label}
         <span class="status-count" id="count-status-${s.key}">0</span>
       </div>
     `).join('');
+    this.renderStageStatusBar();
+  },
+
+  renderStageStatusBar() {
+    const subBar = document.getElementById('status-sub-bar');
+    if (!subBar) return;
+    const stageStatuses = this.getStageStatusDefinitions(this.activeStatus);
+    if (!stageStatuses.length) {
+      subBar.style.display = 'none';
+      subBar.innerHTML = '';
+      return;
+    }
+
+    subBar.style.display = 'flex';
+    subBar.innerHTML = stageStatuses.map((status) => `
+      <div
+        class="status-sub-tab ${status.key === this.activeSubStatus ? 'active' : ''}"
+        data-substatus="${status.key}"
+        onclick="LeadsModule.setSubStatus('${status.key}', this)"
+      >
+        ${status.label}
+        <span class="status-count" id="count-status-${this.activeStatus}-${status.key}">0</span>
+      </div>
+    `).join('');
   },
 
   updateStatusBarCounts() {
     const counts = {
-      all: 0, new: 0, pending: 0, contacted: 0, interested: 0, followup: 0, counselling: 0, hotlead: 0, coldlead: 0,
-      admission_process: 0, converted: 0, lost: 0, closed: 0, admission_form: 0,
-      exam: 0, interview: 0, admission_confirmed: 0, admission_rejected: 0
+      all: 0,
+      pending: 0,
+      voicecall: 0,
+      hot_lead: 0,
+      cold_lead: 0,
+      counselling: 0,
+      admission_form: 0,
+      closed: 0,
+      called: 0,
+      not_connected: 0,
+      switched_off: 0,
+      reschedules: 0,
+      conducted: 0,
+      form_submitted: 0,
+      form_submission: 0
     };
     
     this.applyRoleScope(this.leads).forEach(l => {
@@ -285,28 +437,33 @@ const LeadsModule = {
       }
     });
     
-    // Assign count labels
     for (const [key, count] of Object.entries(counts)) {
-      const el = document.getElementById(`count-status-${key}`) || document.getElementById(`count-${key}`);
+      const el = document.getElementById(`count-status-${key}`);
       if (el) el.textContent = count;
     }
+
+    this.getStageDefinitions()
+      .filter((stage) => stage.key !== 'all')
+      .forEach((stage) => {
+        this.getStageStatusDefinitions(stage.key).forEach((status) => {
+          const count = this.applyRoleScope(this.leads).filter((lead) => (
+            !lead.archived &&
+            this.getLeadStatusKey(lead) === stage.key &&
+            this.getLeadSubStatusKey(lead) === status.key
+          )).length;
+          const el = document.getElementById(`count-status-${stage.key}-${status.key}`);
+          if (el) el.textContent = count;
+        });
+      });
   },
 
   setStatus(key, el) {
     this.activeStatus = key;
+    this.activeSubStatus = '';
     document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
     if (el) el.classList.add('active');
-    
-    const subBar = document.getElementById('status-sub-bar');
-    if (key === 'admission_form') {
-      if (subBar) subBar.style.display = 'flex';
-      document.querySelectorAll('.status-sub-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.substatus === this.activeSubStatus);
-      });
-    } else {
-      if (subBar) subBar.style.display = 'none';
-    }
-    
+    this.renderStageStatusBar();
+    this.updateStatusBarCounts();
     this.applyFilters();
   },
 
@@ -325,10 +482,9 @@ const LeadsModule = {
 
     // Apply status filter
     if (this.activeStatus !== 'all') {
-      if (this.activeStatus === 'admission_form') {
+      result = result.filter(l => this.getLeadStatusKey(l) === this.activeStatus);
+      if (this.activeSubStatus && this.getStageStatusDefinitions(this.activeStatus).length) {
         result = result.filter(l => this.getLeadSubStatusKey(l) === this.activeSubStatus);
-      } else {
-        result = result.filter(l => this.getLeadStatusKey(l) === this.activeStatus);
       }
     }
 
@@ -416,22 +572,18 @@ const LeadsModule = {
     }
 
     // Apply Sorting
-    if (this.sortOption === 'date-newest') {
-      result.sort((a, b) => b.id - a.id);
-    } else if (this.sortOption === 'date-oldest') {
-      result.sort((a, b) => a.id - b.id);
-    } else if (this.sortOption === 'score-highest') {
-      result.sort((a, b) => b.leadScore - a.leadScore);
-    } else if (this.sortOption === 'score-lowest') {
-      result.sort((a, b) => a.leadScore - b.leadScore);
+    if (this.sortOption === 'created-asc') {
+      result.sort((a, b) => this.getLeadCreatedAt(a) - this.getLeadCreatedAt(b));
+    } else if (this.sortOption === 'created-desc') {
+      result.sort((a, b) => this.getLeadCreatedAt(b) - this.getLeadCreatedAt(a));
+    } else if (this.sortOption === 'modified-asc') {
+      result.sort((a, b) => this.getLeadModifiedAt(a) - this.getLeadModifiedAt(b));
+    } else if (this.sortOption === 'modified-desc') {
+      result.sort((a, b) => this.getLeadModifiedAt(b) - this.getLeadModifiedAt(a));
     } else if (this.sortOption === 'name-az') {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (this.sortOption === 'name-za') {
       result.sort((a, b) => b.name.localeCompare(a.name));
-    } else if (this.sortOption === 'followup-date') {
-      result.sort((a, b) => (this.dateKey(a.followupDate) || '9999').localeCompare(this.dateKey(b.followupDate) || '9999'));
-    } else if (this.sortOption === 'last-updated') {
-      result.sort((a, b) => b.id - a.id);
     }
 
     this.filteredLeads = result;
@@ -441,6 +593,7 @@ const LeadsModule = {
     this.updateSelectAllCheckboxState();
     this.updateSelectionUI();
     this.syncCollapseAllButton();
+    this.updateSortButtonLabel();
     this.applyToolbarPermissions?.();
   },
 
@@ -537,7 +690,9 @@ const LeadsModule = {
   },
 
   renderLeadCard(lead, num) {
-    const statusClass = `status-${lead.status}`;
+    const stageKey = this.getLeadStatusKey(lead);
+    const stageStatusLabel = this.formatStageStatusLabel(stageKey, this.getLeadSubStatusKey(lead));
+    const statusClass = `status-${stageKey}`;
     const isExpanded = this.allExpanded;
     const avatarLetter = lead.name.charAt(0);
     const avatarColors = ['#4F6EF7','#10B981','#F59E0B','#8B5CF6','#F97316','#EF4444','#06B6D4'];
@@ -564,16 +719,11 @@ const LeadsModule = {
               <i class="fas fa-phone"></i> ${lead.phone}
               <i class="fab fa-whatsapp wa-icon" style="margin-left:4px"></i>
             </div>
-            <div class="lead-tags-row">
-              <span class="lead-mini-tag">${lead.assignedTo || 'Unassigned'}</span>
-              <span class="lead-mini-tag">${lead.followupDate ? 'Next: ' + lead.followupDate : 'No follow-up'}</span>
-              <span class="lead-mini-tag">Score ${lead.leadScore || 0}</span>
-            </div>
           </div>
 
           <div class="lead-status-wrap">
-            <span class="lead-status-pill ${statusClass}">${lead.statusLabel}</span>
-            <span class="status-type-tag">New Inquiry</span>
+            <span class="lead-status-pill ${statusClass}">${this.formatStageLabel(stageKey)}</span>
+            ${stageStatusLabel ? `<span class="status-type-tag">${stageStatusLabel}</span>` : ''}
           </div>
 
           <div class="lead-meta">
@@ -672,7 +822,7 @@ const LeadsModule = {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Last Activity</span>
-                <span class="detail-value">${lead.communications?.[0]?.title || lead.stageLabel || 'Inquiry Created'}</span>
+                <span class="detail-value">${lead.communications?.[0]?.title || this.formatStageLabel(stageKey) || 'Inquiry Created'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Tags</span>
@@ -792,7 +942,7 @@ const LeadsModule = {
   batchAction(type) {
     const count = this.selectedLeads.size;
     if (count === 0) return;
-    const actionMap = { archive: 'delete', assign: 'assign', segment: 'assign', export: 'export', email: 'export', whatsapp: 'export', status: 'status' };
+    const actionMap = { archive: 'delete', assign: 'assign', segment: 'assign', export: 'export', email: 'export', whatsapp: 'export', status: 'status', stages: 'status' };
     const required = actionMap[type];
     if (required && !this.can('inquiryList', required)) {
       this.showToast('This action is not available for the current role.', 'warning');
@@ -830,28 +980,212 @@ const LeadsModule = {
       });
       this.applyFilters();
       this.showToast(`${count} lead(s) assigned to Bharat Sir`, 'success');
-    } else if (type === 'status') {
-      selectedIds.forEach(id => {
-        const lead = this.leads.find(l => l.id === id);
-        if (lead) {
-          lead.status = 'followup';
-          lead.statusLabel = 'Follow-up';
-          this.recordTimelineAction(lead, 'Bulk Status Changed', 'Status moved to Follow-up.');
-        }
-      });
-      this.applyFilters();
-      this.updateStatusBarCounts();
-      this.showToast(`${count} lead status updated to Follow-up`, 'success');
+    } else if (type === 'status' || type === 'stages') {
+      this.showBulkStagesModal(selectedIds);
     } else if (type === 'segment') {
-      selectedIds.forEach(id => {
-        const lead = this.leads.find(l => l.id === id);
-        if (lead) lead.segment = 'Bulk Review Segment';
-      });
-      this.applyFilters();
-      this.showToast(`${count} lead(s) added to segment`, 'success');
+      this.showBulkSegmentModal(selectedIds);
     } else if (type === 'export') {
       this.exportLeads(selectedIds);
     }
+  },
+
+  getBulkStageModalOptions() {
+    return this.getStageDefinitions().filter((stage) => stage.key !== 'all').map((stage) => ({
+      ...stage,
+      statuses: this.getStageStatusDefinitions(stage.key).length
+        ? this.getStageStatusDefinitions(stage.key)
+        : [{ key: stage.key, label: stage.label }]
+    }));
+  },
+
+  renderBulkStageStatusOptions(stageKey) {
+    const statusSelect = document.getElementById('bulk-stage-status');
+    if (!statusSelect) return;
+    const stage = this.getBulkStageModalOptions().find((item) => item.key === stageKey);
+    statusSelect.innerHTML = '<option value="">Select Stage Status</option>' + (stage?.statuses || []).map((status) => (
+      `<option value="${status.key}">${status.label}</option>`
+    )).join('');
+  },
+
+  syncBulkStageVisibility() {
+    const stageKey = document.getElementById('bulk-stage')?.value || '';
+    const dateWrap = document.getElementById('bulk-stage-date-wrap');
+    const timeWrap = document.getElementById('bulk-stage-time-wrap');
+    const dateInput = document.getElementById('bulk-stage-date');
+    const timeInput = document.getElementById('bulk-stage-time');
+    const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
+
+    this.renderBulkStageStatusOptions(stageKey);
+    if (dateWrap) dateWrap.hidden = shouldHideSchedule;
+    if (timeWrap) timeWrap.hidden = shouldHideSchedule;
+    if (dateInput) dateInput.required = !shouldHideSchedule;
+    if (timeInput) timeInput.required = !shouldHideSchedule;
+    if (shouldHideSchedule) {
+      if (dateInput) dateInput.value = '';
+      if (timeInput) timeInput.value = '';
+    }
+  },
+
+  showBulkStagesModal(selectedIds) {
+    const leads = selectedIds.map((id) => this.leads.find((lead) => lead.id === id)).filter(Boolean);
+    const followedBy = [...new Set(leads.map((lead) => lead.assignedTo || lead.owner || 'Unassigned'))].join(', ');
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card wide">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-tags" style="color:var(--primary)"></i> Update Lead Stages</span>
+          <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="custom-modal-body">
+          <form id="bulk-stage-form" data-ids="${selectedIds.join(',')}" onsubmit="event.preventDefault(); LeadsModule.saveBulkStages()">
+            <div class="modal-grid-2 compact-grid">
+              <div class="form-field">
+                <label>Follow-up Stage *</label>
+                <select id="bulk-stage" required onchange="LeadsModule.syncBulkStageVisibility()">
+                  <option value="">Select Follow-up Stage</option>
+                  ${this.getBulkStageModalOptions().map((stage) => `<option value="${stage.key}">${stage.label}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Follow-up Stage Status *</label>
+                <select id="bulk-stage-status" required>
+                  <option value="">Select Stage Status</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Ref No.</label>
+                <input type="text" id="bulk-stage-ref" placeholder="Optional reference number">
+              </div>
+              <div class="form-field" id="bulk-stage-date-wrap">
+                <label>Follow-up Date *</label>
+                <input type="date" id="bulk-stage-date" required>
+              </div>
+              <div class="form-field" id="bulk-stage-time-wrap">
+                <label>Follow-up Time *</label>
+                <input type="time" id="bulk-stage-time" required>
+              </div>
+              <div class="form-field">
+                <label>Followed By</label>
+                <div class="readonly-field">${followedBy}</div>
+              </div>
+              <div class="form-field full">
+                <label>Purpose *</label>
+                <textarea id="bulk-stage-purpose" rows="3" required placeholder="Enter purpose"></textarea>
+              </div>
+            </div>
+            <input type="submit" id="bulk-stage-submit" style="display:none">
+          </form>
+        </div>
+        <div class="custom-modal-footer">
+          <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('bulk-stage-submit').click()">Save</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    this.syncBulkStageVisibility();
+  },
+
+  saveBulkStages() {
+    const form = document.getElementById('bulk-stage-form');
+    if (!form) return;
+    const ids = (form.dataset.ids || '').split(',').map((value) => Number(value)).filter(Boolean);
+    const stageKey = document.getElementById('bulk-stage')?.value || '';
+    const stageStatus = document.getElementById('bulk-stage-status')?.value || '';
+    const refNo = document.getElementById('bulk-stage-ref')?.value.trim() || '';
+    const followupDate = document.getElementById('bulk-stage-date')?.value || '';
+    const followupTime = document.getElementById('bulk-stage-time')?.value || '';
+    const purpose = document.getElementById('bulk-stage-purpose')?.value.trim() || '';
+    if (!stageKey || !stageStatus || !purpose) return;
+
+    ids.forEach((id) => {
+      const lead = this.leads.find((item) => item.id === id);
+      if (!lead) return;
+      lead.stageKey = stageKey;
+      lead.stageStatus = stageStatus === stageKey ? '' : stageStatus;
+      lead.status = stageStatus;
+      lead.followupRefNo = refNo;
+      if (!['closed', 'admission_form'].includes(stageKey)) {
+        lead.followupDate = followupDate;
+        lead.followupTime = followupTime;
+      }
+      lead.followupPurpose = purpose;
+      this.normalizeLeadStageData(lead);
+      this.stampLeadModified(lead);
+      this.recordTimelineAction(lead, 'Bulk Stage Updated', `${this.formatStageLabel(stageKey)}${lead.stageStatusLabel ? ` - ${lead.stageStatusLabel}` : ''}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`);
+    });
+
+    document.querySelector('.custom-modal-overlay')?.remove();
+    this.applyFilters();
+    this.updateStatusBarCounts();
+    this.syncAppDataLeads();
+    this.showToast(`${ids.length} lead(s) updated`, 'success');
+  },
+
+  showBulkSegmentModal(selectedIds) {
+    const segments = (window.APP_DATA.SEGMENT_DATA || []).filter((segment) => !segment.archived);
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card wide">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-layer-group" style="color:var(--primary)"></i> Assign Leads to Segment</span>
+          <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="custom-modal-body">
+          <form id="bulk-segment-form" data-ids="${selectedIds.join(',')}" onsubmit="event.preventDefault(); LeadsModule.assignBulkSegment()">
+            <p style="margin:0 0 16px;font-size:13px;color:var(--text-secondary)">Select below segment to assign the leads.</p>
+            <div class="segment-selection-list">
+              ${segments.map((segment) => `
+                <label class="segment-selection-card">
+                  <input type="radio" name="bulk-segment-id" value="${segment.id}" ${selectedIds.every((leadId) => segment.leadIds?.includes(leadId)) ? 'checked' : ''}>
+                  <span class="segment-selection-body">
+                    <span class="segment-selection-head">
+                      <strong>${segment.name}</strong>
+                      <span>${segment.leadIds?.length || 0} leads</span>
+                    </span>
+                    <span class="segment-selection-meta">Assigned to: ${(segment.assignedUsers && segment.assignedUsers.length) ? segment.assignedUsers.join(', ') : 'Unassigned'}</span>
+                    <span class="segment-selection-meta">${segment.criteria || 'No criteria added'}</span>
+                  </span>
+                </label>
+              `).join('')}
+            </div>
+            <input type="submit" id="bulk-segment-submit" style="display:none">
+          </form>
+        </div>
+        <div class="custom-modal-footer">
+          <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('bulk-segment-submit').click()">Assign Leads</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  },
+
+  assignBulkSegment() {
+    const form = document.getElementById('bulk-segment-form');
+    if (!form) return;
+    const ids = (form.dataset.ids || '').split(',').map((value) => Number(value)).filter(Boolean);
+    const selectedSegmentId = Number(document.querySelector('input[name="bulk-segment-id"]:checked')?.value);
+    const segment = (window.APP_DATA.SEGMENT_DATA || []).find((item) => item.id === selectedSegmentId);
+    if (!segment) return;
+
+    if (!Array.isArray(segment.leadIds)) segment.leadIds = [];
+    ids.forEach((leadId) => {
+      if (!segment.leadIds.includes(leadId)) segment.leadIds.push(leadId);
+      const lead = this.leads.find((item) => item.id === leadId);
+      if (lead) {
+        lead.segment = segment.name;
+        this.stampLeadModified(lead);
+        this.recordTimelineAction(lead, 'Segment Assigned', `Assigned to segment ${segment.name}.`);
+      }
+    });
+
+    document.querySelector('.custom-modal-overlay')?.remove();
+    this.applyFilters();
+    this.syncAppDataLeads();
+    this.showToast(`${ids.length} lead(s) assigned to ${segment.name}`, 'success');
   },
 
   exportLeads(ids = null, filename = 'leads-export.csv') {
@@ -859,7 +1193,7 @@ const LeadsModule = {
     const headers = ['Enquiry No', 'Name', 'Phone', 'Email', 'State', 'District', 'Inquiry For', 'Batch Selection', 'Mode Of Learning', 'Source', 'Status', 'Assigned To', 'Inquiry Date'];
     const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [headers.map(escape).join(',')].concat(rows.map(lead => [
-      lead.enqNo, lead.name, lead.phone, lead.email, this.getLeadState(lead), this.getLeadDistrict(lead), lead.course, lead.batch || '', lead.mode || '', lead.source, lead.statusLabel, lead.assignedTo || lead.owner || 'Unassigned', lead.inquiryDate
+      lead.enqNo, lead.name, lead.phone, lead.email, this.getLeadState(lead), this.getLeadDistrict(lead), lead.course, lead.batch || '', lead.mode || '', lead.source, this.formatStageLabel(this.getLeadStatusKey(lead)), lead.assignedTo || lead.owner || 'Unassigned', lead.inquiryDate
     ].map(escape).join(','))).join('\n');
     this.downloadTextFile(filename, csv, 'text/csv');
     this.showToast(`${rows.length} lead(s) exported`, 'success');
@@ -969,8 +1303,8 @@ const LeadsModule = {
           inquiryDate: new Date().toLocaleString('en-IN'),
           owner: 'Unassigned',
           ownerTeam: 'Admin',
-          status: 'new',
-          statusLabel: 'New',
+          status: 'pending',
+          statusLabel: 'Pending',
           priority: 'medium',
           leadScore: 50,
           leadAge: '0 Days',
@@ -980,8 +1314,10 @@ const LeadsModule = {
           assignedDate: '-',
           timeAgo: 'Just now',
           isHot: false,
+          stageKey: 'pending',
+          stageStatus: '',
           stage: 0,
-          stageLabel: 'New',
+          stageLabel: 'Pending',
           communications: []
         };
       });
@@ -1016,17 +1352,8 @@ const LeadsModule = {
       min-width: 180px;
     `;
     
-    const sortOpts = [
-      { key: 'date-newest', label: 'Date: Newest First' },
-      { key: 'date-oldest', label: 'Date: Oldest First' },
-      { key: 'followup-date', label: 'Follow-up Date' },
-      { key: 'last-updated', label: 'Last Updated' },
-      { key: 'score-highest', label: 'Lead Score: High to Low' },
-      { key: 'score-lowest', label: 'Lead Score: Low to High' },
-      { key: 'name-az', label: 'Name: A to Z' },
-      { key: 'name-za', label: 'Name: Z to A' }
-    ];
-    
+    const sortOpts = this.getSortOptions();
+
     menu.innerHTML = sortOpts.map(o => `
       <div class="dropdown-item ${this.sortOption === o.key ? 'active' : ''}" 
            style="${this.sortOption === o.key ? 'background:var(--primary-light);color:var(--primary);font-weight:600' : ''}"
@@ -1042,7 +1369,16 @@ const LeadsModule = {
     this.sortOption = opt;
     document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
     this.applyFilters();
-    this.showToast(`Sorted by ${opt.replace('-', ' ')}`, 'info');
+    this.showToast(`Sorted by ${this.getSortLabel(opt)}`, 'info');
+  },
+
+  updateSortButtonLabel() {
+    const button = document.getElementById('sort-toggle-btn');
+    if (!button) return;
+    button.classList.remove('icon-only');
+    button.title = this.getSortLabel();
+    button.setAttribute('aria-label', this.getSortLabel());
+    button.innerHTML = `<i class="fas fa-sort-amount-down"></i><span>${this.getSortLabel()}</span>`;
   },
 
   buildFilterPanel() {
@@ -1219,17 +1555,12 @@ const LeadsModule = {
     const items = [];
     if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('followup', ${id})"><i class="fas fa-redo"></i> Manage Follow-up</div>`);
     if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('counselling', ${id})"><i class="fas fa-comments"></i> Schedule Counselling</div>`);
-    if (this.can('inquiryList', 'note')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('note', ${id})"><i class="fas fa-sticky-note"></i> Add Internal Note</div>`);
-    if (this.can('inquiryList', 'assign')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('assign', ${id})"><i class="fas fa-user-check"></i> Assign / Reassign</div>`);
-    if (this.can('inquiryList', 'edit')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('edit', ${id})"><i class="fas fa-edit"></i> View/Edit</div>`);
-    if (this.can('inquiryList', 'convert')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('convert', ${id})"><i class="fas fa-graduation-cap"></i> Convert to Admission</div>`);
     if (this.can('inquiryList', 'export')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('print', ${id})"><i class="fas fa-print"></i> Print Inquiry Form</div>`);
-    if (this.can('inquiryList', 'create')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('copy', ${id})"><i class="fas fa-copy"></i> Copy Lead (New Course)</div>`);
-    if (this.can('inquiryList', 'markLost') || this.can('inquiryList', 'delete')) items.push('<div class="dropdown-divider"></div>');
-    if (this.can('inquiryList', 'markLost')) items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('lost', ${id})"><i class="fas fa-user-times"></i> Mark as Lost</div>`);
+    if (this.can('inquiryList', 'edit')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('duplicate_scan', ${id})"><i class="fas fa-clone"></i> Duplicate Scan</div>`);
+    if (this.can('inquiryList', 'delete')) items.push('<div class="dropdown-divider"></div>');
     if (this.can('inquiryList', 'delete')) {
-      items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('delete_admin', ${id})"><i class="fas fa-trash"></i> Delete (Admin only)</div>`);
-      items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('archive', ${id})"><i class="fas fa-archive"></i> Archive Inquiry</div>`);
+      items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('delete', ${id})"><i class="fas fa-trash"></i> Delete</div>`);
+      items.push(`<div class="dropdown-item danger" onclick="LeadsModule.action('archive', ${id})"><i class="fas fa-archive"></i> Archive</div>`);
     }
     menu.innerHTML = items.join('');
     e.currentTarget.closest('.more-dropdown').appendChild(menu);
@@ -1248,15 +1579,9 @@ const LeadsModule = {
     const permissionByAction = {
       followup: 'followup',
       counselling: 'followup',
-      note: 'note',
-      assign: 'assign',
-      edit: 'edit',
-      submit: 'convert',
-      convert: 'convert',
-      lost: 'markLost',
+      duplicate_scan: 'edit',
       archive: 'delete',
-      delete_admin: 'delete',
-      copy: 'create',
+      delete: 'delete',
       print: 'export',
       changeclass: 'status'
     };
@@ -1268,66 +1593,31 @@ const LeadsModule = {
     
     if (type === 'followup') {
       this.showManageFollowup(id);
-    } else if (type === 'edit') {
-      this.showAddEditModal(lead);
-    } else if (type === 'submit') {
-      this.submitLead(id);
     } else if (type === 'changeclass') {
       this.showChangeClassModal(id);
-    } else if (type === 'note') {
-      this.recordTimelineAction(lead, 'Internal Note', 'Internal note added for counselor review.');
-      this.showToast(`Internal note added for ${lead.name}`, 'success');
-    } else if (type === 'assign') {
-      lead.assignedTo = lead.assignedTo === 'Bharat Sir' ? 'Vivek Sir' : 'Bharat Sir';
-      lead.owner = lead.assignedTo;
-      this.recordTimelineAction(lead, 'Assignment Changed', `Assigned to ${lead.assignedTo}.`);
-      this.applyFilters();
-      this.showToast(`${lead.name} assigned to ${lead.assignedTo}`, 'success');
     } else if (type === 'counselling') {
       this.showCounsellingModal(id);
-    } else if (type === 'convert') {
-      lead.status = 'admission_process';
-      lead.statusLabel = 'Admission Form';
-      lead.stage = 6;
-      lead.stageLabel = 'Admission';
-      lead.shortlistedForAdmission = true;
-      this.recordTimelineAction(lead, 'Shortlisted for Admission', 'Inquiry moved to admission form workflow.');
-      this.applyFilters();
-      this.updateStatusBarCounts();
-      this.showToast(`${lead.name} shortlisted for admission form`, 'success');
-    } else if (type === 'lost') {
-      this.showLostReasonModal(id);
     } else if (type === 'archive') {
       this.archiveLead(id);
-    } else if (type === 'delete_admin') {
+    } else if (type === 'delete') {
       this.addAuditRecord(lead, 'Admin delete requested');
       lead.archived = true;
       this.selectedLeads.delete(id);
       this.applyFilters();
       this.updateStatusBarCounts();
       this.showToast('Inquiry moved to Admin audit log.', 'warning');
-    } else if (type === 'copy') {
-      const copy = { ...lead, id: Date.now(), enqNo: `ENQ${Date.now().toString().slice(-6)}`, course: `${lead.course} (Copy)`, status: 'new', statusLabel: 'New', stage: 0, stageLabel: 'New', communications: [] };
-      this.leads.unshift(copy);
-      this.syncAppDataLeads();
-      this.applyFilters();
-      this.updateStatusBarCounts();
-      this.showToast(`Copied ${lead.name} as a new inquiry`, 'success');
+    } else if (type === 'duplicate_scan') {
+      this.showDuplicateScanModal(id);
     } else if (type === 'print') {
       DrawerModule.open(id);
       setTimeout(() => window.print(), 150);
-    } else {
-      const labels = {
-        print: 'Print Inquiry Form',
-        copy: 'Copy Lead for new course'
-      };
-      this.showToast(`${labels[type]} — ${lead.name}`, 'info');
     }
   },
 
   recordTimelineAction(lead, title, desc) {
     if (!lead.communications) lead.communications = [];
     const now = new Date();
+    this.stampLeadModified(lead, now);
     lead.communications.unshift({
       type: 'note',
       day: String(now.getDate()).padStart(2, '0'),
@@ -1377,10 +1667,13 @@ const LeadsModule = {
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
     const reason = document.getElementById('lost-reason-select')?.value || 'No Response';
-    lead.status = 'lost';
-    lead.statusLabel = 'Lost';
+    lead.stageKey = 'closed';
+    lead.stageStatus = '';
+    lead.status = 'closed';
+    lead.statusLabel = 'Closed';
     lead.lostReason = reason;
-    lead.stageLabel = 'Closed Inquiry';
+    this.normalizeLeadStageData(lead);
+    this.stampLeadModified(lead);
     this.recordTimelineAction(lead, 'Marked Lost', `Reason: ${reason}`);
     document.querySelector('.custom-modal-overlay')?.remove();
     this.applyFilters();
@@ -1871,6 +2164,8 @@ const LeadsModule = {
         lead.academicStatus = academicStatus;
         lead.query = query;
         if (!lead.utm) lead.utm = this.buildUtmTracking('CRM Add Inquiry');
+        this.normalizeLeadStageData(lead);
+        this.stampLeadModified(lead);
         this.showToast('Lead details updated successfully!', 'success');
       }
     } else {
@@ -1897,8 +2192,8 @@ const LeadsModule = {
         inquiryDate: timestamp,
         owner: 'Bharat Sir',
         ownerTeam: 'UPSC Team',
-        status: 'new',
-        statusLabel: 'New',
+        status: 'pending',
+        statusLabel: 'Pending',
         priority: 'medium',
         leadScore: 65,
         leadAge: '0 Days',
@@ -1908,10 +2203,13 @@ const LeadsModule = {
         assignedDate: timestamp,
         timeAgo: 'Just now',
         isHot: false,
+        stageKey: 'pending',
+        stageStatus: '',
         stage: 0,
-        stageLabel: 'New',
+        stageLabel: 'Pending',
         communications: []
       };
+      this.normalizeLeadStageData(newLead);
       this.leads.unshift(newLead);
       this.syncAppDataLeads();
       this.showToast('New inquiry added successfully!', 'success');
@@ -2044,10 +2342,12 @@ const LeadsModule = {
     const summary = document.getElementById('cs-summary').value;
     const remarks = document.getElementById('cs-remarks').value;
 
-    lead.status = 'counselling';
-    lead.statusLabel = 'Counselling';
-    lead.stage = Math.max(lead.stage || 0, 4);
+    lead.stageKey = 'counselling';
+    lead.stageStatus = 'conducted';
+    lead.status = 'conducted';
     lead.counselling = { date, time, counselor, mode, interest, parentInvolvement, nextAction, course, learningMode, requirement, summary, remarks };
+    this.normalizeLeadStageData(lead);
+    this.stampLeadModified(lead);
     this.recordTimelineAction(lead, 'Counselling Conducted', `${mode}. ${summary} Interest: ${interest}. Parent involvement: ${parentInvolvement}. Next action: ${nextAction}.`);
     document.querySelector('.custom-modal-overlay')?.remove();
     this.applyFilters();
@@ -2212,8 +2512,31 @@ const LeadsModule = {
     lead.followupStatus = followupStatus;
     lead.followupOutcome = outcome;
     lead.followupPurpose = purpose;
-    if (followupStatus === 'Completed') lead.status = outcome === 'Counselling Required' ? 'counselling' : 'followup';
-    if (lead.status === 'followup') lead.statusLabel = 'Follow-up';
+    if (followupStatus === 'Completed') {
+      if (outcome === 'Counselling Required') {
+        lead.stageKey = 'counselling';
+        lead.stageStatus = 'schedule';
+        lead.status = 'schedule';
+      } else if (outcome === 'Admission Form Sent' || outcome === 'Admission Confirmed') {
+        lead.stageKey = 'admission_form';
+        lead.stageStatus = outcome === 'Admission Confirmed' ? 'form_submitted' : 'form_submission';
+        lead.status = lead.stageStatus;
+      } else if (outcome === 'Not Interested') {
+        lead.stageKey = 'closed';
+        lead.stageStatus = '';
+        lead.status = 'closed';
+      } else {
+        lead.stageKey = 'voicecall';
+        lead.stageStatus = 'called';
+        lead.status = 'called';
+      }
+    } else {
+      lead.stageKey = 'voicecall';
+      lead.stageStatus = followupStatus === 'Rescheduled' ? 'schedule' : 'schedule';
+      lead.status = 'schedule';
+    }
+    this.normalizeLeadStageData(lead);
+    this.stampLeadModified(lead);
     this.syncAppDataLeads();
     this.showToast('Follow-up activity recorded successfully!', 'success');
     document.querySelector('.custom-modal-overlay')?.remove();
@@ -2225,11 +2548,11 @@ const LeadsModule = {
     if (!lead) return;
     
     if (confirm(`Are you sure you want to convert the inquiry "${lead.name}" to admission?`)) {
-      lead.status = 'admission_process';
-      lead.statusLabel = 'Admission Form';
-      lead.stage = 6;
-      lead.stageLabel = 'Admission';
-      lead.shortlistedForAdmission = true;
+      lead.stageKey = 'admission_form';
+      lead.stageStatus = 'form_submission';
+      lead.status = 'form_submission';
+      this.normalizeLeadStageData(lead);
+      this.stampLeadModified(lead);
       this.recordTimelineAction(lead, 'Shortlisted for Admission', 'Admission form workflow started.');
       
       this.applyFilters();
@@ -2241,6 +2564,7 @@ const LeadsModule = {
   showChangeClassModal(id) {
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
+    const currentStage = this.getLeadStatusKey(lead);
     
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
@@ -2252,23 +2576,19 @@ const LeadsModule = {
         </div>
         <div class="custom-modal-body">
           <div class="form-field">
-            <label>Current Status</label>
-            <input type="text" value="${lead.statusLabel}" readonly style="background:var(--bg)">
+            <label>Current Stage</label>
+            <input type="text" value="${this.formatStageLabel(currentStage)}" readonly class="readonly-field">
           </div>
           <div class="form-field">
-            <label>Select New Status</label>
+            <label>Select New Stage</label>
             <select id="c-status">
-              <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New Inquiry</option>
-              <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
-              <option value="followup" ${lead.status === 'followup' ? 'selected' : ''}>Follow-up</option>
-              <option value="counselling" ${lead.status === 'counselling' ? 'selected' : ''}>Counselling</option>
-              <option value="admission_process" ${lead.status === 'admission_process' ? 'selected' : ''}>Admission Form</option>
-              <option value="lost" ${lead.status === 'lost' ? 'selected' : ''}>Lost</option>
-              <option value="closed" ${lead.status === 'closed' ? 'selected' : ''}>Closed</option>
-              <option value="exam" ${lead.status === 'exam' ? 'selected' : ''}>Admission: Exam</option>
-              <option value="interview" ${lead.status === 'interview' ? 'selected' : ''}>Admission: Interview</option>
-              <option value="admission_confirmed" ${lead.status === 'admission_confirmed' ? 'selected' : ''}>Admission: Confirmed</option>
-              <option value="admission_rejected" ${lead.status === 'admission_rejected' ? 'selected' : ''}>Admission: Rejected</option>
+              <option value="pending" ${currentStage === 'pending' ? 'selected' : ''}>Pending</option>
+              <option value="voicecall" ${currentStage === 'voicecall' ? 'selected' : ''}>Voicecall</option>
+              <option value="hot_lead" ${currentStage === 'hot_lead' ? 'selected' : ''}>Hot Lead</option>
+              <option value="cold_lead" ${currentStage === 'cold_lead' ? 'selected' : ''}>Cold Lead</option>
+              <option value="counselling" ${currentStage === 'counselling' ? 'selected' : ''}>Counselling</option>
+              <option value="admission_form" ${currentStage === 'admission_form' ? 'selected' : ''}>Admission Form</option>
+              <option value="closed" ${currentStage === 'closed' ? 'selected' : ''}>Closed</option>
             </select>
           </div>
         </div>
@@ -2286,40 +2606,127 @@ const LeadsModule = {
     if (!lead) return;
     
     const newStatus = document.getElementById('c-status').value;
-    const statusLabels = {
-      new: 'New',
-      pending: 'Pending',
-      contacted: 'Contacted',
-      followup: 'Follow-up',
-      counselling: 'Counselling',
-      admission_process: 'Admission Form',
-      lost: 'Lost',
-      closed: 'Closed',
-      exam: 'Exam',
-      interview: 'Interview',
-      admission_confirmed: 'Admission Confirmed',
-      admission_rejected: 'Admission Rejected'
-    };
-    
-    lead.status = newStatus;
-    lead.statusLabel = statusLabels[newStatus];
-    lead.shortlistedForAdmission = ['admission_process', 'exam', 'interview', 'admission_confirmed', 'admission_rejected'].includes(newStatus);
-    
-    if (newStatus === 'new') { lead.stage = 0; lead.stageLabel = 'New'; }
-    else if (newStatus === 'contacted') { lead.stage = 1; lead.stageLabel = 'Contacted'; }
-    else if (newStatus === 'followup') { lead.stage = 3; lead.stageLabel = 'Follow-up'; }
-    else if (newStatus === 'counselling') { lead.stage = 2; lead.stageLabel = 'Counselling'; }
-    else if (newStatus === 'admission_process') { lead.stage = 6; lead.stageLabel = 'Admission'; }
-    else if (newStatus === 'lost') { lead.stage = 5; lead.stageLabel = 'Closed'; }
-    else if (newStatus === 'exam' || newStatus === 'interview') { lead.stage = 3; lead.stageLabel = 'Form Sent'; }
-    else if (newStatus === 'admission_confirmed' || newStatus === 'admission_rejected') { lead.stage = 4; lead.stageLabel = 'Admission'; }
-    else if (newStatus === 'closed') { lead.stage = 5; lead.stageLabel = 'Closed'; }
-    
-    this.showToast(`Status updated to ${statusLabels[newStatus]} successfully!`, 'success');
+    lead.stageKey = newStatus;
+    lead.stageStatus =
+      newStatus === 'voicecall' ? 'schedule' :
+      newStatus === 'counselling' ? 'schedule' :
+      newStatus === 'admission_form' ? 'form_submission' :
+      '';
+    lead.status = lead.stageStatus || newStatus;
+    this.normalizeLeadStageData(lead);
+    this.stampLeadModified(lead);
+
+    this.showToast(`Stage updated to ${this.formatStageLabel(newStatus)} successfully!`, 'success');
     document.querySelector('.custom-modal-overlay')?.remove();
     this.applyFilters();
     this.updateStatusBarCounts();
     this.syncAppDataLeads();
+  },
+
+  findDuplicateLeads(leadId) {
+    const sourceLead = this.leads.find((lead) => lead.id === leadId);
+    if (!sourceLead) return { sourceLead: null, matches: [] };
+    const comparableFields = [
+      ['name', sourceLead.name],
+      ['phone', sourceLead.phone],
+      ['email', sourceLead.email],
+      ['state', this.getLeadState(sourceLead)],
+      ['district', this.getLeadDistrict(sourceLead)],
+      ['course', sourceLead.course],
+      ['batch', sourceLead.batch || ''],
+      ['mode', sourceLead.mode || ''],
+      ['academicStatus', sourceLead.academicStatus],
+      ['query', sourceLead.query || '']
+    ];
+
+    const matches = this.applyRoleScope(this.leads).filter((lead) => {
+      if (lead.id === leadId || lead.archived) return false;
+      const matchedFields = comparableFields
+        .filter(([field, value]) => String(value || '').trim() && String((field === 'state' ? this.getLeadState(lead) : field === 'district' ? this.getLeadDistrict(lead) : lead[field]) || '').trim().toLowerCase() === String(value).trim().toLowerCase())
+        .map(([field]) => field);
+      const qualifies = matchedFields.includes('phone') || matchedFields.includes('email') || (matchedFields.includes('name') && matchedFields.includes('course')) || matchedFields.length >= 4;
+      return qualifies ? { ...lead, matchedFields } : false;
+    }).map((lead) => {
+      const matchedFields = comparableFields
+        .filter(([field, value]) => String(value || '').trim() && String((field === 'state' ? this.getLeadState(lead) : field === 'district' ? this.getLeadDistrict(lead) : lead[field]) || '').trim().toLowerCase() === String(value).trim().toLowerCase())
+        .map(([field]) => field);
+      return { ...lead, matchedFields };
+    });
+
+    return { sourceLead, matches };
+  },
+
+  renderDuplicateRecordCard(lead, checkboxName) {
+    const stageKey = this.getLeadStatusKey(lead);
+    const stageStatusLabel = this.formatStageStatusLabel(stageKey, this.getLeadSubStatusKey(lead));
+    return `
+      <label class="segment-selection-card duplicate-record-card">
+        <input type="checkbox" name="${checkboxName}" value="${lead.id}">
+        <span class="segment-selection-body">
+          <span class="segment-selection-head">
+            <strong>${lead.name} (${lead.enqNo})</strong>
+            <span>${lead.phone}</span>
+          </span>
+          <span class="segment-selection-meta">Matched fields: ${lead.matchedFields.join(', ')}</span>
+          <span class="segment-selection-meta">Email: ${lead.email || '-'}</span>
+          <span class="segment-selection-meta">Location: ${this.getLeadDistrict(lead)}, ${this.getLeadState(lead)}</span>
+          <span class="segment-selection-meta">Course: ${lead.course || '-'} | Batch: ${lead.batch || '-'} | Mode: ${lead.mode || '-'}</span>
+          <span class="segment-selection-meta">Academic Status: ${lead.academicStatus || '-'} | Query: ${lead.query || '-'}</span>
+          <span class="segment-selection-meta">Stage: ${this.formatStageLabel(stageKey)}${stageStatusLabel ? ` - ${stageStatusLabel}` : ''}</span>
+        </span>
+      </label>
+    `;
+  },
+
+  showDuplicateScanModal(leadId) {
+    const { sourceLead, matches } = this.findDuplicateLeads(leadId);
+    if (!sourceLead) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card wide">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-clone" style="color:var(--primary)"></i> Duplicate Scan</span>
+          <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="custom-modal-body">
+          <div class="form-field full" style="margin-bottom:16px">
+            <label>Selected Lead</label>
+            <div class="readonly-field">${sourceLead.name} | ${sourceLead.phone} | ${sourceLead.email || '-'} | ${this.getLeadDistrict(sourceLead)}, ${this.getLeadState(sourceLead)} | ${sourceLead.course}</div>
+          </div>
+          ${matches.length ? `
+            <form id="duplicate-scan-form" data-source-id="${leadId}" onsubmit="event.preventDefault(); LeadsModule.archiveSelectedDuplicates()">
+              <div class="segment-selection-list">
+                ${matches.map((lead) => this.renderDuplicateRecordCard(lead, 'duplicate-lead-id')).join('')}
+              </div>
+              <input type="submit" id="duplicate-scan-submit" style="display:none">
+            </form>
+          ` : '<div class="readonly-field">No matching duplicate records found.</div>'}
+        </div>
+        <div class="custom-modal-footer">
+          <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Close</button>
+          ${matches.length ? `<button class="btn btn-primary btn-sm" onclick="document.getElementById('duplicate-scan-submit').click()">Archive Selected</button>` : ''}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  },
+
+  archiveSelectedDuplicates() {
+    const ids = Array.from(document.querySelectorAll('input[name="duplicate-lead-id"]:checked')).map((input) => Number(input.value)).filter(Boolean);
+    if (!ids.length) return this.showToast('Select duplicate records to archive.', 'warning');
+    ids.forEach((id) => {
+      const lead = this.leads.find((item) => item.id === id);
+      if (!lead) return;
+      this.addAuditRecord(lead, 'Archived from duplicate scan');
+      lead.archived = true;
+      this.selectedLeads.delete(id);
+    });
+    document.querySelector('.custom-modal-overlay')?.remove();
+    this.applyFilters();
+    this.updateStatusBarCounts();
+    this.syncAppDataLeads();
+    this.showToast(`${ids.length} duplicate record(s) archived`, 'success');
   },
 
   archiveLead(id) {
@@ -2439,9 +2846,7 @@ const LeadsModule = {
       'export-leads-btn': 'Export',
       'download-leads-btn': 'Download',
       'email-all-btn': 'Email All',
-      'sort-toggle-btn': 'Sort',
-      'row-view-btn': 'Row View',
-      'calendar-view-btn': 'Calendar View',
+      'view-toggle-btn': 'Calendar View',
       'collapse-toggle-btn': 'Expand All'
     };
     Object.entries(toolbarLabels).forEach(([id, label]) => {
@@ -2452,7 +2857,8 @@ const LeadsModule = {
   normalizeBulkToolbar() {
     const actionLabels = {
       email: 'Email',
-      status: 'Status',
+      stages: 'Stages',
+      status: 'Stages',
       segment: 'Segment',
       export: 'Export Selected',
       archive: 'Archive'
@@ -2473,14 +2879,12 @@ const LeadsModule = {
     document.getElementById('mass-admit-btn')?.remove();
     this.normalizeToolbarButtons();
     this.normalizeBulkToolbar();
+    this.updateSortButtonLabel();
+    this.updateViewToggleButton();
 
-    // View mode toggles
-    const rowBtn = document.getElementById('row-view-btn');
-    const calendarBtn = document.getElementById('calendar-view-btn');
-    rowBtn?.addEventListener('click', () => this.toggleViewMode('row'));
-    calendarBtn?.addEventListener('click', () => {
-      this.toggleViewMode('row');
-      App.goToCalendar();
+    const viewToggleBtn = document.getElementById('view-toggle-btn');
+    viewToggleBtn?.addEventListener('click', () => {
+      this.toggleViewMode(this.viewMode === 'row' ? 'calendar' : 'row');
     });
 
     // Collapse/Expand toggle
@@ -2546,23 +2950,32 @@ const LeadsModule = {
       const allowed =
         action === 'segment' ? this.can('inquiryList', 'assign') :
         action === 'archive' ? this.can('inquiryList', 'delete') :
-        action === 'status' ? this.can('inquiryList', 'status') :
+        (action === 'status' || action === 'stages') ? this.can('inquiryList', 'status') :
         true;
       btn.style.display = allowed ? '' : 'none';
     });
   },
 
+  updateViewToggleButton() {
+    const button = document.getElementById('view-toggle-btn');
+    if (!button) return;
+    const targetMode = this.viewMode === 'row' ? 'calendar' : 'row';
+    const icon = targetMode === 'calendar' ? 'fa-calendar-alt' : 'fa-list';
+    const label = targetMode === 'calendar' ? 'Calendar View' : 'Row View';
+    button.classList.add('icon-only');
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.innerHTML = `<i class="fas ${icon}"></i>`;
+  },
+
   toggleViewMode(mode) {
-    const rowBtn = document.getElementById('row-view-btn');
-    const calendarBtn = document.getElementById('calendar-view-btn');
     const leadList = document.getElementById('lead-list');
     const calendarView = document.getElementById('lead-calendar-view');
     const pagination = document.querySelector('.leads-pagination');
     const collapseBtn = document.getElementById('collapse-toggle-btn');
 
     this.viewMode = mode;
-    if (rowBtn) rowBtn.classList.toggle('active', mode === 'row');
-    if (calendarBtn) calendarBtn.classList.toggle('active', mode === 'calendar');
+    this.updateViewToggleButton();
 
     if (leadList) leadList.style.display = mode === 'row' ? 'flex' : 'none';
     if (calendarView) calendarView.style.display = mode === 'calendar' ? 'block' : 'none';
