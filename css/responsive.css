@@ -90,10 +90,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1280;
     border-radius: 10px;
     border: 1px solid var(--border);
     background: var(--bg-card);
     color: var(--text-primary);
+    box-shadow: var(--shadow-md);
     flex-shrink: 0;
   }
 
@@ -1711,8 +1716,8 @@ textarea {
   }
 
   .mobile-menu-btn {
-    grid-column: 1;
-    grid-row: 1;
+    top: 10px;
+    left: var(--mobile-page-gutter);
   }
 
   .topbar-spacer,

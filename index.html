@@ -134,6 +134,17 @@
           </div>
         </nav>
 
+        <div class="sidebar-account">
+          <div
+            class="nav-subitem account-settings-trigger"
+            data-account-settings
+            onclick="AccountSettingsModule.open()"
+          >
+            <i class="fas fa-user-cog" style="width: 12px; color: inherit"></i>
+            Account Settings
+          </div>
+        </div>
+
         <div class="sidebar-footer">
           <div class="sidebar-help">
             <div class="help-icon"><i class="fas fa-headset"></i></div>
@@ -147,62 +158,29 @@
 
       <!-- ===== MAIN CONTENT ===== -->
       <div class="main-content">
-        <!-- Top Bar -->
-        <header class="topbar">
-          <div class="topbar-search">
-            <i class="fas fa-search search-icon"></i>
-            <input
-              placeholder="Search inquiry no., student name, mobile number, or email ID..."
-              id="global-search"
-            />
-          </div>
-          <div class="topbar-spacer"></div>
-          <div
-            id="page-section-title"
-            style="font-size: 12px; color: var(--text-muted); font-weight: 500"
-          ></div>
-          <div class="topbar-actions">
-            <div class="role-switcher-wrap" id="role-switcher-wrap"></div>
-            <button
-              class="topbar-icon-btn audit-btn is-hidden"
-              title="Audit Log"
-              id="audit-btn"
-            >
-              <i class="fas fa-shield-halved"></i>
-            </button>
-            <button
-              id="theme-toggle"
-              class="topbar-icon-btn"
-              title="Toggle theme"
-              aria-label="Toggle theme"
-            >
-              <i class="fas fa-sun" id="theme-icon"></i>
-            </button>
-            <button
-              class="topbar-icon-btn"
-              title="Notifications"
-              id="notification-btn"
-            >
-              <i class="fas fa-bell"></i>
-              <span class="notif-badge">10</span>
-            </button>
-            <div class="topbar-user">
-              <div class="user-avatar">BS</div>
-              <div class="user-info">
-                <div class="user-name">Bharat Sir</div>
-                <div class="user-role">Admin</div>
+        <aside
+          class="account-settings-panel"
+          id="account-settings-panel"
+          aria-hidden="true"
+        >
+          <div class="account-settings-card">
+            <div class="account-settings-header">
+              <div>
+                <div class="account-settings-eyebrow">Account Settings</div>
+                <h2>Preferences</h2>
               </div>
-              <i
-                class="fas fa-chevron-down"
-                style="
-                  font-size: 10px;
-                  color: var(--text-muted);
-                  margin-left: 4px;
-                "
-              ></i>
+              <button
+                class="account-settings-close"
+                type="button"
+                onclick="AccountSettingsModule.close()"
+                aria-label="Close account settings"
+              >
+                <i class="fas fa-times"></i>
+              </button>
             </div>
+            <div class="account-settings-body" id="account-settings-body"></div>
           </div>
-        </header>
+        </aside>
 
         <!-- ======================================
          SCREEN 1: STUDENT INQUIRY DASHBOARD

@@ -250,6 +250,22 @@
   flex-shrink: 0;
 }
 
+.sidebar-account {
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+
+.account-settings-trigger {
+  border: 1px solid var(--sidebar-border);
+  background: var(--sidebar-hover);
+  border-radius: var(--radius-md);
+}
+
+.account-settings-trigger:hover {
+  color: var(--sidebar-text-active);
+  box-shadow: var(--shadow-sm);
+}
+
 .sidebar-help {
   display: flex;
   align-items: center;

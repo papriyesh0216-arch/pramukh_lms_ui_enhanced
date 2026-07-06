@@ -108,7 +108,7 @@ const AuthModule = {
   },
 
   renderSwitcher() {
-    const container = document.getElementById('role-switcher-wrap');
+    const container = document.getElementById('account-role-switcher-wrap') || document.getElementById('role-switcher-wrap');
     if (!container) return;
     container.innerHTML = `
       <label class="role-switcher-label" for="role-switcher">Role</label>
@@ -125,6 +125,7 @@ const AuthModule = {
       select.addEventListener('change', () => {
         this.setRole(select.value);
         this.refreshRoleViews();
+        AccountSettingsModule?.render?.();
       });
     }
     this.applyTopbar();
@@ -141,6 +142,7 @@ const AuthModule = {
     if (role) role.textContent = profile.roleLine;
     if (badge) badge.textContent = profile.scopeLine;
     document.getElementById('audit-btn')?.classList.toggle('is-hidden', !this.can('audit', 'view'));
+    AccountSettingsModule?.syncProfile?.();
   },
 
   refreshRoleViews() {
@@ -170,6 +172,138 @@ function can(module, action) {
 window.AuthModule = AuthModule;
 window.can = can;
 
+const AccountSettingsModule = {
+  notifications: [
+    { title: 'Follow-up due today', meta: '2 inquiries need action' },
+    { title: 'Counselling scheduled', meta: '1 session pending' },
+    { title: 'Admission form updates', meta: '4 records in progress' }
+  ],
+
+  init() {
+    this.render();
+    this.applyThemeState();
+    document.getElementById('account-settings-panel')?.addEventListener('click', (event) => {
+      if (event.target.id === 'account-settings-panel') this.close();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') this.close();
+    });
+  },
+
+  open() {
+    this.render();
+    document.getElementById('account-settings-panel')?.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('account-settings-open');
+  },
+
+  close() {
+    document.getElementById('account-settings-panel')?.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('account-settings-open');
+  },
+
+  render() {
+    const body = document.getElementById('account-settings-body');
+    if (!body) return;
+    const profile = AuthModule.profile;
+    body.innerHTML = `
+      <section class="account-settings-section">
+        <div class="account-settings-section-title">
+          <i class="fas fa-palette"></i>
+          <span>Theme</span>
+        </div>
+        <button class="account-settings-action" id="account-theme-toggle" type="button">
+          <span><i class="fas fa-sun" id="account-theme-icon"></i> Theme Mode</span>
+          <strong id="account-theme-label">Light</strong>
+        </button>
+      </section>
+
+      <section class="account-settings-section">
+        <div class="account-settings-section-title">
+          <i class="fas fa-bell"></i>
+          <span>Notifications</span>
+        </div>
+        <div class="account-notification-list">
+          ${this.notifications.map(item => `
+            <div class="account-notification-item">
+              <strong>${item.title}</strong>
+              <span>${item.meta}</span>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+
+      <section class="account-settings-section">
+        <div class="account-settings-section-title">
+          <i class="fas fa-user-shield"></i>
+          <span>Account / Role Selector</span>
+        </div>
+        <div class="role-switcher-wrap account-role-switcher" id="account-role-switcher-wrap"></div>
+        <button class="account-settings-action audit-btn is-hidden" id="audit-btn" type="button">
+          <span><i class="fas fa-shield-halved"></i> Audit Log</span>
+          <strong>Open</strong>
+        </button>
+      </section>
+
+      <section class="account-settings-section">
+        <div class="account-settings-section-title">
+          <i class="fas fa-id-badge"></i>
+          <span>My Account</span>
+        </div>
+        <div class="account-profile-card">
+          <div class="user-avatar">${profile.initials}</div>
+          <div class="user-info">
+            <div class="user-name">${profile.user}</div>
+            <div class="user-role">${profile.roleLine}</div>
+            <div class="account-profile-meta">${profile.scopeLine}</div>
+          </div>
+        </div>
+      </section>
+    `;
+    AuthModule.renderSwitcher();
+    this.bindThemeToggle();
+    this.syncProfile();
+    document.getElementById('audit-btn')?.addEventListener('click', () => App.showAuditLog());
+  },
+
+  syncProfile() {
+    const profile = AuthModule.profile;
+    document.querySelectorAll('.user-avatar').forEach(item => { item.textContent = profile.initials; });
+    document.querySelectorAll('.user-name').forEach(item => { item.textContent = profile.user; });
+    document.querySelectorAll('.user-role').forEach(item => { item.textContent = profile.roleLine; });
+    const meta = document.querySelector('.account-profile-meta');
+    if (meta) meta.textContent = profile.scopeLine;
+  },
+
+  bindThemeToggle() {
+    document.getElementById('account-theme-toggle')?.addEventListener('click', () => this.toggleTheme());
+    this.applyThemeState();
+  },
+
+  applyThemeState() {
+    const saved = localStorage.getItem('pa-theme');
+    const isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.body.classList.toggle('dark', isDark);
+    const icon = document.getElementById('account-theme-icon');
+    const label = document.getElementById('account-theme-label');
+    if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+    if (label) label.textContent = isDark ? 'Dark' : 'Light';
+  },
+
+  toggleTheme() {
+    const nowDark = !document.body.classList.contains('dark');
+    document.body.classList.toggle('dark', nowDark);
+    document.body.classList.remove('theme-fade');
+    void document.body.offsetWidth;
+    document.body.classList.add('theme-fade');
+    window.setTimeout(() => document.body.classList.remove('theme-fade'), 360);
+    try { localStorage.setItem('pa-theme', nowDark ? 'dark' : 'light'); } catch (e) {}
+    this.applyThemeState();
+    try { DashboardModule.refreshTheme?.(); } catch (e) {}
+  }
+};
+
+window.AccountSettingsModule = AccountSettingsModule;
+
 const App = {
   currentScreen: 'dashboard',
   expandedLeads: new Set(),
@@ -195,6 +329,7 @@ const App = {
     AuthModule.init();
     this.setupNavigation();
     this.setupTopbar();
+    AccountSettingsModule.init();
     this.setupResponsiveShell();
     this.setupMobileSectionTracking();
     this.setupGlobalButtons();
@@ -238,36 +373,16 @@ const App = {
   },
 
   setupTopbar() {
-    // Theme toggle: read preference and attach handler
     try {
-      const themeToggle = document.getElementById('theme-toggle');
-      const themeIcon = document.getElementById('theme-icon');
-      const saved = localStorage.getItem('pa-theme');
-      const isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      document.body.classList.toggle('dark', isDark);
-      if (themeIcon) themeIcon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-      if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-          const nowDark = !document.body.classList.contains('dark');
-          document.body.classList.toggle('dark', nowDark);
-          document.body.classList.remove('theme-fade');
-          void document.body.offsetWidth;
-          document.body.classList.add('theme-fade');
-          window.setTimeout(() => document.body.classList.remove('theme-fade'), 360);
-          if (themeIcon) themeIcon.className = nowDark ? 'fas fa-moon' : 'fas fa-sun';
-          try { localStorage.setItem('pa-theme', nowDark ? 'dark' : 'light'); } catch (e) {}
-          try { DashboardModule.refreshTheme?.(); } catch (e) {}
-        });
-      }
+      AccountSettingsModule.applyThemeState();
     } catch (e) {
       // ignore
     }
   },
 
   setupResponsiveShell() {
-    const topbar = document.querySelector('.topbar');
     const sidebar = document.querySelector('.sidebar');
-    if (!topbar || !sidebar || document.getElementById('mobile-menu-btn')) return;
+    if (!sidebar || document.getElementById('mobile-menu-btn')) return;
 
     const menuBtn = document.createElement('button');
     menuBtn.id = 'mobile-menu-btn';
@@ -279,7 +394,7 @@ const App = {
     const backdrop = document.createElement('div');
     backdrop.className = 'mobile-nav-backdrop';
 
-    topbar.insertBefore(menuBtn, topbar.firstChild);
+    document.body.appendChild(menuBtn);
     document.body.appendChild(backdrop);
 
     this.closeResponsiveMenu = () => {
@@ -296,7 +411,7 @@ const App = {
     menuBtn.addEventListener('click', toggleMenu);
     backdrop.addEventListener('click', this.closeResponsiveMenu);
     sidebar.addEventListener('click', (event) => {
-      if (event.target.closest('[data-screen], .nav-sub-subitem:not([data-submenu])')) this.closeResponsiveMenu();
+      if (event.target.closest('[data-screen], .nav-sub-subitem:not([data-submenu]), [data-account-settings]')) this.closeResponsiveMenu();
     });
     window.addEventListener('resize', () => {
       if (window.innerWidth > 980) this.closeResponsiveMenu();
@@ -464,16 +579,11 @@ const App = {
   },
 
   setupGlobalButtons() {
-    document.getElementById('audit-btn')?.addEventListener('click', () => this.showAuditLog());
     document.getElementById('dashboard-print-btn')?.addEventListener('click', () => window.print());
     document.getElementById('counselor-download-btn')?.addEventListener('click', () => this.exportCounselorReport());
     document.getElementById('tasks-view-all-link')?.addEventListener('click', (e) => {
       e.preventDefault();
       this.goToCalendar();
-    });
-    document.getElementById('notification-btn')?.addEventListener('click', () => {
-      this.goToCalendar();
-      LeadsModule.showToast('Showing follow-up notifications in calendar', 'info');
     });
   },
 
@@ -1215,22 +1325,6 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => App.init());
 
-// Sidebar profile popup controls
-App.toggleSidebarProfilePopup = function () {
-  const popup = document.getElementById('account-settings-popup');
-
-  if (!popup) return;
-  const isHidden = popup.getAttribute('aria-hidden') === 'true';
-  popup.setAttribute('aria-hidden', String(!isHidden));
-};
-
-
-App.closeSidebarProfilePopup = function () {
-  const popup = document.getElementById('account-settings-popup');
-  if (!popup) return;
-  popup.setAttribute('aria-hidden', 'true');
-};
-
 // Sidebar collapse/expand (icon-only)
 App.toggleSidebarCollapsed = function () {
   document.body.classList.toggle('sidebar-collapsed');
@@ -1242,13 +1336,3 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('pa-sidebar-collapsed') === '1') document.body.classList.add('sidebar-collapsed');
   } catch (e) {}
 });
-
-document.addEventListener('click', (e) => {
-  const popup = document.getElementById('account-settings-popup');
-  if (!popup) return;
-  const opener = e.target.closest('#sidebar-profile-btn');
-  const insidePopup = e.target.closest('#account-settings-popup');
-  if (opener || insidePopup) return;
-  App.closeSidebarProfilePopup();
-});
-

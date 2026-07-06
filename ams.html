@@ -93,6 +93,17 @@
           </div>
         </nav>
 
+        <div class="sidebar-account">
+          <div
+            class="nav-subitem account-settings-trigger"
+            data-account-settings
+            onclick="AMSAccountSettings.open()"
+          >
+            <i class="fas fa-user-cog" style="width: 12px; color: inherit"></i>
+            Account Settings
+          </div>
+        </div>
+
         <div class="sidebar-footer">
           <div class="sidebar-help">
             <div class="help-icon"><i class="fas fa-headset"></i></div>
@@ -105,47 +116,29 @@
       </aside>
 
       <div class="main-content">
-        <header class="topbar">
-          <div class="topbar-search">
-            <i class="fas fa-search search-icon"></i>
-            <input
-              placeholder="Search admission no., student, course, mobile, document, fee status..."
-              id="global-search"
-            />
-          </div>
-          <div class="topbar-spacer"></div>
-          <div
-            id="page-section-title"
-            style="font-size: 12px; color: var(--text-muted); font-weight: 500"
-          >
-            Admission Dashboard
-          </div>
-          <div class="topbar-actions">
-            <button
-              id="theme-toggle"
-              class="topbar-icon-btn"
-              title="Toggle theme"
-              aria-label="Toggle theme"
-            >
-              <i class="fas fa-sun" id="theme-icon"></i>
-            </button>
-            <button class="topbar-icon-btn" title="Notifications">
-              <i class="fas fa-bell"></i>
-              <span class="notif-badge">6</span>
-            </button>
-            <div class="topbar-user">
-              <div class="user-avatar">AD</div>
-              <div class="user-info">
-                <div class="user-name">Admission Desk</div>
-                <div class="user-role">AMS Admin</div>
+        <aside
+          class="account-settings-panel"
+          id="account-settings-panel"
+          aria-hidden="true"
+        >
+          <div class="account-settings-card">
+            <div class="account-settings-header">
+              <div>
+                <div class="account-settings-eyebrow">Account Settings</div>
+                <h2>Preferences</h2>
               </div>
-              <i
-                class="fas fa-chevron-down"
-                style="font-size: 10px; color: var(--text-muted); margin-left: 4px"
-              ></i>
+              <button
+                class="account-settings-close"
+                type="button"
+                onclick="AMSAccountSettings.close()"
+                aria-label="Close account settings"
+              >
+                <i class="fas fa-times"></i>
+              </button>
             </div>
+            <div class="account-settings-body" id="account-settings-body"></div>
           </div>
-        </header>
+        </aside>
 
         <div class="screen active" id="screen-ams-dashboard">
           <div class="content-area ams-content">
@@ -295,6 +288,120 @@
     <script src="js/ams-data.js"></script>
     <script src="js/ams.js"></script>
     <script>
+      const AMSAccountSettings = {
+        notifications: [
+          { title: "Application review pending", meta: "3 student files need checks" },
+          { title: "Fee follow-up", meta: "2 payment records need action" },
+          { title: "Document verification", meta: "4 documents in review" },
+        ],
+
+        init() {
+          this.render();
+          this.applyThemeState();
+          document.getElementById("account-settings-panel")?.addEventListener("click", (event) => {
+            if (event.target.id === "account-settings-panel") this.close();
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") this.close();
+          });
+        },
+
+        open() {
+          this.render();
+          document.getElementById("account-settings-panel")?.setAttribute("aria-hidden", "false");
+          document.body.classList.add("account-settings-open");
+        },
+
+        close() {
+          document.getElementById("account-settings-panel")?.setAttribute("aria-hidden", "true");
+          document.body.classList.remove("account-settings-open");
+        },
+
+        render() {
+          const body = document.getElementById("account-settings-body");
+          if (!body) return;
+          body.innerHTML = `
+            <section class="account-settings-section">
+              <div class="account-settings-section-title">
+                <i class="fas fa-palette"></i>
+                <span>Theme</span>
+              </div>
+              <button class="account-settings-action" id="account-theme-toggle" type="button">
+                <span><i class="fas fa-sun" id="account-theme-icon"></i> Theme Mode</span>
+                <strong id="account-theme-label">Light</strong>
+              </button>
+            </section>
+
+            <section class="account-settings-section">
+              <div class="account-settings-section-title">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+              </div>
+              <div class="account-notification-list">
+                ${this.notifications
+                  .map(
+                    (item) => `
+                      <div class="account-notification-item">
+                        <strong>${item.title}</strong>
+                        <span>${item.meta}</span>
+                      </div>
+                    `,
+                  )
+                  .join("")}
+              </div>
+            </section>
+
+            <section class="account-settings-section">
+              <div class="account-settings-section-title">
+                <i class="fas fa-user-shield"></i>
+                <span>Account / Role Selector</span>
+              </div>
+              <div class="role-switcher-wrap account-role-switcher">
+                <label class="role-switcher-label" for="ams-role-switcher">Role</label>
+                <select class="role-switcher-select" id="ams-role-switcher" aria-label="AMS role" disabled>
+                  <option>AMS Admin - Admission Desk</option>
+                </select>
+                <span class="scope-badge">Admission Desk</span>
+              </div>
+            </section>
+
+            <section class="account-settings-section">
+              <div class="account-settings-section-title">
+                <i class="fas fa-id-badge"></i>
+                <span>My Account</span>
+              </div>
+              <div class="account-profile-card">
+                <div class="user-avatar">AD</div>
+                <div class="user-info">
+                  <div class="user-name">Admission Desk</div>
+                  <div class="user-role">AMS Admin</div>
+                  <div class="account-profile-meta">Admission operations</div>
+                </div>
+              </div>
+            </section>
+          `;
+          document.getElementById("account-theme-toggle")?.addEventListener("click", () => this.toggleTheme());
+          this.applyThemeState();
+        },
+
+        applyThemeState() {
+          const saved = localStorage.getItem("pa-theme");
+          const isDark = saved === "dark";
+          document.body.classList.toggle("dark", isDark);
+          const icon = document.getElementById("account-theme-icon");
+          const label = document.getElementById("account-theme-label");
+          if (icon) icon.className = isDark ? "fas fa-moon" : "fas fa-sun";
+          if (label) label.textContent = isDark ? "Dark" : "Light";
+        },
+
+        toggleTheme() {
+          const nowDark = !document.body.classList.contains("dark");
+          document.body.classList.toggle("dark", nowDark);
+          localStorage.setItem("pa-theme", nowDark ? "dark" : "light");
+          this.applyThemeState();
+        },
+      };
+
       const AMSApp = {
         currentScreen: "ams-dashboard",
         titles: {
@@ -303,7 +410,8 @@
         },
 
         init() {
-          this.setupTheme();
+          AMSAccountSettings.init();
+          this.setupResponsiveShell();
           this.showScreen("ams-dashboard");
           window.AMSModule?.init?.();
         },
@@ -343,18 +451,36 @@
           });
         },
 
-        setupTheme() {
-          const themeToggle = document.getElementById("theme-toggle");
-          const themeIcon = document.getElementById("theme-icon");
-          const saved = localStorage.getItem("pa-theme");
-          const isDark = saved === "dark";
-          document.body.classList.toggle("dark", isDark);
-          if (themeIcon) themeIcon.className = isDark ? "fas fa-moon" : "fas fa-sun";
-          themeToggle?.addEventListener("click", () => {
-            const nowDark = !document.body.classList.contains("dark");
-            document.body.classList.toggle("dark", nowDark);
-            if (themeIcon) themeIcon.className = nowDark ? "fas fa-moon" : "fas fa-sun";
-            localStorage.setItem("pa-theme", nowDark ? "dark" : "light");
+        setupResponsiveShell() {
+          const sidebar = document.querySelector(".sidebar");
+          if (!sidebar || document.getElementById("mobile-menu-btn")) return;
+
+          const menuBtn = document.createElement("button");
+          menuBtn.id = "mobile-menu-btn";
+          menuBtn.className = "mobile-menu-btn";
+          menuBtn.type = "button";
+          menuBtn.setAttribute("aria-label", "Open navigation");
+          menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+
+          const backdrop = document.createElement("div");
+          backdrop.className = "mobile-nav-backdrop";
+          document.body.appendChild(menuBtn);
+          document.body.appendChild(backdrop);
+
+          const closeMenu = () => {
+            document.body.classList.remove("mobile-nav-open");
+            menuBtn.setAttribute("aria-label", "Open navigation");
+            menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+          };
+
+          menuBtn.addEventListener("click", () => {
+            const isOpen = document.body.classList.toggle("mobile-nav-open");
+            menuBtn.setAttribute("aria-label", isOpen ? "Close navigation" : "Open navigation");
+            menuBtn.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+          });
+          backdrop.addEventListener("click", closeMenu);
+          sidebar.addEventListener("click", (event) => {
+            if (event.target.closest("[data-screen], [data-account-settings]")) closeMenu();
           });
         },
       };
