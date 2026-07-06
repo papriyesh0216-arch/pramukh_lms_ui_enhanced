@@ -475,10 +475,13 @@ const LeadsModule = {
   },
 
   applyFilters() {
+    // Read values only from the allowed filter set.
     this.filterCourse = document.getElementById('filter-course')?.value || this.filterCourse || 'all';
-    this.filterSource = document.getElementById('filter-source')?.value || this.filterSource || 'all';
     this.filterSearch = document.getElementById('filter-search-input')?.value || this.filterSearch || '';
+
+    // In the UI, Search represents (Name, Number, Email). Course/others are filtered separately.
     let result = this.applyRoleScope([...this.leads]).filter(l => !l.archived);
+
 
     // Apply status filter
     if (this.activeStatus !== 'all') {
@@ -2876,11 +2879,17 @@ const LeadsModule = {
   },
 
   setupToolbar() {
+    // Remove “Mass Admission” button if present
     document.getElementById('mass-admit-btn')?.remove();
+    document.querySelectorAll('button, .toolbar-btn').forEach((btn) => {
+      if (btn.textContent && btn.textContent.trim().toLowerCase() === 'mass admission') btn.remove();
+    });
+
     this.normalizeToolbarButtons();
     this.normalizeBulkToolbar();
     this.updateSortButtonLabel();
     this.updateViewToggleButton();
+
 
     const viewToggleBtn = document.getElementById('view-toggle-btn');
     viewToggleBtn?.addEventListener('click', () => {
