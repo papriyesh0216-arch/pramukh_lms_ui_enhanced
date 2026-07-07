@@ -1,64 +1,82 @@
 /* ============================================================
    INQUIRY-FORM.CSS — Standalone Inquiry Module
+   Compact premium form override
    ============================================================ */
 
 body.inquiry-page {
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(213, 148, 58, 0.12), transparent 28%),
+    linear-gradient(135deg, #f8fbff, #eef5fb);
   color: var(--text-primary);
-  overflow: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 100vh;
+  height: auto !important;
+}
+
+body.inquiry-page.dark {
+  background:
+    radial-gradient(circle at 12% 10%, rgba(242, 184, 91, 0.12), transparent 28%),
+    linear-gradient(135deg, #07111f, #0b1a2c);
 }
 
 .inquiry-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding: 16px 16px 28px;
 }
 
 .inquiry-topbar {
+  width: min(760px, 100%);
+  min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 16px 24px;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 0 auto 16px;
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  top: auto;
   z-index: 10;
 }
 
 .inquiry-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .inquiry-logo-mark {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--primary), var(--purple));
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--academy-blue), var(--academy-gold));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 16px var(--primary-shadow);
+  box-shadow: 0 10px 22px rgba(16, 56, 96, 0.18);
   overflow: hidden;
 }
 
 .inquiry-logo-mark img {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
 .inquiry-brand-title {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   color: var(--text-primary);
 }
 
 .inquiry-brand-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -72,14 +90,15 @@ body.inquiry-page {
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: 20px 24px 28px;
+  align-items: flex-start;
+  padding: 0;
 }
 
 .inquiry-panel {
-  width: min(1080px, 100%);
+  width: min(840px, 100%);
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 22px;
   box-shadow: var(--shadow-card);
   overflow: hidden;
 }
@@ -90,35 +109,39 @@ body.inquiry-page {
 }
 
 .inquiry-hero {
+  width: 100%;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 24px;
-  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-subtle) 100%);
+  padding: 16px 18px;
+  background:
+    radial-gradient(circle at 96% 20%, rgba(213, 148, 58, 0.12), transparent 32%),
+    linear-gradient(135deg, rgba(16, 56, 96, 0.05), rgba(213, 148, 58, 0.08));
   border-bottom: 1px solid var(--divider);
 }
 
 .inquiry-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--primary);
-  margin-bottom: 6px;
+  color: var(--academy-gold);
+  margin-bottom: 5px;
 }
 
 .panel-title {
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 900;
   margin: 0;
 }
 
 .panel-subtitle {
   font-size: 12px;
   color: var(--text-muted);
-  margin-top: 6px;
-  max-width: 62ch;
+  margin-top: 5px;
+  max-width: 58ch;
 }
 
 .inquiry-hero-meta {
@@ -129,10 +152,15 @@ body.inquiry-page {
   align-items: center;
 }
 
+.inquiry-hero-meta .badge-primary,
+.inquiry-hero-meta .badge:first-child:not(:last-child) {
+  display: none !important;
+}
+
 .inquiry-form {
-  padding: 24px;
+  padding: 18px;
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .inquiry-actions {
@@ -152,7 +180,9 @@ body.inquiry-page {
 }
 
 .modal-grid-2 {
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .form-field.full,
@@ -164,12 +194,145 @@ body.inquiry-page {
   display: none !important;
 }
 
-.radio-card-grid.cols-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.inquiry-form .form-field {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
 }
 
-.radio-card-grid.cols-2 {
+.inquiry-form .form-field label {
+  display: block;
+  margin: 0 0 5px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.inquiry-form input,
+.inquiry-form select,
+.inquiry-form textarea {
+  width: 100%;
+  min-height: 38px;
+  height: 38px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.inquiry-form textarea {
+  height: 74px;
+  min-height: 74px;
+  resize: vertical;
+}
+
+.radio-card-grid.cols-3,
+.radio-card-grid.cols-2,
+.inquiry-type-grid {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.inquiry-type-grid .radio-card,
+.radio-card-grid .radio-card {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.radio-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.radio-card .radio-mark {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong, var(--border));
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.radio-card input[type="radio"]:checked + .radio-mark {
+  border-color: var(--academy-blue);
+  box-shadow: inset 0 0 0 4px #fff;
+  background: var(--academy-blue);
+}
+
+.radio-card:has(input[type="radio"]:checked) {
+  border-color: var(--academy-blue);
+  background: rgba(16, 56, 96, 0.07);
+}
+
+.radio-title,
+.radio-subtitle {
+  display: block;
+  line-height: 1.15;
+}
+
+.radio-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.radio-subtitle {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.radio-inline-group {
+  min-height: 38px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.inquiry-form .btn,
+.inquiry-form button[type="submit"] {
+  min-height: 38px;
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 13px;
 }
 
 @media (max-width: 900px) {
@@ -180,42 +343,43 @@ body.inquiry-page {
   .inquiry-hero-meta {
     justify-content: flex-start;
   }
-
-  .inquiry-form {
-    padding: 20px;
-  }
 }
 
 @media (max-width: 720px) {
-  .inquiry-topbar,
-  .inquiry-stage {
-    padding-left: 16px;
-    padding-right: 16px;
+  .inquiry-shell {
+    padding: 12px;
   }
 
   .inquiry-topbar {
+    width: 100%;
     flex-direction: column;
     align-items: stretch;
+    border-radius: 18px;
   }
 
   .inquiry-topbar-actions {
     justify-content: space-between;
   }
 
-  .modal-grid-2 {
+  .inquiry-panel {
+    width: 100%;
+    border-radius: 18px;
+  }
+
+  .inquiry-hero,
+  .inquiry-form {
+    padding: 14px;
+  }
+
+  .modal-grid-2,
+  .radio-card-grid.cols-3,
+  .radio-card-grid.cols-2,
+  .inquiry-type-grid {
     grid-template-columns: 1fr;
   }
 
   .form-field.full,
   .form-field.span-2 {
     grid-column: auto;
-  }
-
-  .radio-card-grid.cols-3 {
-    grid-template-columns: 1fr;
-  }
-
-  .radio-card-grid.cols-2 {
-    grid-template-columns: 1fr;
   }
 }
