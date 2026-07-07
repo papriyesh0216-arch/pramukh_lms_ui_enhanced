@@ -1,445 +1,189 @@
-/* ============================================================
-   PREMIUM FIXES — Scrolling, compact inquiry form, component cleanup
-   Loaded after existing CSS. Keep behavior intact.
-   ============================================================ */
+/* Final premium fixes: archive, sidebar, visible buttons, inquiry form */
 
-/* Global scroll correction */
-html,
-body {
-  width: 100%;
-  min-height: 100%;
-}
-
-body:not(.inquiry-page) {
-  overflow: hidden !important;
-}
-
-.app-shell {
-  height: 100vh !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
-
-.main-content {
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
-
-.screen.active {
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
-
-.content-area,
-#screen-dashboard .content-area,
-#screen-calendar .content-area,
-#screen-segmentation .content-area,
-#screen-ams-dashboard .content-area,
-#screen-ams-students .content-area {
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  scrollbar-gutter: stable;
-}
-
-#screen-leads {
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  scrollbar-gutter: stable;
-  padding-bottom: 28px;
-}
-
-#screen-leads .lead-list,
-#screen-leads .lead-calendar-view,
+/* Archive view */
 #screen-leads .archived-lead-view {
-  flex: 0 0 auto !important;
-  overflow: visible !important;
+  margin: 0 28px 28px !important;
+  padding: 22px !important;
+  background: linear-gradient(135deg, #ffffff, #f8fbff) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(16, 56, 96, 0.12) !important;
+  border-radius: 26px !important;
+  box-shadow: 0 20px 52px rgba(16, 56, 96, 0.12) !important;
 }
-
-.sidebar {
-  height: 100vh !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+body.dark #screen-leads .archived-lead-view {
+  background: linear-gradient(135deg, #0f2238, #0b1a2c) !important;
+  color: #f8fafc !important;
 }
-
-/* Account settings must behave like an overlay drawer, not push page content */
-.account-settings-panel {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 5000 !important;
-  display: flex !important;
-  justify-content: flex-end !important;
-  align-items: stretch !important;
-  background: rgba(7, 17, 31, 0.46) !important;
-  backdrop-filter: blur(6px) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  overflow: hidden !important;
+#screen-leads .archived-eyebrow { color: var(--academy-gold) !important; }
+#screen-leads .archived-lead-head h2 { color: var(--text-primary) !important; font-weight: 900 !important; }
+body.dark #screen-leads .archived-lead-head h2 { color: #fff !important; }
+#screen-leads .archived-status-tab {
+  background: rgba(255,255,255,.8) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
 }
-
-.account-settings-panel[aria-hidden="false"] {
-  opacity: 1 !important;
-  pointer-events: auto !important;
+#screen-leads .archived-status-tab.active {
+  background: linear-gradient(135deg, var(--academy-blue), var(--academy-blue-2)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
-
-.account-settings-card {
-  width: min(420px, 100vw) !important;
-  max-width: 100vw !important;
-  height: 100vh !important;
-  margin: 0 !important;
-  border-radius: 24px 0 0 24px !important;
-  transform: translateX(100%) !important;
-  transition: transform 0.24s ease !important;
-  overflow: hidden !important;
+#screen-leads .archived-lead-row {
+  background: rgba(255,255,255,.78) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(16,56,96,.12) !important;
+  border-radius: 18px !important;
 }
+body.dark #screen-leads .archived-lead-row { background: rgba(255,255,255,.05) !important; }
+#screen-leads .archived-lead-row strong { color: var(--text-primary) !important; }
+body.dark #screen-leads .archived-lead-row strong { color: #fff !important; }
+#screen-leads .archived-label { color: var(--text-muted) !important; }
+#screen-leads .archived-lead-meta { color: var(--text-secondary) !important; }
+#screen-leads .archived-status-pill { background: var(--accent-light) !important; color: var(--accent) !important; }
 
-.account-settings-panel[aria-hidden="false"] .account-settings-card {
-  transform: translateX(0) !important;
-}
-
-.account-settings-header {
-  padding: 16px 18px !important;
-  min-height: 72px !important;
-}
-
-.account-settings-header h2 {
-  font-size: 19px !important;
-  line-height: 1.15 !important;
-}
-
-.account-settings-body {
-  padding: 14px 16px 20px !important;
-  overflow-y: auto !important;
-  display: grid !important;
-  gap: 12px !important;
-}
-
-.account-settings-section,
-.account-profile-card,
-.account-notification-item {
-  border-radius: 16px !important;
-}
-
-/* Main page spacing cleanup */
-.content-area {
-  padding: 24px 28px !important;
-}
-
-.dashboard-hero-header,
-.dashboard-header {
-  margin-bottom: 18px !important;
-}
-
-.kpi-row,
-.dashboard-grid,
-.dashboard-bottom-row,
-.dashboard-ops-grid,
-.assignment-layout,
-.segmentation-layout {
-  gap: 16px !important;
-}
-
-/* Stop cards from becoming too large */
-.kpi-card {
-  min-height: 96px !important;
-  padding: 16px 18px !important;
-}
-
-.chart-card,
-.table-card,
-.tasks-card,
-.score-guide-card,
-.mini-calendar-card,
-.dashboard-command-panel,
-.segmentation-card,
-.future-enhancement-card {
-  padding: 16px !important;
-}
-
-/* Lead management cleanup */
-.lead-list-switch {
-  margin: 18px 22px 12px !important;
-  padding: 10px !important;
-  gap: 10px !important;
-}
-
-.lead-switch-card {
-  min-height: 64px !important;
-  padding: 12px 16px !important;
-}
-
-.status-bar,
-.status-sub-bar,
-.leads-toolbar,
-.leads-filter-panel,
-.leads-info-bar,
-.leads-pagination {
-  margin-left: 22px !important;
-  margin-right: 22px !important;
-}
-
-.leads-toolbar {
-  padding: 14px !important;
-}
-
-.lead-card {
-  margin-left: 22px !important;
-  margin-right: 22px !important;
-}
-
-.lead-card-header {
-  padding: 14px 16px !important;
-}
-
-/* Form controls should not look like huge cards everywhere */
-.form-field,
-.modal-section,
-.form-section,
-.drawer-info-card,
-.profile-card {
-  box-shadow: none !important;
-}
-
-/* Compact standalone Inquiry Form */
-body.inquiry-page {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  min-height: 100vh !important;
-  height: auto !important;
-}
-
-.inquiry-shell {
-  min-height: 100vh !important;
-  padding: 18px 18px 28px !important;
-}
-
-.inquiry-topbar {
-  width: min(720px, 100%) !important;
-  min-height: 58px !important;
-  padding: 10px 14px !important;
-  margin: 0 auto 16px !important;
-  border-radius: 22px !important;
-}
-
-.inquiry-brand {
-  gap: 10px !important;
-}
-
-.inquiry-logo-mark {
-  width: 42px !important;
-  height: 42px !important;
-  border-radius: 14px !important;
-}
-
-.inquiry-brand-title {
-  font-size: 15px !important;
-  font-weight: 900 !important;
-}
-
-.inquiry-brand-sub {
-  font-size: 11px !important;
-}
-
-.inquiry-topbar-actions {
-  gap: 8px !important;
-}
-
-.inquiry-stage {
+/* Sidebar icon visibility and alignment */
+.sidebar { width: var(--sidebar-width) !important; display: flex !important; flex-direction: column !important; }
+.sidebar-nav { flex: 1 1 auto !important; width: 100% !important; }
+.nav-subitem,
+.nav-sub-subitem,
+.sidebar-collapse-btn,
+.account-settings-trigger {
   width: 100% !important;
-  padding: 0 !important;
-}
-
-.inquiry-panel {
-  width: min(840px, 100%) !important;
-  margin: 0 auto !important;
-  padding: 0 !important;
-  border-radius: 22px !important;
-  overflow: hidden !important;
-}
-
-.inquiry-hero {
-  padding: 16px 18px !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--divider) !important;
-  border-radius: 0 !important;
-  background: linear-gradient(135deg, rgba(16, 56, 96, 0.05), rgba(213, 148, 58, 0.08)) !important;
-}
-
-.inquiry-hero h1,
-.inquiry-hero .panel-title {
-  font-size: 22px !important;
-  margin: 4px 0 4px !important;
-  line-height: 1.1 !important;
-}
-
-.inquiry-hero p,
-.inquiry-hero .panel-subtitle {
-  font-size: 12px !important;
-  max-width: 560px !important;
-}
-
-.inquiry-hero-meta {
-  gap: 6px !important;
-  flex-wrap: wrap !important;
-}
-
-.inquiry-form {
-  padding: 18px !important;
   display: grid !important;
-  gap: 12px !important;
-}
-
-.inquiry-form .modal-grid-2 {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-}
-
-.inquiry-form .form-field {
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-}
-
-.inquiry-form .form-field label {
-  display: block !important;
-  margin-bottom: 5px !important;
-  font-size: 10px !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase !important;
-}
-
-.inquiry-form input,
-.inquiry-form select,
-.inquiry-form textarea {
-  min-height: 38px !important;
-  height: 38px !important;
-  padding: 8px 12px !important;
-  border-radius: 12px !important;
-  font-size: 12px !important;
-  background: #ffffff !important;
-}
-
-body.dark .inquiry-form input,
-body.dark .inquiry-form select,
-body.dark .inquiry-form textarea {
-  background: rgba(9, 24, 42, 0.94) !important;
-}
-
-.inquiry-form textarea {
-  height: 74px !important;
-  min-height: 74px !important;
-  resize: vertical !important;
-}
-
-.inquiry-option-row,
-.inquiry-type-row,
-.radio-card-row {
+  grid-template-columns: 22px minmax(0, 1fr) auto !important;
+  align-items: center !important;
   gap: 10px !important;
+  text-align: left !important;
+}
+.nav-subitem > i:first-child,
+.nav-sub-subitem > i:first-child,
+.sidebar-collapse-btn > i:first-child,
+.account-settings-trigger > i:first-child {
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: currentColor !important;
+  font-size: 13px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.nav-subitem.active > i:first-child,
+.nav-sub-subitem.active > i:first-child { color: #fff !important; }
+.nav-sub-subitem:not(:has(i))::before {
+  content: '\f105';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+body.sidebar-collapsed .sidebar,
+.app-shell.sidebar-collapsed .sidebar,
+.sidebar.collapsed { width: var(--sidebar-collapsed) !important; align-items: center !important; }
+body.sidebar-collapsed .logo-text,
+body.sidebar-collapsed .sidebar-search,
+body.sidebar-collapsed .help-text,
+.app-shell.sidebar-collapsed .logo-text,
+.app-shell.sidebar-collapsed .sidebar-search,
+.app-shell.sidebar-collapsed .help-text,
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .sidebar-search,
+.sidebar.collapsed .help-text { display: none !important; }
+body.sidebar-collapsed .nav-subitem,
+body.sidebar-collapsed .nav-sub-subitem,
+body.sidebar-collapsed .sidebar-collapse-btn,
+body.sidebar-collapsed .account-settings-trigger,
+.app-shell.sidebar-collapsed .nav-subitem,
+.app-shell.sidebar-collapsed .nav-sub-subitem,
+.app-shell.sidebar-collapsed .sidebar-collapse-btn,
+.app-shell.sidebar-collapsed .account-settings-trigger,
+.sidebar.collapsed .nav-subitem,
+.sidebar.collapsed .nav-sub-subitem,
+.sidebar.collapsed .sidebar-collapse-btn,
+.sidebar.collapsed .account-settings-trigger {
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+body.sidebar-collapsed .nav-subitem > i:first-child,
+body.sidebar-collapsed .nav-sub-subitem > i:first-child,
+body.sidebar-collapsed .sidebar-collapse-btn > i:first-child,
+body.sidebar-collapsed .account-settings-trigger > i:first-child,
+.app-shell.sidebar-collapsed .nav-subitem > i:first-child,
+.app-shell.sidebar-collapsed .nav-sub-subitem > i:first-child,
+.app-shell.sidebar-collapsed .sidebar-collapse-btn > i:first-child,
+.app-shell.sidebar-collapsed .account-settings-trigger > i:first-child,
+.sidebar.collapsed .nav-subitem > i:first-child,
+.sidebar.collapsed .nav-sub-subitem > i:first-child,
+.sidebar.collapsed .sidebar-collapse-btn > i:first-child,
+.sidebar.collapsed .account-settings-trigger > i:first-child {
+  width: 22px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
-.inquiry-option,
-.radio-card,
-.inquiry-type-card {
-  min-height: 56px !important;
-  padding: 10px 12px !important;
-  border-radius: 14px !important;
+/* Visible buttons */
+button,.btn,.toolbar-btn,.action-btn,.topbar-icon-btn,.date-filter-btn,.export-btn,.sidebar-collapse-btn,.account-settings-trigger,.mobile-menu-btn,.mobile-bottom-nav__item {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
-
-.inquiry-form .btn,
-.inquiry-form button[type="submit"] {
-  min-height: 38px !important;
-  padding: 8px 14px !important;
-  border-radius: 13px !important;
-  width: fit-content !important;
+.toolbar-btn,.action-btn,.topbar-icon-btn,.mobile-menu-btn,.sidebar-collapse-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
+.toolbar-btn i,.action-btn i,.topbar-icon-btn i,.mobile-menu-btn i,.btn i { color: currentColor !important; opacity: 1 !important; }
+.leads-toolbar,.toolbar-left,.toolbar-right { flex-wrap: wrap !important; }
 
-/* AMS and segmentation scroll safety */
-#screen-segmentation,
-#screen-calendar,
-#screen-dashboard,
-#screen-ams-dashboard,
-#screen-ams-students {
-  min-height: 0 !important;
+/* Scroll safety */
+.app-shell,.main-content,.screen.active { min-height: 0 !important; }
+.content-area,#screen-leads { overflow-y: auto !important; overflow-x: hidden !important; scrollbar-gutter: stable !important; }
+
+/* Mobile and laptop */
+@media (max-width: 1180px) {
+  .content-area { padding: 18px !important; }
+  #screen-leads .archived-lead-row { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 }
-
-.segmentation-layout,
-.assignment-layout,
-.dashboard-grid,
-.dashboard-bottom-row {
-  padding-bottom: 24px !important;
-}
-
-/* Tables must scroll horizontally instead of breaking layout */
-.table-card,
-.lead-table-wrap,
-.data-table-wrap,
-.ams-table-card {
-  overflow-x: auto !important;
-}
-
-.data-table,
-table {
-  min-width: max-content;
-}
-
-/* Mobile */
 @media (max-width: 980px) {
-  .content-area {
-    padding: 16px !important;
+  .sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: min(286px, 84vw) !important;
+    transform: translateX(-105%) !important;
+    z-index: 1300 !important;
   }
-
-  #screen-leads {
-    padding-bottom: calc(var(--mobile-bottom-nav-height, 72px) + 20px) !important;
+  body.mobile-nav-open .sidebar { transform: translateX(0) !important; }
+  .mobile-nav-backdrop { position: fixed !important; inset: 0 !important; z-index: 1290 !important; background: rgba(2,6,23,.44) !important; }
+  body.mobile-nav-open .mobile-nav-backdrop { display: block !important; }
+  .mobile-menu-btn {
+    width: 40px !important;
+    height: 40px !important;
+    display: inline-flex !important;
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 1280 !important;
   }
-
-  .status-bar,
-  .status-sub-bar,
-  .leads-toolbar,
-  .leads-filter-panel,
-  .leads-info-bar,
-  .leads-pagination,
-  .lead-card,
-  .lead-list-switch {
-    margin-left: 14px !important;
-    margin-right: 14px !important;
-  }
+  .dashboard-grid,.dashboard-bottom-row,.dashboard-ops-grid,.assignment-layout,.segmentation-layout,.kpi-row,.kpi-metrics-row,.report-grid,.segmentation-report-grid,.assignment-summary-grid,.future-enhancement-grid { grid-template-columns: 1fr !important; }
+  #screen-leads .lead-list-switch { grid-template-columns: 1fr !important; }
 }
-
 @media (max-width: 720px) {
-  .inquiry-shell {
-    padding: 12px !important;
-  }
-
-  .inquiry-topbar {
-    width: 100% !important;
-    border-radius: 18px !important;
-  }
-
-  .inquiry-panel {
-    width: 100% !important;
-    border-radius: 18px !important;
-  }
-
-  .inquiry-hero {
-    padding: 14px !important;
-  }
-
-  .inquiry-form {
-    padding: 14px !important;
-  }
-
-  .inquiry-form .modal-grid-2 {
-    grid-template-columns: 1fr !important;
-  }
-
-  .account-settings-card {
-    width: 100vw !important;
-    border-radius: 0 !important;
-  }
+  .content-area,#screen-dashboard .content-area { padding: 12px !important; }
+  #screen-leads .archived-lead-row { grid-template-columns: 1fr !important; }
+  #screen-leads .archived-lead-head { flex-direction: column !important; align-items: flex-start !important; }
+  .mobile-bottom-nav { display: grid !important; }
 }
