@@ -135,6 +135,17 @@
         </nav>
 
         <div class="sidebar-account">
+          <button
+            type="button"
+            class="sidebar-collapse-btn"
+            id="sidebar-collapse-btn"
+            onclick="App.toggleSidebarCollapsed()"
+            title="Collapse sidebar"
+            aria-label="Collapse sidebar"
+          >
+            <i class="fas fa-angles-left"></i>
+            <span>Collapse Sidebar</span>
+          </button>
           <div
             class="nav-subitem account-settings-trigger"
             data-account-settings
@@ -551,13 +562,15 @@
                   margin-right: 6px;
                 "
               >
-                <input
-                  type="checkbox"
+                <button
+                  type="button"
+                  class="toolbar-btn"
                   id="select-all-leads"
-                  style="width: 16px; height: 16px; cursor: pointer"
                   title="Select All On Page"
-                  onclick="LeadsModule.toggleSelectAll(this)"
-                />
+                  onclick="LeadsModule.toggleSelectAll()"
+                >
+                  <i class="fas fa-check-double"></i>
+                </button>
               </div>
               <!-- Global Filter -->
               <button
@@ -665,6 +678,41 @@
               </div>
             </div>
             <div class="toolbar-right">
+              <div class="quick-search-wrap toolbar-search-wrap">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  class="quick-search-input"
+                  id="quick-search-input"
+                  placeholder="Search inquiry no., student name, mobile, email..."
+                />
+              </div>
+              <button
+                class="clear-search-btn toolbar-clear-search"
+                title="Clear Search"
+                aria-label="Clear Search"
+                onclick="
+                  document.getElementById('quick-search-input').value = '';
+                  LeadsModule.filterSearch = '';
+                  document.getElementById('filter-search-input') &&
+                    (document.getElementById('filter-search-input').value = '');
+                  LeadsModule.applyFilters();
+                "
+              >
+                <i class="fas fa-times"></i>
+              </button>
+              <button
+                class="toolbar-btn"
+                id="saved-filter-btn"
+                title="Saved filter views"
+                onclick="
+                  LeadsModule.showToast(
+                    'Saved filter view bookmarked for demo',
+                    'success',
+                  )
+                "
+              >
+                <i class="fas fa-bookmark"></i> Saved Filters
+              </button>
               <div class="toolbar-view-toggle">
                 <button
                   class="toolbar-btn"
@@ -1018,41 +1066,6 @@
             <div class="leads-result-label">
               <span class="result-badge">Search Result</span>
               <span id="leads-count-label">Showing 1 to 6 of 831 leads</span>
-            </div>
-            <div class="quick-search-bar">
-              <button
-                class="toolbar-btn"
-                id="saved-filter-btn"
-                title="Saved filter views"
-                onclick="
-                  LeadsModule.showToast(
-                    'Saved filter view bookmarked for demo',
-                    'success',
-                  )
-                "
-              >
-                <i class="fas fa-bookmark"></i> Saved Filters
-              </button>
-              <div class="quick-search-wrap">
-                <i class="fas fa-search search-icon"></i>
-                <input
-                  class="quick-search-input"
-                  id="quick-search-input"
-                  placeholder="Search inquiry no., student name, mobile, email..."
-                />
-              </div>
-              <button
-                class="clear-search-btn"
-                onclick="
-                  document.getElementById('quick-search-input').value = '';
-                  LeadsModule.filterSearch = '';
-                  document.getElementById('filter-search-input') &&
-                    (document.getElementById('filter-search-input').value = '');
-                  LeadsModule.applyFilters();
-                "
-              >
-                <i class="fas fa-times"></i>
-              </button>
             </div>
           </div>
 

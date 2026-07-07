@@ -1328,11 +1328,28 @@ document.addEventListener('DOMContentLoaded', () => App.init());
 // Sidebar collapse/expand (icon-only)
 App.toggleSidebarCollapsed = function () {
   document.body.classList.toggle('sidebar-collapsed');
+  const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+  const btn = document.getElementById('sidebar-collapse-btn');
+  if (btn) {
+    btn.title = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    btn.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    btn.innerHTML = isCollapsed
+      ? '<i class="fas fa-angles-right"></i><span>Expand Sidebar</span>'
+      : '<i class="fas fa-angles-left"></i><span>Collapse Sidebar</span>';
+  }
   try { localStorage.setItem('pa-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch (e) {}
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   try {
-    if (localStorage.getItem('pa-sidebar-collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+    if (localStorage.getItem('pa-sidebar-collapsed') === '1') {
+      document.body.classList.add('sidebar-collapsed');
+      const btn = document.getElementById('sidebar-collapse-btn');
+      if (btn) {
+        btn.title = 'Expand sidebar';
+        btn.setAttribute('aria-label', 'Expand sidebar');
+        btn.innerHTML = '<i class="fas fa-angles-right"></i><span>Expand Sidebar</span>';
+      }
+    }
   } catch (e) {}
 });

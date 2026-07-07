@@ -1858,3 +1858,50 @@ textarea {
     min-height: 36px;
   }
 }
+
+/* Inquiry List toolbar: tools row, separator, search row */
+#screen-leads .leads-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+#screen-leads .toolbar-left {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+#screen-leads .toolbar-right {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+#screen-leads .toolbar-search-wrap {
+  flex: 0 1 50%;
+  width: 50%;
+  min-width: 320px;
+  max-width: 50%;
+}
+
+#screen-leads .toolbar-search-wrap .quick-search-input {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  #screen-leads .toolbar-search-wrap {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}

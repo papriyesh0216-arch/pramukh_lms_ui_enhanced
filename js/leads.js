@@ -478,6 +478,11 @@ const LeadsModule = {
     // Read values only from the allowed filter set.
     this.filterCourse = document.getElementById('filter-course')?.value || this.filterCourse || 'all';
     this.filterSearch = document.getElementById('filter-search-input')?.value || this.filterSearch || '';
+    this.filterSource = 'all';
+    this.filterCounselor = 'all';
+    this.filterAcademicStatus = 'all';
+    this.filterInquiryDate = '';
+    this.filterFollowupDate = '';
 
     // In the UI, Search represents (Name, Number, Email). Course/others are filtered separately.
     let result = this.applyRoleScope([...this.leads]).filter(l => !l.archived);
@@ -496,14 +501,7 @@ const LeadsModule = {
       result = result.filter(l => l.course === this.filterCourse);
     }
 
-    // Apply source filter
-    if (this.filterSource !== 'all') {
-      result = result.filter(l => l.source === this.filterSource || this.normalizeSource(l.source) === this.normalizeSource(this.filterSource));
-    }
-
-    this.filterCounselor = document.getElementById('filter-counselor')?.value || this.filterCounselor || 'all';
     this.filterMode = document.getElementById('filter-mode')?.value || this.filterMode || 'all';
-    this.filterAcademicStatus = document.getElementById('filter-academic-status')?.value || this.filterAcademicStatus || 'all';
     this.filterBatch = document.getElementById('filter-batch')?.value || this.filterBatch || 'all';
     this.filterState = document.getElementById('filter-state')?.value || this.filterState || '';
     this.filterCity = document.getElementById('filter-district')?.value || this.filterCity || '';
@@ -511,13 +509,8 @@ const LeadsModule = {
     this.filterDateTo = document.getElementById('filter-date-to')?.value || this.filterDateTo || '';
     this.filterInquiryNumber = document.getElementById('filter-inquiry-number')?.value || this.filterInquiryNumber || '';
     this.filterAssignInquiry = document.getElementById('filter-assign-inquiry')?.value || this.filterAssignInquiry || 'all';
-    this.filterInquiryDate = document.getElementById('filter-inquiry-date')?.value || this.filterInquiryDate || '';
-    this.filterFollowupDate = document.getElementById('filter-followup-date')?.value || this.filterFollowupDate || '';
     this.filterSegment = document.getElementById('filter-segment')?.value || this.filterSegment || 'all';
 
-    if (this.filterCounselor !== 'all') {
-      result = result.filter(l => this.filterCounselor === 'Unassigned' ? !l.assignedTo || l.assignedTo === 'Unassigned' : (l.assignedTo || l.owner) === this.filterCounselor);
-    }
     if (this.filterMode !== 'all') {
       result = result.filter(l => l.mode === this.filterMode);
     }
@@ -528,15 +521,9 @@ const LeadsModule = {
       const state = this.filterState.toLowerCase();
       result = result.filter(l => this.getLeadState(l).toLowerCase().includes(state));
     }
-    if (this.filterAcademicStatus !== 'all') {
-      result = result.filter(l => l.academicStatus === this.filterAcademicStatus);
-    }
     if (this.filterCity) {
       const district = this.filterCity.toLowerCase();
       result = result.filter(l => this.getLeadDistrict(l).toLowerCase().includes(district));
-    }
-    if (this.filterInquiryDate) {
-      result = result.filter(l => this.dateKey(l.inquiryDate) === this.filterInquiryDate);
     }
     if (this.filterDateFrom || this.filterDateTo) {
       result = result.filter(l => {
@@ -554,9 +541,6 @@ const LeadsModule = {
     if (this.filterAssignInquiry !== 'all') {
       result = result.filter(l => this.filterAssignInquiry === 'Unassigned' ? !l.assignedTo || l.assignedTo === 'Unassigned' : (l.assignedTo || l.owner) === this.filterAssignInquiry);
     }
-    if (this.filterFollowupDate) {
-      result = result.filter(l => this.dateKey(l.followupDate) === this.filterFollowupDate);
-    }
     if (this.filterSegment !== 'all') {
       const segment = window.APP_DATA.SEGMENT_DATA?.find(s => s.name === this.filterSegment);
       if (segment) result = result.filter(l => segment.leadIds.includes(l.id));
@@ -568,9 +552,7 @@ const LeadsModule = {
       result = result.filter(l => 
         l.name.toLowerCase().includes(q) ||
         l.phone.includes(q) ||
-        l.email.toLowerCase().includes(q) ||
-        l.enqNo.toLowerCase().includes(q) ||
-        l.course.toLowerCase().includes(q)
+        l.email.toLowerCase().includes(q)
       );
     }
 
@@ -697,22 +679,20 @@ const LeadsModule = {
     const stageStatusLabel = this.formatStageStatusLabel(stageKey, this.getLeadSubStatusKey(lead));
     const statusClass = `status-${stageKey}`;
     const isExpanded = this.allExpanded;
-    const avatarLetter = lead.name.charAt(0);
-    const avatarColors = ['#4F6EF7','#10B981','#F59E0B','#8B5CF6','#F97316','#EF4444','#06B6D4'];
-    const avatarColor = avatarColors[lead.id % avatarColors.length];
-    const isChecked = this.selectedLeads.has(lead.id) ? 'checked' : '';
+    const isSelected = this.selectedLeads.has(lead.id);
 
     return `
       <div class="lead-card ${isExpanded ? 'is-expanded' : ''}" id="lead-card-${lead.id}">
         <div class="lead-card-header" onclick="LeadsModule.handleRowClick(event, ${lead.id})">
-          <div class="lead-checkbox-cell" onclick="event.stopPropagation()">
-            <input type="checkbox" class="lead-select-checkbox" data-id="${lead.id}" ${isChecked} onchange="LeadsModule.toggleLeadSelection(${lead.id})">
-          </div>
-          <div class="lead-number">${num}</div>
-          <div class="lead-avatar" style="background:${avatarColor}">
-            ${avatarLetter}
-            ${lead.isHot ? '<span class="hot-indicator"></span>' : ''}
-          </div>
+          <button
+            type="button"
+            class="lead-number lead-serial-select ${isSelected ? 'is-selected' : ''}"
+            data-id="${lead.id}"
+            onclick="LeadsModule.toggleLeadSelection(${lead.id}); event.stopPropagation()"
+            aria-label="${isSelected ? 'Deselect' : 'Select'} lead ${num}"
+          >
+            ${isSelected ? '<i class="fas fa-check"></i>' : num}
+          </button>
           <div class="lead-main-info">
             <div class="lead-name-row">
               <span class="lead-name" onclick="DrawerModule.open(${lead.id}); event.stopPropagation()">${lead.name}</span>
@@ -720,7 +700,9 @@ const LeadsModule = {
             </div>
             <div class="lead-phone">
               <i class="fas fa-phone"></i> ${lead.phone}
-              <i class="fab fa-whatsapp wa-icon" style="margin-left:4px"></i>
+              <button class="lead-inline-email" type="button" title="Email ${lead.name}" aria-label="Email ${lead.name}" onclick="LeadsModule.email(${lead.id}); event.stopPropagation()">
+                <i class="fas fa-envelope"></i>
+              </button>
             </div>
           </div>
 
@@ -730,15 +712,15 @@ const LeadsModule = {
           </div>
 
           <div class="lead-meta">
-            <span class="lead-meta-item"><i class="fas fa-book"></i>${lead.course}</span>
-            <span class="lead-meta-item"><i class="fas fa-map-marker-alt"></i>${lead.city}</span>
+          <span class="lead-meta-item"><i class="fas fa-book"></i>${lead.course}</span>
+            <span class="lead-meta-item"><i class="fas fa-map-marker-alt"></i>${this.getLeadDistrict(lead)}, ${this.getLeadState(lead)}</span>
           </div>
 
           <span class="lead-timestamp">${lead.timeAgo}</span>
 
           <div class="lead-actions" onclick="event.stopPropagation()">
-            <button class="lead-action-btn funnel-btn" data-tip="Follow-up History" onclick="LeadsModule.showFollowupHistory(${lead.id})">
-              <i class="fas fa-history"></i>
+            <button class="lead-action-btn funnel-btn" data-tip="Inquiry Funnel" onclick="LeadsModule.showInquiryFunnel(${lead.id})">
+              <i class="fas fa-route"></i>
             </button>
             <button class="lead-action-btn call-btn" data-tip="Call" onclick="LeadsModule.callLead(${lead.id})">
               <i class="fas fa-phone"></i>
@@ -809,27 +791,11 @@ const LeadsModule = {
             <div class="lead-detail-col">
               <div class="detail-row">
                 <span class="detail-label">Mode Of Learning</span>
-                <span class="detail-value">${lead.mode}</span>
+                <span class="detail-value">${lead.mode || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Inquiry Date/Time</span>
                 <span class="detail-value">${lead.inquiryDate}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Inquiry Source</span>
-                <span class="detail-value">${lead.source}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Next Follow-up</span>
-                <span class="detail-value">${lead.followupDate || '-'}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Last Activity</span>
-                <span class="detail-value">${lead.communications?.[0]?.title || this.formatStageLabel(stageKey) || 'Inquiry Created'}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Tags</span>
-                <span class="detail-value">${lead.isHot ? 'Hot Lead, ' : ''}${lead.segment || this.getLeadSegmentName(lead) || 'General Inquiry'}</span>
               </div>
             </div>
           </div>
@@ -843,7 +809,7 @@ const LeadsModule = {
   },
 
   handleRowClick(e, id) {
-    if (e.target.closest('.lead-select-checkbox') || 
+    if (e.target.closest('.lead-serial-select') ||
         e.target.closest('.lead-action-btn') || 
         e.target.closest('.more-dropdown') ||
         e.target.closest('.lead-name') ||
@@ -894,19 +860,16 @@ const LeadsModule = {
     this.updateSelectionUI();
   },
 
-  toggleSelectAll(masterCheckbox) {
-    const checked = masterCheckbox.checked;
+  toggleSelectAll() {
     const start = (this.currentPage - 1) * this.perPage;
-    this.filteredLeads.slice(start, start + this.perPage).forEach(l => {
-      if (checked) {
-        this.selectedLeads.add(l.id);
-      } else {
-        this.selectedLeads.delete(l.id);
-      }
+    const visible = this.filteredLeads.slice(start, start + this.perPage);
+    const allSelected = visible.length > 0 && visible.every(l => this.selectedLeads.has(l.id));
+    visible.forEach(l => {
+      if (allSelected) this.selectedLeads.delete(l.id);
+      else this.selectedLeads.add(l.id);
     });
-    document.querySelectorAll('.lead-select-checkbox').forEach(cb => {
-      cb.checked = checked;
-    });
+    this.renderLeads();
+    this.updateSelectAllCheckboxState();
     this.updateSelectionUI();
   },
 
@@ -915,14 +878,14 @@ const LeadsModule = {
     if (!master) return;
     const visibleIds = this.filteredLeads.slice((this.currentPage - 1) * this.perPage, this.currentPage * this.perPage).map(l => l.id);
     if (visibleIds.length === 0) {
-      master.checked = false;
       master.disabled = true;
+      master.classList.remove('active', 'is-partial');
       return;
     }
     master.disabled = false;
     const selectedVisible = visibleIds.filter(id => this.selectedLeads.has(id)).length;
-    master.checked = selectedVisible === visibleIds.length;
-    master.indeterminate = selectedVisible > 0 && !master.checked;
+    master.classList.toggle('active', selectedVisible === visibleIds.length);
+    master.classList.toggle('is-partial', selectedVisible > 0 && selectedVisible < visibleIds.length);
   },
 
   updateSelectionUI() {
@@ -1022,7 +985,32 @@ const LeadsModule = {
     if (dateWrap) dateWrap.hidden = shouldHideSchedule;
     if (timeWrap) timeWrap.hidden = shouldHideSchedule;
     if (dateInput) dateInput.required = !shouldHideSchedule;
-    if (timeInput) timeInput.required = !shouldHideSchedule;
+    if (timeInput) timeInput.required = false;
+    if (shouldHideSchedule) {
+      if (dateInput) dateInput.value = '';
+      if (timeInput) timeInput.value = '';
+    }
+  },
+
+  syncFollowupStageVisibility() {
+    const stageKey = document.getElementById('f-stage')?.value || '';
+    const statusSelect = document.getElementById('f-stage-status');
+    const dateWrap = document.getElementById('f-date-wrap');
+    const timeWrap = document.getElementById('f-time-wrap');
+    const dateInput = document.getElementById('f-date');
+    const timeInput = document.getElementById('f-time');
+    const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
+    const stage = this.getBulkStageModalOptions().find((item) => item.key === stageKey);
+
+    if (statusSelect) {
+      statusSelect.innerHTML = '<option value="">Select Stage Status</option>' + (stage?.statuses || []).map((status) => (
+        `<option value="${status.key}">${status.label}</option>`
+      )).join('');
+    }
+    if (dateWrap) dateWrap.hidden = shouldHideSchedule;
+    if (timeWrap) timeWrap.hidden = shouldHideSchedule;
+    if (dateInput) dateInput.required = !shouldHideSchedule;
+    if (timeInput) timeInput.required = false;
     if (shouldHideSchedule) {
       if (dateInput) dateInput.value = '';
       if (timeInput) timeInput.value = '';
@@ -1051,8 +1039,8 @@ const LeadsModule = {
                 </select>
               </div>
               <div class="form-field">
-                <label>Follow-up Stage Status *</label>
-                <select id="bulk-stage-status" required>
+                <label>Follow-up Stage Status</label>
+                <select id="bulk-stage-status">
                   <option value="">Select Stage Status</option>
                 </select>
               </div>
@@ -1065,8 +1053,8 @@ const LeadsModule = {
                 <input type="date" id="bulk-stage-date" required>
               </div>
               <div class="form-field" id="bulk-stage-time-wrap">
-                <label>Follow-up Time *</label>
-                <input type="time" id="bulk-stage-time" required>
+                <label>Follow-up Time</label>
+                <input type="time" id="bulk-stage-time">
               </div>
               <div class="form-field">
                 <label>Followed By</label>
@@ -1100,22 +1088,44 @@ const LeadsModule = {
     const followupDate = document.getElementById('bulk-stage-date')?.value || '';
     const followupTime = document.getElementById('bulk-stage-time')?.value || '';
     const purpose = document.getElementById('bulk-stage-purpose')?.value.trim() || '';
-    if (!stageKey || !stageStatus || !purpose) return;
+    const needsSchedule = !['closed', 'admission_form'].includes(stageKey);
+    if (!stageKey || !purpose || (needsSchedule && !followupDate)) return;
+    const followedBy = document.querySelector('#bulk-stage-form .readonly-field')?.textContent || '';
 
     ids.forEach((id) => {
       const lead = this.leads.find((item) => item.id === id);
       if (!lead) return;
       lead.stageKey = stageKey;
       lead.stageStatus = stageStatus === stageKey ? '' : stageStatus;
-      lead.status = stageStatus;
+      lead.status = stageStatus || stageKey;
       lead.followupRefNo = refNo;
-      if (!['closed', 'admission_form'].includes(stageKey)) {
+      if (needsSchedule) {
         lead.followupDate = followupDate;
         lead.followupTime = followupTime;
+      } else {
+        lead.followupDate = '';
+        lead.followupTime = '';
       }
       lead.followupPurpose = purpose;
+      lead.followupManagement = { stageKey, stageStatus: lead.stageStatus, refNo, followupDate: lead.followupDate, followupTime: lead.followupTime, purpose, followedBy };
       this.normalizeLeadStageData(lead);
       this.stampLeadModified(lead);
+      if (stageKey === 'counselling') {
+        this.recordEmailNotification(
+          lead,
+          'Counselling scheduled - Pramukh Academy',
+          `Dear ${lead.name}, your counselling follow-up is scheduled on ${lead.followupDate || '-'}${lead.followupTime ? ` at ${lead.followupTime}` : ''}. Purpose: ${purpose}.`,
+          'Automatic counselling stage email.'
+        );
+      }
+      if (stageKey === 'admission_form') {
+        this.recordEmailNotification(
+          lead,
+          'Admission form link - Pramukh Academy',
+          `Dear ${lead.name}, your inquiry has moved to admission. Please complete the admission form: ams.html`,
+          'Automatic admission stage email.'
+        );
+      }
       this.recordTimelineAction(lead, 'Bulk Stage Updated', `${this.formatStageLabel(stageKey)}${lead.stageStatusLabel ? ` - ${lead.stageStatusLabel}` : ''}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`);
     });
 
@@ -1193,10 +1203,21 @@ const LeadsModule = {
 
   exportLeads(ids = null, filename = 'leads-export.csv') {
     const rows = ids ? this.applyRoleScope(this.leads).filter(l => ids.includes(l.id)) : this.filteredLeads;
-    const headers = ['Enquiry No', 'Name', 'Phone', 'Email', 'State', 'District', 'Inquiry For', 'Batch Selection', 'Mode Of Learning', 'Source', 'Status', 'Assigned To', 'Inquiry Date'];
+    const headers = ['Inquiry Reference No.', 'Full Name', 'Contact No.', 'Email ID', 'State', 'District', 'Academic Status', 'Inquiry For', 'Batch Selection', 'Mode Of Learning', 'Any Specific Query', 'Inquiry Date/Time'];
     const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [headers.map(escape).join(',')].concat(rows.map(lead => [
-      lead.enqNo, lead.name, lead.phone, lead.email, this.getLeadState(lead), this.getLeadDistrict(lead), lead.course, lead.batch || '', lead.mode || '', lead.source, this.formatStageLabel(this.getLeadStatusKey(lead)), lead.assignedTo || lead.owner || 'Unassigned', lead.inquiryDate
+      lead.enqNo,
+      lead.name,
+      lead.phone,
+      lead.email,
+      this.getLeadState(lead),
+      this.getLeadDistrict(lead),
+      lead.academicStatus || '',
+      lead.course,
+      lead.batch || '',
+      lead.mode || '',
+      lead.query || '',
+      lead.inquiryDate
     ].map(escape).join(','))).join('\n');
     this.downloadTextFile(filename, csv, 'text/csv');
     this.showToast(`${rows.length} lead(s) exported`, 'success');
@@ -1225,6 +1246,38 @@ const LeadsModule = {
       at: new Date().toLocaleString('en-IN')
     });
     localStorage.setItem('paAuditDeleted', JSON.stringify(records.slice(0, 50)));
+  },
+
+  recordEmailNotification(lead, subject, body, remarks = '') {
+    if (!lead?.email) return;
+    const record = {
+      id: Date.now(),
+      leadId: lead.id,
+      enqNo: lead.enqNo,
+      to: lead.email,
+      subject,
+      body,
+      remarks,
+      at: new Date().toLocaleString('en-IN'),
+      status: 'queued'
+    };
+    try {
+      const outbox = JSON.parse(localStorage.getItem('pa-email-outbox') || '[]');
+      outbox.unshift(record);
+      localStorage.setItem('pa-email-outbox', JSON.stringify(outbox.slice(0, 100)));
+    } catch (e) {}
+    if (!lead.communications) lead.communications = [];
+    lead.communications.unshift({
+      type: 'email',
+      day: new Date().getDate().toString().padStart(2, '0'),
+      month: new Date().toLocaleString('en-IN', { month: 'short' }),
+      title: `Email: ${subject}`,
+      desc: body,
+      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      by: 'System',
+      emailRemarks: remarks,
+      payload: { to: lead.email, subject, body }
+    });
   },
 
   bulkEmail(ids = null) {
@@ -1262,7 +1315,7 @@ const LeadsModule = {
             <label>CSV File</label>
             <input type="file" id="lead-import-file" accept=".csv,text/csv">
           </div>
-          <div style="font-size:12px;color:var(--text-muted)">Expected columns: name, phone, email, state, district, course, source.</div>
+          <div style="font-size:12px;color:var(--text-muted)">Expected columns: name, phone, email, state, district, academicStatus, course, batch, mode, query.</div>
         </div>
         <div class="custom-modal-footer">
           <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
@@ -1299,9 +1352,9 @@ const LeadsModule = {
           district,
           city: `${district}, ${state}`,
           course,
-          batch: this.courseNeedsBatchMode(course) ? 'Foundation' : '',
-          mode: this.courseNeedsBatchMode(course) ? 'Class' : '',
-          source: get('source') || 'Excel Import',
+          batch: this.courseNeedsBatchMode(course) ? (get('batch') || 'Foundation') : '',
+          mode: this.courseNeedsBatchMode(course) ? (get('mode') || 'Class') : '',
+          source: 'Inquiry Form',
           campaign: '-',
           inquiryDate: new Date().toLocaleString('en-IN'),
           owner: 'Unassigned',
@@ -1311,8 +1364,8 @@ const LeadsModule = {
           priority: 'medium',
           leadScore: 50,
           leadAge: '0 Days',
-          academicStatus: 'College Student',
-          query: 'Imported lead.',
+          academicStatus: this.normalizeAcademicStatus(get('academicstatus') || 'College Student'),
+          query: get('query') || 'Imported inquiry.',
           assignedTo: 'Unassigned',
           assignedDate: '-',
           timeAgo: 'Just now',
@@ -1390,6 +1443,9 @@ const LeadsModule = {
     const stateOptions = Object.keys(typeof INDIAN_STATE_DISTRICTS !== 'undefined' ? INDIAN_STATE_DISTRICTS : {}).map((state) => (
       `<option value="${state}">${state}</option>`
     )).join('');
+    const segmentOptions = (window.APP_DATA?.SEGMENT_DATA || []).map((segment) => (
+      `<option value="${segment.name}">${segment.name}</option>`
+    )).join('');
     filterPanel.innerHTML = `
       <div class="filter-field">
         <label>Search</label>
@@ -1440,6 +1496,20 @@ const LeadsModule = {
         </select>
       </div>
       <div class="filter-field">
+        <label>Date Range</label>
+        <div class="date-range-filter">
+          <input type="date" id="filter-date-from" onchange="LeadsModule.applyFilters()">
+          <input type="date" id="filter-date-to" onchange="LeadsModule.applyFilters()">
+        </div>
+      </div>
+      <div class="filter-field">
+        <label>Lead Segment</label>
+        <select id="filter-segment" onchange="LeadsModule.applyFilters()">
+          <option value="all">All Segments</option>
+          ${segmentOptions}
+        </select>
+      </div>
+      <div class="filter-field">
         <label>Inquiry Number</label>
         <input type="text" id="filter-inquiry-number" placeholder="Inquiry number" oninput="LeadsModule.applyFilters()">
       </div>
@@ -1453,15 +1523,6 @@ const LeadsModule = {
           <option value="Jignesh Trivedi">Jignesh Trivedi</option>
           <option value="Unassigned">Unassigned</option>
         </select>
-      </div>
-      <div class="filter-field">
-        <label>Date From</label>
-        <input type="date" id="filter-date-from" onchange="LeadsModule.applyFilters()">
-      </div>
-
-      <div class="filter-field">
-        <label>Date To</label>
-        <input type="date" id="filter-date-to" onchange="LeadsModule.applyFilters()">
       </div>
       <div class="filter-actions">
         <button class="btn btn-outline btn-sm" onclick="LeadsModule.resetFilters()">Reset</button>
@@ -2209,6 +2270,12 @@ const LeadsModule = {
         communications: []
       };
       this.normalizeLeadStageData(newLead);
+      this.recordEmailNotification(
+        newLead,
+        'Inquiry confirmation - Pramukh Academy',
+        `Dear ${newLead.name}, your inquiry ${newLead.enqNo} has been received. Our team will contact you shortly.`,
+        'Automatic inquiry confirmation email.'
+      );
       this.leads.unshift(newLead);
       this.syncAppDataLeads();
       this.showToast('New inquiry added successfully!', 'success');
@@ -2347,6 +2414,12 @@ const LeadsModule = {
     lead.counselling = { date, time, counselor, mode, interest, parentInvolvement, nextAction, course, learningMode, requirement, summary, remarks };
     this.normalizeLeadStageData(lead);
     this.stampLeadModified(lead);
+    this.recordEmailNotification(
+      lead,
+      'Counselling scheduled - Pramukh Academy',
+      `Dear ${lead.name}, your counselling is scheduled on ${date || '-'} at ${time || '-'}. Counselor: ${counselor}.`,
+      remarks || 'Automatic counselling schedule email.'
+    );
     this.recordTimelineAction(lead, 'Counselling Conducted', `${mode}. ${summary} Interest: ${interest}. Parent involvement: ${parentInvolvement}. Next action: ${nextAction}.`);
     document.querySelector('.custom-modal-overlay')?.remove();
     this.applyFilters();
@@ -2390,68 +2463,37 @@ const LeadsModule = {
             <form id="followup-form" onsubmit="event.preventDefault(); LeadsModule.saveFollowup(${lead.id})">
               <div class="modal-grid-2 compact-grid">
                 <div class="form-field">
-                  <label>Follow-up Date</label>
+                  <label>Follow-up Stage *</label>
+                  <select id="f-stage" required onchange="LeadsModule.syncFollowupStageVisibility()">
+                    <option value="">Select Follow-up Stage</option>
+                    ${this.getBulkStageModalOptions().map((stage) => `<option value="${stage.key}">${stage.label}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Follow-up Stage Status</label>
+                  <select id="f-stage-status">
+                    <option value="">Select Stage Status</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Ref No.</label>
+                  <input type="text" id="f-ref" placeholder="Optional reference number">
+                </div>
+                <div class="form-field" id="f-date-wrap">
+                  <label>Follow-up Date *</label>
                   <input type="date" id="f-date" required>
                 </div>
-                <div class="form-field">
+                <div class="form-field" id="f-time-wrap">
                   <label>Follow-up Time</label>
-                  <input type="time" id="f-time" required>
+                  <input type="time" id="f-time">
                 </div>
                 <div class="form-field">
-                  <label>Follow-up Type</label>
-                  <select id="f-type">
-                    <option value="call">Phone Call</option>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="email">Email</option>
-                    <option value="meeting">In-Person Meeting</option>
-                    <option value="online">Online Meeting</option>
-                    <option value="campus">Campus Visit</option>
-                    <option value="reminder">Reminder</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label>Follow-up Status</label>
-                  <select id="f-status">
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Rescheduled">Rescheduled</option>
-                    <option value="Cancelled">Cancelled</option>
-                    <option value="Missed">Missed</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label>Counselor</label>
-                  <select id="f-counselor">
-                    <option>Bharat Sir</option>
-                    <option>Vivek Sir</option>
-                    <option>Pooja Shah</option>
-                    <option>Jignesh Trivedi</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label>Outcome</label>
-                  <select id="f-outcome">
-                    <option>Interested</option>
-                    <option>Need More Info</option>
-                    <option>Call Later</option>
-                    <option>Counselling Required</option>
-                    <option>Admission Form Sent</option>
-                    <option>Admission Confirmed</option>
-                    <option>Not Interested</option>
-                    <option>No Response</option>
-                  </select>
+                  <label>Followed By</label>
+                  <div class="readonly-field" id="f-followed-by">${lead.assignedTo || lead.owner || 'Unassigned'}</div>
                 </div>
                 <div class="form-field full">
-                  <label>Follow-up Purpose</label>
-                  <input type="text" id="f-purpose" placeholder="Share details, confirm interest, collect documents..." required>
-                </div>
-                <div class="form-field full">
-                  <label>Remarks / Discussion Notes</label>
-                  <textarea id="f-desc" rows="3" required placeholder="Enter communication summary..."></textarea>
-                </div>
-                <div class="form-field">
-                  <label>Next Follow-up Date</label>
-                  <input type="date" id="f-next-date">
+                  <label>Purpose *</label>
+                  <textarea id="f-purpose" rows="3" required placeholder="Enter purpose"></textarea>
                 </div>
               </div>
               <input type="submit" style="display:none" id="submit-followup-hidden">
@@ -2465,77 +2507,64 @@ const LeadsModule = {
       </div>
     `;
     document.body.appendChild(overlay);
+    this.syncFollowupStageVisibility();
   },
 
   saveFollowup(leadId) {
     const lead = this.leads.find(l => l.id === leadId);
     if (!lead) return;
-    
-    const type = document.getElementById('f-type').value;
-    const desc = document.getElementById('f-desc').value;
+
+    const stageKey = document.getElementById('f-stage')?.value || '';
+    const stageStatus = document.getElementById('f-stage-status')?.value || '';
+    const refNo = document.getElementById('f-ref')?.value.trim() || '';
     const followupDate = document.getElementById('f-date').value;
     const followupTime = document.getElementById('f-time').value;
-    const followupStatus = document.getElementById('f-status').value;
-    const counselor = document.getElementById('f-counselor').value;
-    const outcome = document.getElementById('f-outcome').value;
-    const purpose = document.getElementById('f-purpose').value;
-    const nextDate = document.getElementById('f-next-date').value;
-    
-    const titles = {
-      call: 'Phone Call Follow-up',
-      whatsapp: 'WhatsApp Chat',
-      email: 'Email Communication',
-      meeting: 'In-Person Meeting',
-      online: 'Online Meeting',
-      campus: 'Campus Visit',
-      reminder: 'Reminder'
-    };
-    
+    const purpose = document.getElementById('f-purpose').value.trim();
+    const followedBy = document.getElementById('f-followed-by')?.textContent || lead.assignedTo || lead.owner || 'Unassigned';
+    const needsSchedule = !['closed', 'admission_form'].includes(stageKey);
+    if (!stageKey || !purpose || (needsSchedule && !followupDate)) return;
+
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
-    
+
     const newComm = {
-      type: type,
+      type: 'followup',
       day: now.getDate().toString(),
       month: months[now.getMonth()],
-      title: `${titles[type]} (${followupStatus})`,
-      desc: `${purpose}. ${desc} Outcome: ${outcome}.`,
+      title: 'Follow-up Management',
+      desc: `${this.formatStageLabel(stageKey)}${stageStatus ? ` - ${this.formatStageStatusLabel(stageKey, stageStatus)}` : ''}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`,
       time: followupTime || now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      by: counselor
+      by: followedBy,
+      followupData: { stageKey, stageStatus, refNo, followupDate: needsSchedule ? followupDate : '', followupTime: needsSchedule ? followupTime : '', purpose, followedBy }
     };
-    
+
     lead.communications.unshift(newComm);
-    lead.followupDate = nextDate || followupDate;
-    lead.followupTime = followupTime;
-    lead.followupType = titles[type];
-    lead.followupStatus = followupStatus;
-    lead.followupOutcome = outcome;
+    lead.stageKey = stageKey;
+    lead.stageStatus = stageStatus === stageKey ? '' : stageStatus;
+    lead.status = stageStatus || stageKey;
+    lead.followupRefNo = refNo;
+    lead.followupDate = needsSchedule ? followupDate : '';
+    lead.followupTime = needsSchedule ? followupTime : '';
     lead.followupPurpose = purpose;
-    if (followupStatus === 'Completed') {
-      if (outcome === 'Counselling Required') {
-        lead.stageKey = 'counselling';
-        lead.stageStatus = 'schedule';
-        lead.status = 'schedule';
-      } else if (outcome === 'Admission Form Sent' || outcome === 'Admission Confirmed') {
-        lead.stageKey = 'admission_form';
-        lead.stageStatus = outcome === 'Admission Confirmed' ? 'form_submitted' : 'form_submission';
-        lead.status = lead.stageStatus;
-      } else if (outcome === 'Not Interested') {
-        lead.stageKey = 'closed';
-        lead.stageStatus = '';
-        lead.status = 'closed';
-      } else {
-        lead.stageKey = 'voicecall';
-        lead.stageStatus = 'called';
-        lead.status = 'called';
-      }
-    } else {
-      lead.stageKey = 'voicecall';
-      lead.stageStatus = followupStatus === 'Rescheduled' ? 'schedule' : 'schedule';
-      lead.status = 'schedule';
-    }
+    lead.followupManagement = newComm.followupData;
     this.normalizeLeadStageData(lead);
     this.stampLeadModified(lead);
+    if (stageKey === 'counselling') {
+      this.recordEmailNotification(
+        lead,
+        'Counselling scheduled - Pramukh Academy',
+        `Dear ${lead.name}, your counselling follow-up is scheduled on ${lead.followupDate || '-'}${lead.followupTime ? ` at ${lead.followupTime}` : ''}. Purpose: ${purpose}.`,
+        'Automatic counselling follow-up email.'
+      );
+    }
+    if (stageKey === 'admission_form') {
+      this.recordEmailNotification(
+        lead,
+        'Admission form link - Pramukh Academy',
+        `Dear ${lead.name}, your inquiry has moved to admission. Please complete the admission form: ams.html`,
+        'Automatic admission follow-up email.'
+      );
+    }
     this.syncAppDataLeads();
     this.showToast('Follow-up activity recorded successfully!', 'success');
     document.querySelector('.custom-modal-overlay')?.remove();
@@ -2552,6 +2581,12 @@ const LeadsModule = {
       lead.status = 'form_submission';
       this.normalizeLeadStageData(lead);
       this.stampLeadModified(lead);
+      this.recordEmailNotification(
+        lead,
+        'Admission form link - Pramukh Academy',
+        `Dear ${lead.name}, your inquiry has moved to admission. Please complete the admission form: ams.html`,
+        'Automatic admission form link email.'
+      );
       this.recordTimelineAction(lead, 'Shortlisted for Admission', 'Admission form workflow started.');
       
       this.applyFilters();
@@ -2643,7 +2678,10 @@ const LeadsModule = {
       const matchedFields = comparableFields
         .filter(([field, value]) => String(value || '').trim() && String((field === 'state' ? this.getLeadState(lead) : field === 'district' ? this.getLeadDistrict(lead) : lead[field]) || '').trim().toLowerCase() === String(value).trim().toLowerCase())
         .map(([field]) => field);
-      const qualifies = matchedFields.includes('phone') || matchedFields.includes('email') || (matchedFields.includes('name') && matchedFields.includes('course')) || matchedFields.length >= 4;
+      const qualifies =
+        matchedFields.includes('phone') ||
+        matchedFields.includes('email') ||
+        (matchedFields.includes('name') && matchedFields.includes('course') && matchedFields.includes('state') && matchedFields.includes('district'));
       return qualifies ? { ...lead, matchedFields } : false;
     }).map((lead) => {
       const matchedFields = comparableFields
@@ -2704,7 +2742,7 @@ const LeadsModule = {
         </div>
         <div class="custom-modal-footer">
           <button class="btn btn-outline btn-sm" onclick="this.closest('.custom-modal-overlay').remove()">Close</button>
-          ${matches.length ? `<button class="btn btn-primary btn-sm" onclick="document.getElementById('duplicate-scan-submit').click()">Archive Selected</button>` : ''}
+          ${matches.length ? `<button class="btn btn-outline btn-sm" onclick="LeadsModule.mergeSelectedDuplicates()">Merge</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('duplicate-scan-submit').click()">Archive Selected</button>` : ''}
         </div>
       </div>
     `;
@@ -2728,6 +2766,32 @@ const LeadsModule = {
     this.showToast(`${ids.length} duplicate record(s) archived`, 'success');
   },
 
+  mergeSelectedDuplicates() {
+    const form = document.getElementById('duplicate-scan-form');
+    const sourceId = Number(form?.dataset.sourceId);
+    const sourceLead = this.leads.find((lead) => lead.id === sourceId);
+    const ids = Array.from(document.querySelectorAll('input[name="duplicate-lead-id"]:checked')).map((input) => Number(input.value)).filter(Boolean);
+    if (!sourceLead || !ids.length) return this.showToast('Select duplicate records to merge.', 'warning');
+
+    ids.forEach((id) => {
+      const duplicate = this.leads.find((lead) => lead.id === id);
+      if (!duplicate) return;
+      ['email', 'phone', 'whatsapp', 'state', 'district', 'city', 'academicStatus', 'course', 'batch', 'mode', 'query'].forEach((field) => {
+        if (!sourceLead[field] && duplicate[field]) sourceLead[field] = duplicate[field];
+      });
+      sourceLead.communications = [...(sourceLead.communications || []), ...(duplicate.communications || [])];
+      this.addAuditRecord(duplicate, `Merged into ${sourceLead.enqNo}`);
+      duplicate.archived = true;
+      this.selectedLeads.delete(id);
+    });
+    this.recordTimelineAction(sourceLead, 'Duplicate Records Merged', `${ids.length} duplicate record(s) merged into this inquiry.`);
+    document.querySelector('.custom-modal-overlay')?.remove();
+    this.normalizeInquiryLeadData();
+    this.applyFilters();
+    this.updateStatusBarCounts();
+    this.showToast(`${ids.length} duplicate record(s) merged`, 'success');
+  },
+
   archiveLead(id) {
     if (!this.can('inquiryList', 'delete')) {
       this.showToast('Archive is Admin-only.', 'warning');
@@ -2746,7 +2810,87 @@ const LeadsModule = {
     }
   },
 
+  showInquiryFunnel(id) {
+    const lead = this.leads.find(l => l.id === id);
+    if (!lead) return;
+    const existing = document.getElementById('followup-history-overlay');
+    if (existing) existing.remove();
+
+    const entries = [
+      {
+        type: 'created',
+        title: 'Inquiry Created',
+        desc: `${lead.course || 'General Inquiry'} inquiry submitted. Query: ${lead.query || '-'}`,
+        by: lead.owner || lead.assignedTo || 'System',
+        at: lead.inquiryDate || '-'
+      },
+      ...(lead.communications || []).map((item) => ({
+        type: item.type || 'note',
+        title: item.title,
+        desc: item.desc,
+        by: item.by || lead.assignedTo || 'System',
+        at: `${item.day || ''} ${item.month || ''} ${item.time || ''}`.trim(),
+        remarks: item.remarks || item.emailRemarks || item.whatsappRemarks || item.callRemarks || '',
+        payload: item.payload || item.followupData || null
+      }))
+    ];
+
+    const iconMap = {
+      created: 'fa-flag',
+      email: 'fa-envelope',
+      whatsapp: 'fa-message',
+      call: 'fa-phone',
+      followup: 'fa-calendar-check',
+      note: 'fa-clipboard-list'
+    };
+
+    const timelineHTML = entries.map((entry) => `
+      <div class="timeline-item">
+        <div class="timeline-dot tl-note"><i class="fas ${iconMap[entry.type] || 'fa-clipboard-list'}"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-date">${entry.at || '-'}</div>
+          <div class="timeline-title">${entry.title || 'Activity'}</div>
+          <div class="timeline-desc">${entry.desc || '-'}</div>
+          ${entry.payload ? `<div class="timeline-desc">Details: ${Object.entries(entry.payload).map(([key, value]) => `${key}: ${value || '-'}`).join('; ')}</div>` : ''}
+          ${entry.remarks ? `<div class="timeline-desc">Remarks: ${entry.remarks}</div>` : ''}
+          <div class="timeline-by">Handled by ${entry.by || 'System'}</div>
+        </div>
+      </div>
+    `).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'followup-history-overlay';
+    overlay.className = 'followup-history-panel';
+    overlay.innerHTML = `
+      <div class="followup-panel-content inquiry-funnel-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Inquiry Funnel - ${lead.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${lead.enqNo} | ${this.formatStageLabel(this.getLeadStatusKey(lead))} | ${lead.assignedTo || lead.owner || 'Unassigned'}</div>
+          </div>
+          <button class="panel-close" onclick="document.getElementById('followup-history-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="panel-body">
+          <div class="lead-detail-grid" style="grid-template-columns:1fr;margin-bottom:14px">
+            <div class="lead-detail-col" style="border-right:0">
+              <div class="detail-row"><span class="detail-label">Handled By</span><span class="detail-value">${lead.assignedTo || lead.owner || 'Unassigned'}</span></div>
+              <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email || '-'}</span></div>
+              <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${lead.phone || '-'}</span></div>
+              <div class="detail-row"><span class="detail-label">WhatsApp</span><span class="detail-value">${lead.whatsapp || lead.phone || '-'}</span></div>
+            </div>
+          </div>
+          <div class="timeline">${timelineHTML}</div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  },
+
   showFollowupHistory(id) {
+    return this.showInquiryFunnel(id);
+  },
+
+  showLegacyFollowupHistory(id) {
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
     const existing = document.getElementById('followup-history-overlay');
@@ -2838,6 +2982,7 @@ const LeadsModule = {
 
   normalizeToolbarButtons() {
     const toolbarLabels = {
+      'select-all-leads': 'Select All On Page',
       'filter-toggle-btn': 'Filters',
       'refresh-btn': 'Refresh',
       'add-lead-btn': 'Add New Inquiry',
@@ -2846,6 +2991,7 @@ const LeadsModule = {
       'download-leads-btn': 'Download',
       'email-all-btn': 'Email All',
       'sort-toggle-btn': 'Sort Leads',
+      'saved-filter-btn': 'Saved Filters',
       'view-toggle-btn': 'Calendar View',
       'collapse-toggle-btn': 'Expand All'
     };

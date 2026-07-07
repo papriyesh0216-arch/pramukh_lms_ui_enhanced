@@ -68,6 +68,27 @@ const InquiryFormPage = {
     }
   },
 
+  recordEmailNotification(submission) {
+    if (!submission?.email) return;
+    try {
+      const outbox = JSON.parse(localStorage.getItem('pa-email-outbox') || '[]');
+      outbox.unshift({
+        id: Date.now(),
+        leadId: submission.id,
+        enqNo: submission.enqNo,
+        to: submission.email,
+        subject: 'Inquiry confirmation - Pramukh Academy',
+        body: `Dear ${submission.name}, your inquiry ${submission.enqNo} has been received. Our team will contact you shortly.`,
+        remarks: 'Automatic inquiry confirmation email.',
+        at: new Date().toISOString(),
+        status: 'queued'
+      });
+      localStorage.setItem('pa-email-outbox', JSON.stringify(outbox));
+    } catch (e) {
+      // ignore storage failures
+    }
+  },
+
   setupLocationFields() {
     const stateSelect = document.getElementById('i-state');
     const districtSelect = document.getElementById('i-district');
@@ -288,7 +309,7 @@ const InquiryFormPage = {
         minute: '2-digit'
       });
 
-      submissions.unshift({
+      const submission = {
         id: Date.now(),
         enqNo: 'INQ' + Math.floor(Math.random() * 9000 + 1000),
         name,
@@ -304,9 +325,12 @@ const InquiryFormPage = {
         query,
         createdAt,
         utm: this.getTrackingData()
-      });
+      };
+
+      submissions.unshift(submission);
 
       this.saveSubmissions(submissions);
+      this.recordEmailNotification(submission);
       form.reset();
       document.getElementById('i-district').innerHTML = '<option value="">Select District</option>';
       document.getElementById('i-district').disabled = true;
