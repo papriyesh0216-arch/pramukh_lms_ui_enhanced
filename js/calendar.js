@@ -8,6 +8,7 @@ const CalendarModule = {
 
   init() {
     this.renderCalendar();
+    this.ensureCalendarListButton();
     document.getElementById('cal-prev-btn')?.addEventListener('click', () => {
       this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
       this.renderCalendar();
@@ -23,6 +24,23 @@ const CalendarModule = {
     this.bindLeadToolbarCalendarButton();
   },
 
+  ensureCalendarListButton() {
+    if (document.getElementById('cal-list-btn')) return;
+    const navGroup = document.querySelector('#screen-calendar .calendar-nav-group');
+    if (!navGroup) return;
+
+    const button = document.createElement('button');
+    button.className = 'cal-nav-btn cal-list-btn';
+    button.id = 'cal-list-btn';
+    button.type = 'button';
+    button.title = 'Back to Inquiry List';
+    button.setAttribute('aria-label', 'Back to Inquiry List');
+    button.innerHTML = '<i class="fas fa-list"></i>';
+    button.addEventListener('click', () => this.goToInquiryList(true));
+
+    navGroup.insertBefore(button, navGroup.firstChild);
+  },
+
   bindLeadToolbarCalendarButton() {
     const btn = document.getElementById('view-toggle-btn');
     if (!btn || btn.dataset.calendarRouteBound === 'true') return;
@@ -34,14 +52,94 @@ const CalendarModule = {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      if (window.App?.goToCalendar) {
-        App.goToCalendar();
-      } else {
-        document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
-        document.getElementById('screen-calendar')?.classList.add('active');
-        this.renderCalendar();
-      }
+      this.openExistingCalendar();
     }, true);
+  },
+
+  openExistingCalendar() {
+    if (typeof App !== 'undefined' && App.goToCalendar) {
+      App.goToCalendar();
+    } else {
+      document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
+      document.getElementById('screen-calendar')?.classList.add('active');
+      this.renderCalendar();
+    }
+    this.ensureCalendarListButton();
+  },
+
+  goToInquiryList(resetList = false) {
+    if (typeof App !== 'undefined' && App.showScreen) {
+      App.showScreen('leads');
+    } else {
+      document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
+      document.getElementById('screen-leads')?.classList.add('active');
+    }
+
+    if (resetList) this.resetInquiryListState();
+  },
+
+  resetInquiryListState() {
+    if (typeof LeadsModule === 'undefined') return;
+
+    LeadsModule.viewMode = 'row';
+    LeadsModule.activeStatus = 'all';
+    LeadsModule.activeSubStatus = '';
+    LeadsModule.currentPage = 1;
+    LeadsModule.filterCourse = 'all';
+    LeadsModule.filterSource = 'all';
+    LeadsModule.filterSearch = '';
+    LeadsModule.filterCounselor = 'all';
+    LeadsModule.filterMode = 'all';
+    LeadsModule.filterAcademicStatus = 'all';
+    LeadsModule.filterCity = '';
+    LeadsModule.filterBatch = 'all';
+    LeadsModule.filterState = '';
+    LeadsModule.filterDateFrom = '';
+    LeadsModule.filterDateTo = '';
+    LeadsModule.filterInquiryNumber = '';
+    LeadsModule.filterAssignInquiry = 'all';
+    LeadsModule.filterInquiryDate = '';
+    LeadsModule.filterFollowupDate = '';
+    LeadsModule.filterSegment = 'all';
+    LeadsModule.selectedLeads?.clear?.();
+
+    [
+      'filter-search-input',
+      'filter-state',
+      'filter-district',
+      'filter-date-from',
+      'filter-date-to',
+      'filter-inquiry-number'
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    [
+      ['filter-course', 'all'],
+      ['filter-mode', 'all'],
+      ['filter-batch', 'all'],
+      ['filter-assign-inquiry', 'all'],
+      ['filter-segment', 'all']
+    ].forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    });
+
+    document.querySelectorAll('.status-tab, .status-sub-tab').forEach((tab) => tab.classList.remove('active'));
+    document.getElementById('status-tab-all')?.classList.add('active');
+
+    const leadList = document.getElementById('lead-list');
+    const leadCalendarView = document.getElementById('lead-calendar-view');
+    const pagination = document.querySelector('.leads-pagination');
+    if (leadList) leadList.style.display = 'flex';
+    if (leadCalendarView) leadCalendarView.style.display = 'none';
+    if (pagination) pagination.style.display = 'flex';
+
+    LeadsModule.renderStageStatusBar?.();
+    LeadsModule.updateViewToggleButton?.();
+    LeadsModule.applyFilters?.();
+    LeadsModule.updateStatusBarCounts?.();
   },
 
   renderCalendar() {
@@ -63,14 +161,12 @@ const CalendarModule = {
     let cells = '';
     const totalCells = 35;
 
-    // Prev month padding
     for (let i = startPad - 1; i >= 0; i--) {
       cells += `<div class="cal-day-cell other-month">
         <div class="cal-day-num">${prevDays - i}</div>
       </div>`;
     }
 
-    // Current month days
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const ev = calData[dateKey];
@@ -92,7 +188,6 @@ const CalendarModule = {
       `;
     }
 
-    // Fill remaining cells for next month
     const used = startPad + daysInMonth;
     const remaining = totalCells - used;
     for (let d = 1; d <= remaining; d++) {
@@ -112,7 +207,6 @@ const CalendarModule = {
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const dateLabel = `${parseInt(day)} ${monthNames[parseInt(month)-1]} ${year}`;
 
-    // Sample leads for this day
     const dayLeads = window.APP_DATA.LEAD_DATA.slice(0, Math.min(3, ev.pending + ev.followup + 1));
     const avatarColors = ['#4F6EF7','#10B981','#F59E0B','#8B5CF6','#F97316'];
 
@@ -175,7 +269,7 @@ const CalendarModule = {
 
         <div class="day-popup-footer">
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('day-popup-overlay').remove()">Close</button>
-          <button class="btn btn-primary btn-sm" onclick="App.showScreen('leads'); document.getElementById('day-popup-overlay').remove()">
+          <button class="btn btn-primary btn-sm" onclick="CalendarModule.goToInquiryList(true); document.getElementById('day-popup-overlay').remove()">
             <i class="fas fa-list"></i> Inquiry List
           </button>
         </div>
@@ -188,9 +282,17 @@ const CalendarModule = {
 
   filterByType(type) {
     document.getElementById('day-popup-overlay')?.remove();
-    App.showScreen('leads');
-    if (type === 'overdue' || type === 'followup' || type === 'pending') {
-      LeadsModule.setStatus(type === 'pending' ? 'new' : 'followup', document.getElementById(`status-tab-${type === 'pending' ? 'new' : 'followup'}`));
+    this.goToInquiryList(false);
+    if (type === 'pending') {
+      LeadsModule.setStatus('pending', document.getElementById('status-tab-pending'));
+    } else if (type === 'overdue' || type === 'followup' || type === 'today') {
+      LeadsModule.activeStatus = 'voicecall';
+      LeadsModule.activeSubStatus = 'schedule';
+      document.querySelectorAll('.status-tab, .status-sub-tab').forEach((tab) => tab.classList.remove('active'));
+      document.getElementById('status-tab-voicecall')?.classList.add('active');
+      LeadsModule.renderStageStatusBar?.();
+      document.getElementById('status-tab-voicecall-schedule')?.classList.add('active');
+      LeadsModule.applyFilters?.();
     }
     LeadsModule.showToast(`Filtered by: ${type} leads`, 'info');
   },
