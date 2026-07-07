@@ -532,6 +532,37 @@
          SCREEN 2: STUDENT INQUIRY LEAD
          ====================================== -->
         <div class="screen" id="screen-leads">
+          <div class="lead-list-switch" role="tablist" aria-label="Inquiry lead views">
+            <button
+              type="button"
+              class="lead-switch-card active"
+              id="lead-switch-inquiry"
+              role="tab"
+              aria-selected="true"
+              onclick="LeadsModule.switchLeadListView('inquiry')"
+            >
+              <span class="lead-switch-icon"><i class="fas fa-list-check"></i></span>
+              <span>
+                <strong>Inquiry Lead</strong>
+                <small>Active inquiry list</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="lead-switch-card"
+              id="lead-switch-archived"
+              role="tab"
+              aria-selected="false"
+              onclick="LeadsModule.switchLeadListView('archived')"
+            >
+              <span class="lead-switch-icon"><i class="fas fa-box-archive"></i></span>
+              <span>
+                <strong>Archived Lead</strong>
+                <small>Duplicate and archived records</small>
+              </span>
+            </button>
+          </div>
+
           <!-- Status Bar -->
           <div class="status-bar" id="status-bar"></div>
 
@@ -1108,6 +1139,47 @@
               <option>50 / page</option>
             </select>
           </div>
+
+          <section
+            class="archived-lead-view"
+            id="archived-lead-view"
+            aria-label="Archived Lead list"
+            hidden
+          >
+            <div class="archived-lead-head">
+              <div>
+                <div class="archived-eyebrow">Archived Lead Records</div>
+                <h2>Duplicate / Archived Enquiry</h2>
+              </div>
+              <div class="archived-status-tabs" role="tablist" aria-label="Archived lead status filter">
+                <button
+                  type="button"
+                  class="archived-status-tab active"
+                  id="archived-status-all"
+                  onclick="LeadsModule.setArchivedStatusFilter('all')"
+                >
+                  All <span id="archived-count-all">0</span>
+                </button>
+                <button
+                  type="button"
+                  class="archived-status-tab"
+                  id="archived-status-duplicate"
+                  onclick="LeadsModule.setArchivedStatusFilter('duplicate')"
+                >
+                  Duplicate <span id="archived-count-duplicate">0</span>
+                </button>
+                <button
+                  type="button"
+                  class="archived-status-tab"
+                  id="archived-status-archived"
+                  onclick="LeadsModule.setArchivedStatusFilter('archived')"
+                >
+                  Archived <span id="archived-count-archived">0</span>
+                </button>
+              </div>
+            </div>
+            <div class="archived-lead-list" id="archived-lead-list"></div>
+          </section>
         </div>
         <!-- /screen-leads -->
 

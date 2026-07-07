@@ -28,6 +28,8 @@ const LeadsModule = {
   filterInquiryDate: '',
   filterFollowupDate: '',
   filterSegment: 'all',
+  leadListView: 'inquiry',
+  archivedStatusFilter: 'all',
   sortOption: 'created-desc',
 
   init() {
@@ -41,6 +43,7 @@ const LeadsModule = {
     this.setupFilters();
     this.applyFilters();
     this.setupToolbar();
+    this.setupLeadListSwitch();
     this.updateStatusBarCounts();
   },
 
@@ -658,6 +661,173 @@ const LeadsModule = {
       sizeSelect.value = `${this.perPage} / page`;
       sizeSelect.onchange = () => this.setPageSize(parseInt(sizeSelect.value, 10));
     }
+  },
+
+  setupLeadListSwitch() {
+    this.switchLeadListView(this.leadListView || 'inquiry');
+  },
+
+  switchLeadListView(view) {
+    this.leadListView = view === 'archived' ? 'archived' : 'inquiry';
+    const isArchived = this.leadListView === 'archived';
+    const screen = document.getElementById('screen-leads');
+    const archivedView = document.getElementById('archived-lead-view');
+    const inquiryBtn = document.getElementById('lead-switch-inquiry');
+    const archivedBtn = document.getElementById('lead-switch-archived');
+
+    screen?.classList.toggle('archived-lead-mode', isArchived);
+    if (archivedView) archivedView.hidden = !isArchived;
+    inquiryBtn?.classList.toggle('active', !isArchived);
+    archivedBtn?.classList.toggle('active', isArchived);
+    inquiryBtn?.setAttribute('aria-selected', String(!isArchived));
+    archivedBtn?.setAttribute('aria-selected', String(isArchived));
+
+    if (isArchived) this.renderArchivedLeadList();
+  },
+
+  setArchivedStatusFilter(status) {
+    this.archivedStatusFilter = ['all', 'duplicate', 'archived'].includes(status) ? status : 'all';
+    this.renderArchivedLeadList();
+  },
+
+  getArchiveAuditRecords() {
+    try {
+      return JSON.parse(localStorage.getItem('paAuditDeleted') || '[]');
+    } catch (e) {
+      return [];
+    }
+  },
+
+  getArchiveAuditForLead(lead) {
+    const records = this.getArchiveAuditRecords();
+    return records.find((record) => (
+      (lead.enqNo && record.enqNo === lead.enqNo) ||
+      (lead.name && record.name === lead.name)
+    )) || null;
+  },
+
+  getArchivedStatusFromAction(action = '') {
+    const text = String(action).toLowerCase();
+    return text.includes('duplicate') || text.includes('merged into') ? 'duplicate' : 'archived';
+  },
+
+  getArchivedLeadRows() {
+    const scopedArchived = this.applyRoleScope(this.leads).filter((lead) => lead.archived);
+    const rows = scopedArchived.map((lead) => {
+      const audit = this.getArchiveAuditForLead(lead);
+      const action = audit?.action || lead.archiveReason || 'Archived inquiry';
+      const status = this.getArchivedStatusFromAction(action);
+      return {
+        key: `lead-${lead.id}`,
+        status,
+        lead,
+        audit,
+        name: lead.name || audit?.name || '-',
+        enqNo: lead.enqNo || audit?.enqNo || '-',
+        phone: lead.phone || '-',
+        email: lead.email || '-',
+        course: lead.course || lead.inquiryType || '-',
+        query: lead.query || '-',
+        assignedTo: lead.assignedTo || lead.owner || '-',
+        archivedBy: audit?.by || lead.archivedBy || '-',
+        archivedAt: audit?.at || lead.archivedAt || '-',
+        duplicateDetails: status === 'duplicate' ? action : '-'
+      };
+    });
+
+    this.getArchiveAuditRecords().forEach((audit, index) => {
+      const exists = rows.some((row) => row.enqNo === audit.enqNo || row.name === audit.name);
+      if (exists) return;
+      const status = this.getArchivedStatusFromAction(audit.action);
+      rows.push({
+        key: `audit-${index}-${audit.enqNo || audit.name || 'record'}`,
+        status,
+        lead: null,
+        audit,
+        name: audit.name || '-',
+        enqNo: audit.enqNo || '-',
+        phone: '-',
+        email: '-',
+        course: '-',
+        query: '-',
+        assignedTo: '-',
+        archivedBy: audit.by || '-',
+        archivedAt: audit.at || '-',
+        duplicateDetails: status === 'duplicate' ? audit.action : '-'
+      });
+    });
+
+    return rows;
+  },
+
+  renderArchivedLeadRow(row) {
+    const statusLabel = row.status === 'duplicate' ? 'Duplicate' : 'Archived';
+    return `
+      <article class="archived-lead-row">
+        <div class="archived-lead-meta">
+          <span class="archived-label">Student</span>
+          <strong>${this.escapeHtml(row.name)}</strong>
+          <span>${this.escapeHtml(row.enqNo)}</span>
+          <span>${this.escapeHtml(row.phone)}${row.email && row.email !== '-' ? ` / ${this.escapeHtml(row.email)}` : ''}</span>
+        </div>
+        <div class="archived-lead-meta">
+          <span class="archived-label">Inquiry Details</span>
+          <span>${this.escapeHtml(row.course)}</span>
+          <span>${this.escapeHtml(row.query)}</span>
+          <span class="archived-status-pill ${row.status}">${statusLabel}</span>
+        </div>
+        <div class="archived-lead-meta">
+          <span class="archived-label">Assigned User</span>
+          <strong>${this.escapeHtml(row.assignedTo)}</strong>
+          <span>Archived by: ${this.escapeHtml(row.archivedBy)}</span>
+          <span>${this.escapeHtml(row.archivedAt)}</span>
+        </div>
+        <div class="archived-lead-meta">
+          <span class="archived-label">Duplicate Details</span>
+          <span>${this.escapeHtml(row.duplicateDetails)}</span>
+        </div>
+      </article>
+    `;
+  },
+
+  renderArchivedLeadList() {
+    const container = document.getElementById('archived-lead-list');
+    if (!container) return;
+    const rows = this.getArchivedLeadRows();
+    const counts = {
+      all: rows.length,
+      duplicate: rows.filter((row) => row.status === 'duplicate').length,
+      archived: rows.filter((row) => row.status === 'archived').length
+    };
+
+    Object.entries(counts).forEach(([key, value]) => {
+      const el = document.getElementById(`archived-count-${key}`);
+      if (el) el.textContent = value;
+    });
+
+    ['all', 'duplicate', 'archived'].forEach((key) => {
+      document.getElementById(`archived-status-${key}`)?.classList.toggle('active', this.archivedStatusFilter === key);
+    });
+
+    const filtered = this.archivedStatusFilter === 'all'
+      ? rows
+      : rows.filter((row) => row.status === this.archivedStatusFilter);
+
+    container.innerHTML = filtered.length
+      ? filtered.map((row) => this.renderArchivedLeadRow(row)).join('')
+      : `<div class="archived-empty-state">
+          <i class="fas fa-box-open" style="font-size:26px;margin-bottom:10px;display:block"></i>
+          No ${this.archivedStatusFilter === 'all' ? 'duplicate or archived' : this.archivedStatusFilter} records found.
+        </div>`;
+  },
+
+  escapeHtml(value = '') {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   },
 
   setPage(page) {
