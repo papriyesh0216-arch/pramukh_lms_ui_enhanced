@@ -20,6 +20,28 @@ const CalendarModule = {
       this.currentDate = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
       this.renderCalendar();
     });
+    this.bindLeadToolbarCalendarButton();
+  },
+
+  bindLeadToolbarCalendarButton() {
+    const btn = document.getElementById('view-toggle-btn');
+    if (!btn || btn.dataset.calendarRouteBound === 'true') return;
+    btn.dataset.calendarRouteBound = 'true';
+    btn.title = 'Open Follow-Up Calendar';
+    btn.setAttribute('aria-label', 'Open Follow-Up Calendar');
+    btn.innerHTML = '<i class="fas fa-calendar-alt"></i>';
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (window.App?.goToCalendar) {
+        App.goToCalendar();
+      } else {
+        document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
+        document.getElementById('screen-calendar')?.classList.add('active');
+        this.renderCalendar();
+      }
+    }, true);
   },
 
   renderCalendar() {
