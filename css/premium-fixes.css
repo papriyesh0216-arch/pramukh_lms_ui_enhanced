@@ -1,0 +1,445 @@
+/* ============================================================
+   PREMIUM FIXES — Scrolling, compact inquiry form, component cleanup
+   Loaded after existing CSS. Keep behavior intact.
+   ============================================================ */
+
+/* Global scroll correction */
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+body:not(.inquiry-page) {
+  overflow: hidden !important;
+}
+
+.app-shell {
+  height: 100vh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.main-content {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.screen.active {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.content-area,
+#screen-dashboard .content-area,
+#screen-calendar .content-area,
+#screen-segmentation .content-area,
+#screen-ams-dashboard .content-area,
+#screen-ams-students .content-area {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
+}
+
+#screen-leads {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
+  padding-bottom: 28px;
+}
+
+#screen-leads .lead-list,
+#screen-leads .lead-calendar-view,
+#screen-leads .archived-lead-view {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+
+.sidebar {
+  height: 100vh !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Account settings must behave like an overlay drawer, not push page content */
+.account-settings-panel {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 5000 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: stretch !important;
+  background: rgba(7, 17, 31, 0.46) !important;
+  backdrop-filter: blur(6px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+.account-settings-panel[aria-hidden="false"] {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.account-settings-card {
+  width: min(420px, 100vw) !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 24px 0 0 24px !important;
+  transform: translateX(100%) !important;
+  transition: transform 0.24s ease !important;
+  overflow: hidden !important;
+}
+
+.account-settings-panel[aria-hidden="false"] .account-settings-card {
+  transform: translateX(0) !important;
+}
+
+.account-settings-header {
+  padding: 16px 18px !important;
+  min-height: 72px !important;
+}
+
+.account-settings-header h2 {
+  font-size: 19px !important;
+  line-height: 1.15 !important;
+}
+
+.account-settings-body {
+  padding: 14px 16px 20px !important;
+  overflow-y: auto !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.account-settings-section,
+.account-profile-card,
+.account-notification-item {
+  border-radius: 16px !important;
+}
+
+/* Main page spacing cleanup */
+.content-area {
+  padding: 24px 28px !important;
+}
+
+.dashboard-hero-header,
+.dashboard-header {
+  margin-bottom: 18px !important;
+}
+
+.kpi-row,
+.dashboard-grid,
+.dashboard-bottom-row,
+.dashboard-ops-grid,
+.assignment-layout,
+.segmentation-layout {
+  gap: 16px !important;
+}
+
+/* Stop cards from becoming too large */
+.kpi-card {
+  min-height: 96px !important;
+  padding: 16px 18px !important;
+}
+
+.chart-card,
+.table-card,
+.tasks-card,
+.score-guide-card,
+.mini-calendar-card,
+.dashboard-command-panel,
+.segmentation-card,
+.future-enhancement-card {
+  padding: 16px !important;
+}
+
+/* Lead management cleanup */
+.lead-list-switch {
+  margin: 18px 22px 12px !important;
+  padding: 10px !important;
+  gap: 10px !important;
+}
+
+.lead-switch-card {
+  min-height: 64px !important;
+  padding: 12px 16px !important;
+}
+
+.status-bar,
+.status-sub-bar,
+.leads-toolbar,
+.leads-filter-panel,
+.leads-info-bar,
+.leads-pagination {
+  margin-left: 22px !important;
+  margin-right: 22px !important;
+}
+
+.leads-toolbar {
+  padding: 14px !important;
+}
+
+.lead-card {
+  margin-left: 22px !important;
+  margin-right: 22px !important;
+}
+
+.lead-card-header {
+  padding: 14px 16px !important;
+}
+
+/* Form controls should not look like huge cards everywhere */
+.form-field,
+.modal-section,
+.form-section,
+.drawer-info-card,
+.profile-card {
+  box-shadow: none !important;
+}
+
+/* Compact standalone Inquiry Form */
+body.inquiry-page {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 100vh !important;
+  height: auto !important;
+}
+
+.inquiry-shell {
+  min-height: 100vh !important;
+  padding: 18px 18px 28px !important;
+}
+
+.inquiry-topbar {
+  width: min(720px, 100%) !important;
+  min-height: 58px !important;
+  padding: 10px 14px !important;
+  margin: 0 auto 16px !important;
+  border-radius: 22px !important;
+}
+
+.inquiry-brand {
+  gap: 10px !important;
+}
+
+.inquiry-logo-mark {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 14px !important;
+}
+
+.inquiry-brand-title {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+.inquiry-brand-sub {
+  font-size: 11px !important;
+}
+
+.inquiry-topbar-actions {
+  gap: 8px !important;
+}
+
+.inquiry-stage {
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.inquiry-panel {
+  width: min(840px, 100%) !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+}
+
+.inquiry-hero {
+  padding: 16px 18px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--divider) !important;
+  border-radius: 0 !important;
+  background: linear-gradient(135deg, rgba(16, 56, 96, 0.05), rgba(213, 148, 58, 0.08)) !important;
+}
+
+.inquiry-hero h1,
+.inquiry-hero .panel-title {
+  font-size: 22px !important;
+  margin: 4px 0 4px !important;
+  line-height: 1.1 !important;
+}
+
+.inquiry-hero p,
+.inquiry-hero .panel-subtitle {
+  font-size: 12px !important;
+  max-width: 560px !important;
+}
+
+.inquiry-hero-meta {
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+.inquiry-form {
+  padding: 18px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.inquiry-form .modal-grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.inquiry-form .form-field {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.inquiry-form .form-field label {
+  display: block !important;
+  margin-bottom: 5px !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.inquiry-form input,
+.inquiry-form select,
+.inquiry-form textarea {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  background: #ffffff !important;
+}
+
+body.dark .inquiry-form input,
+body.dark .inquiry-form select,
+body.dark .inquiry-form textarea {
+  background: rgba(9, 24, 42, 0.94) !important;
+}
+
+.inquiry-form textarea {
+  height: 74px !important;
+  min-height: 74px !important;
+  resize: vertical !important;
+}
+
+.inquiry-option-row,
+.inquiry-type-row,
+.radio-card-row {
+  gap: 10px !important;
+}
+
+.inquiry-option,
+.radio-card,
+.inquiry-type-card {
+  min-height: 56px !important;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+}
+
+.inquiry-form .btn,
+.inquiry-form button[type="submit"] {
+  min-height: 38px !important;
+  padding: 8px 14px !important;
+  border-radius: 13px !important;
+  width: fit-content !important;
+}
+
+/* AMS and segmentation scroll safety */
+#screen-segmentation,
+#screen-calendar,
+#screen-dashboard,
+#screen-ams-dashboard,
+#screen-ams-students {
+  min-height: 0 !important;
+}
+
+.segmentation-layout,
+.assignment-layout,
+.dashboard-grid,
+.dashboard-bottom-row {
+  padding-bottom: 24px !important;
+}
+
+/* Tables must scroll horizontally instead of breaking layout */
+.table-card,
+.lead-table-wrap,
+.data-table-wrap,
+.ams-table-card {
+  overflow-x: auto !important;
+}
+
+.data-table,
+table {
+  min-width: max-content;
+}
+
+/* Mobile */
+@media (max-width: 980px) {
+  .content-area {
+    padding: 16px !important;
+  }
+
+  #screen-leads {
+    padding-bottom: calc(var(--mobile-bottom-nav-height, 72px) + 20px) !important;
+  }
+
+  .status-bar,
+  .status-sub-bar,
+  .leads-toolbar,
+  .leads-filter-panel,
+  .leads-info-bar,
+  .leads-pagination,
+  .lead-card,
+  .lead-list-switch {
+    margin-left: 14px !important;
+    margin-right: 14px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .inquiry-shell {
+    padding: 12px !important;
+  }
+
+  .inquiry-topbar {
+    width: 100% !important;
+    border-radius: 18px !important;
+  }
+
+  .inquiry-panel {
+    width: 100% !important;
+    border-radius: 18px !important;
+  }
+
+  .inquiry-hero {
+    padding: 14px !important;
+  }
+
+  .inquiry-form {
+    padding: 14px !important;
+  }
+
+  .inquiry-form .modal-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .account-settings-card {
+    width: 100vw !important;
+    border-radius: 0 !important;
+  }
+}
