@@ -14,14 +14,11 @@ const DrawerModule = {
     document.getElementById('drawer-close-btn')?.addEventListener('click', () => this.close());
     document.getElementById('drawer-overlay')?.addEventListener('click', () => this.close());
     this.setupActions();
-    this.setupResize();
-    window.addEventListener('resize', () => this.applyDrawerWidth());
   },
 
   setupActions() {
     document.getElementById('drawer-add-followup-btn')?.addEventListener('click', () => this.runLeadAction('followup'));
     document.getElementById('drawer-schedule-meeting-btn')?.addEventListener('click', () => this.runLeadAction('counselling'));
-    document.getElementById('drawer-more-actions-btn')?.addEventListener('click', () => this.runLeadAction('changeclass'));
     document.getElementById('drawer-edit-lead-btn')?.addEventListener('click', () => this.runLeadAction('edit'));
     document.getElementById('drawer-view-more-link')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -84,29 +81,20 @@ const DrawerModule = {
 
   quickAction(type) {
     if (!this.currentLead) return;
-    const permissionByType = { admission: 'convert', counselling: 'followup', note: 'note' };
+    const permissionByType = {};
     const required = permissionByType[type];
     if (required && !AuthModule.can('inquiryDetails', required)) {
       LeadsModule.showToast('This action is not available for the current role.', 'warning');
       return;
     }
-    if (type === 'admission' && ['lost', 'closed'].includes(this.currentLead.status)) {
-      LeadsModule.showToast('Reopen inquiry first before converting.', 'warning');
-      return;
-    }
     const labels = {
       brochure: 'Brochure sent',
-      fee: 'Fee structure shared',
-      batch: 'Batch details shared',
-      admission: 'Convert to Admission',
-      counselling: 'Counselling action opened',
-      note: 'Note added'
+      course: 'Course details shared',
+      'edit-buttons': 'Quick action button editor opened'
     };
-    if (type === 'counselling') return this.runLeadAction('counselling');
-    if (type === 'admission') {
-      this.currentLead.status = 'admission_process';
-      this.currentLead.statusLabel = 'Admission Form';
-      this.currentLead.stage = 6;
+    if (type === 'edit-buttons') {
+      this.showQuickActionButtonForm();
+      return;
     }
     LeadsModule.recordTimelineAction(this.currentLead, labels[type] || 'Quick Action', `${labels[type] || 'Quick action'} from drawer.`);
     LeadsModule.applyFilters();
@@ -122,7 +110,6 @@ const DrawerModule = {
       return;
     }
     this.currentLead = lead;
-    this.applyDrawerWidth();
     this.renderDrawer(lead);
     document.getElementById('drawer-overlay')?.classList.add('open');
     document.getElementById('lead-drawer')?.classList.add('open');
@@ -209,6 +196,147 @@ const DrawerModule = {
         `).join('')}
       </div>
     `;
+  },
+
+  buildJourneyHtml(lead) {
+    const stages = [
+      'Inquiry Created',
+      'Lead Assigned',
+      'First Contact',
+      'Follow-up',
+      'Counselling',
+      'Qualified Lead',
+      'Admission Form Started',
+      'Fee Paid',
+      'Student Created'
+    ];
+    const stageDates = [
+      lead.inquiryDate || '',
+      lead.assignedDate || '',
+      '12 May',
+      lead.followupDate || '',
+      lead.counselling?.date || '',
+      '',
+      '',
+      '',
+      ''
+    ];
+    const iconForStage = ['fa-inbox', 'fa-user-check', 'fa-phone', 'fa-calendar-check', 'fa-comments', 'fa-certificate', 'fa-file-signature', 'fa-receipt', 'fa-graduation-cap'];
+    const currentStage = Math.min(Math.max(Number(lead.stage || 0), 0), stages.length - 1);
+    return `
+      <div class="stage-pipeline-card inquiry-journey-card">
+        <div class="drawer-card-header">
+          <div class="drawer-card-title"><i class="fas fa-route"></i> Lead Journey</div>
+        </div>
+        <div style="padding: 12px 20px">
+          <div class="stage-pipeline">
+            ${stages.map((stage, index) => {
+              const isCompleted = index < currentStage;
+              const isActive = index === currentStage;
+              return `
+                ${index > 0 ? `<div class="stage-connector ${index <= currentStage ? 'done' : ''}"></div>` : ''}
+                <div class="stage-node ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
+                  <div class="stage-circle"><i class="fas ${iconForStage[index]}"></i></div>
+                  <span class="stage-label">${this.escapeHtml(stage)}</span>
+                  ${stageDates[index] ? `<span class="stage-date">${this.escapeHtml(stageDates[index])}</span>` : ''}
+                </div>
+              `;
+            }).join('')}
+            <div class="journey-outcome-chips">
+              <span class="alt-outcome-chip">Lost Lead</span>
+              <span class="alt-outcome-chip">Closed Inquiry</span>
+              <span class="alt-outcome-chip">Reopened Inquiry</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  showQuickActionButtonForm() {
+    if (!this.currentLead) return;
+    document.getElementById('quick-action-button-overlay')?.remove();
+    const leadId = this.currentLead.id;
+    const overlay = document.createElement('div');
+    overlay.id = 'quick-action-button-overlay';
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card wide quick-button-modal">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-sliders-h" style="color:var(--primary)"></i> Create Quick Action Button</span>
+          <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="quick-button-form" onsubmit="event.preventDefault(); DrawerModule.saveQuickActionButton(${leadId})">
+          <div class="custom-modal-body quick-button-form-body">
+            <div class="form-grid cols-2">
+              <div class="form-field">
+                <label>Button Name</label>
+                <input id="quick-button-name" type="text" placeholder="eg, Share demo class" required>
+              </div>
+              <div class="form-field">
+                <label>Action Type</label>
+                <select id="quick-button-action" required>
+                  <option value="message">Message</option>
+                  <option value="link">Open Link</option>
+                  <option value="call">Call</option>
+                  <option value="email">Email</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Icon</label>
+                <select id="quick-button-icon">
+                  <option value="fa-paper-plane">Paper Plane</option>
+                  <option value="fa-book-open">Course</option>
+                  <option value="fa-calendar-check">Calendar</option>
+                  <option value="fa-link">Link</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Button Color</label>
+                <select id="quick-button-color">
+                  <option value="primary">Primary</option>
+                  <option value="success">Success</option>
+                  <option value="warning">Warning</option>
+                  <option value="info">Info</option>
+                </select>
+              </div>
+              <div class="form-field span-2">
+                <label>Message / Link</label>
+                <textarea id="quick-button-payload" rows="4" placeholder="Enter button message, URL, or action notes"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="custom-modal-footer">
+            <button class="btn btn-outline btn-sm" type="button" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
+            <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-save"></i> Save Button</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  },
+
+  saveQuickActionButton(id) {
+    const lead = this.findLead(id);
+    if (!lead) return;
+    const name = document.getElementById('quick-button-name')?.value?.trim();
+    if (!name) {
+      LeadsModule.showToast('Enter a button name.', 'warning');
+      return;
+    }
+    const action = document.getElementById('quick-button-action')?.value || 'message';
+    const icon = document.getElementById('quick-button-icon')?.value || 'fa-paper-plane';
+    const color = document.getElementById('quick-button-color')?.value || 'primary';
+    const payload = document.getElementById('quick-button-payload')?.value?.trim() || '';
+    lead.quickActionDrafts = [
+      ...(Array.isArray(lead.quickActionDrafts) ? lead.quickActionDrafts : []),
+      { name, action, icon, color, payload, createdAt: new Date().toISOString() }
+    ];
+    LeadsModule.recordTimelineAction(lead, 'Quick Action Button Created', `${name} quick action button created.`);
+    LeadsModule.applyFilters();
+    document.getElementById('quick-action-button-overlay')?.remove();
+    this.renderDrawer(lead);
+    LeadsModule.showToast('Quick action button saved.', 'success');
   },
 
   setupResize() {
@@ -301,7 +429,6 @@ const DrawerModule = {
 
     document.getElementById('drawer-contacts').innerHTML = `
       <span class="profile-contact-item"><i class="fas fa-phone"></i>${this.escapeHtml(lead.phone)}</span>
-      <span class="profile-contact-item"><i class="fab fa-whatsapp" style="color:var(--wa)"></i>${this.escapeHtml(lead.whatsapp)}</span>
       <span class="profile-contact-item"><i class="fas fa-envelope" style="color:var(--primary)"></i>${this.escapeHtml(lead.email)}</span>
     `;
 
@@ -315,51 +442,6 @@ const DrawerModule = {
         <div class="profile-meta-value profile-meta-owner">
           <div class="owner-mini-avatar">${this.escapeHtml((lead.owner || 'B').charAt(0))}</div>${this.escapeHtml(lead.owner)}
         </div>
-      </div>
-    `;
-
-    const stages = [
-      'Inquiry Created',
-      'Lead Assigned',
-      'First Contact',
-      'Follow-up',
-      'Counselling',
-      'Qualified Lead',
-      'Admission Form Started',
-      'Fee Paid',
-      'Student Created'
-    ];
-    const stageDates = [
-      lead.inquiryDate || '',
-      lead.assignedDate || '',
-      '12 May',
-      lead.followupDate || '',
-      '14 May',
-      '',
-      '',
-      '',
-      ''
-    ];
-    const iconForStage = ['fa-inbox', 'fa-user-check', 'fa-phone', 'fa-calendar-check', 'fa-comments', 'fa-certificate', 'fa-file-signature', 'fa-receipt', 'fa-graduation-cap'];
-    const currentStage = Math.min(Math.max(Number(lead.stage || 0), 0), stages.length - 1);
-    document.getElementById('drawer-pipeline').innerHTML = stages.map((s, i) => {
-      const isCompleted = i < currentStage;
-      const isActive = i === currentStage;
-      return `
-        ${i > 0 ? `<div class="stage-connector ${i <= currentStage ? 'done' : ''}"></div>` : ''}
-        <div class="stage-node ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
-          <div class="stage-circle">
-            <i class="fas ${iconForStage[i]}"></i>
-          </div>
-          <span class="stage-label">${s}</span>
-          ${stageDates[i] ? `<span class="stage-date">${stageDates[i]}</span>` : ''}
-        </div>
-      `;
-    }).join('') + `
-      <div class="journey-outcome-chips">
-        <span class="alt-outcome-chip">Lost Lead</span>
-        <span class="alt-outcome-chip">Closed Inquiry</span>
-        <span class="alt-outcome-chip">Reopened Inquiry</span>
       </div>
     `;
 
@@ -422,23 +504,10 @@ const DrawerModule = {
         }).join('')
       : '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px"><i class="fas fa-inbox" style="font-size:24px;opacity:0.3;display:block;margin-bottom:8px"></i>No activity yet</div>';
 
-    document.getElementById('drawer-followup-details').innerHTML = [
-      { label: 'Follow-up Type', value: lead.followupType || 'Call' },
-      { label: 'Status', value: `<span class="state-chip">${this.escapeHtml(lead.followupStatus || 'Scheduled')}</span>` },
-      { label: 'Outcome', value: `<span class="outcome-chip">${this.escapeHtml(lead.followupOutcome || 'Pending')}</span>` },
-      { label: 'Date', value: lead.followupDate || 'Not Set' },
-      { label: 'Time', value: lead.followupTime || '-' },
-      { label: 'Purpose / Remarks', value: lead.followupPurpose || 'Share details and check interest.' },
-      { label: 'Followed By', value: `<div style="display:flex;align-items:center;gap:6px"><div class="owner-mini-avatar">${this.escapeHtml((lead.owner || 'B').charAt(0))}</div>${this.escapeHtml(lead.owner)}</div>` }
-    ].map(r => `
-      <div class="followup-detail-row">
-        <div class="followup-detail-label">${this.escapeHtml(r.label)}</div>
-        <div class="followup-detail-value">${r.value}</div>
-      </div>
-    `).join('');
-
     const counselling = lead.counselling;
+    const counsellingCard = document.getElementById('drawer-counselling-card');
     const counsellingEl = document.getElementById('drawer-counselling-history');
+    if (counsellingCard) counsellingCard.style.display = counselling ? '' : 'none';
     if (counsellingEl) {
       counsellingEl.innerHTML = counselling ? `
         <div class="comm-item">
@@ -450,61 +519,8 @@ const DrawerModule = {
           </div>
           <div class="comm-time">${this.escapeHtml(counselling.time || '')}</div>
         </div>
-      ` : `
-        <div class="comm-item">
-          <div class="comm-icon tl-meeting"><i class="fas fa-comments"></i></div>
-          <div class="comm-body">
-            <div class="comm-title">No counselling session recorded</div>
-            <div class="comm-desc">Schedule counselling to capture requirement, interest level, parent involvement, and next action.</div>
-          </div>
-        </div>
-      `;
+      ` : '';
     }
-
-    const notes = communications.filter(item => /note/i.test(item.title || '') || item.type === 'note').slice(0, 3);
-    const notesEl = document.getElementById('drawer-internal-notes');
-    if (notesEl) {
-      notesEl.innerHTML = notes.length ? notes.map(note => `
-        <div class="comm-item">
-          <div class="comm-icon"><i class="fas fa-sticky-note"></i></div>
-          <div class="comm-body">
-            <div class="comm-title">${this.escapeHtml(note.title)}</div>
-            <div class="comm-desc">${this.escapeHtml(note.desc)}</div>
-            <div class="comm-meta"><span>By ${this.escapeHtml(note.by)}</span></div>
-          </div>
-          <div class="comm-time">${this.escapeHtml(note.time || '')}</div>
-        </div>
-      `).join('') : `
-        <div class="comm-item">
-          <div class="comm-icon"><i class="fas fa-sticky-note"></i></div>
-          <div class="comm-body">
-            <div class="comm-title">No internal notes yet</div>
-            <div class="comm-desc">Staff-only notes will appear here for counsellor review.</div>
-          </div>
-        </div>
-      `;
-    }
-
-    const priority = lead.priority || 'low';
-    document.getElementById('drawer-score-value').textContent = lead.leadScore;
-    document.getElementById('drawer-priority-value').textContent = priority.charAt(0).toUpperCase() + priority.slice(1);
-    document.getElementById('drawer-lead-age').textContent = lead.leadAge || '0 Days';
-    const lastActEl = document.getElementById('drawer-last-activity');
-    if (lastActEl) lastActEl.textContent = '15 May 2025\n10:20 AM';
-    document.getElementById('drawer-assigned-on').textContent = lead.assignedDate || '-';
-
-    document.getElementById('drawer-score-rows').innerHTML = [
-      { label: 'Website Activity', val: 25, max: 25 },
-      { label: 'Engagement', val: 20, max: 25 },
-      { label: 'Profile Fit', val: 20, max: 25 },
-      { label: 'Communication', val: Math.max(0, lead.leadScore - 65), max: 25 }
-    ].map(s => `
-      <div class="score-detail-row">
-        <div class="score-detail-icon"><i class="fas fa-check"></i></div>
-        <div class="score-detail-label">${this.escapeHtml(s.label)}</div>
-        <div class="score-detail-value">${s.val}/${s.max}</div>
-      </div>
-    `).join('');
     this.applyPermissionState(lead);
   },
 
@@ -514,17 +530,12 @@ const DrawerModule = {
       if (el) el.style.display = visible ? '' : 'none';
     };
     setVisible('drawer-add-followup-btn', AuthModule.can('inquiryDetails', 'followup'));
-    setVisible('drawer-schedule-meeting-btn', AuthModule.can('inquiryDetails', 'followup'));
-    setVisible('drawer-more-actions-btn', AuthModule.can('inquiryDetails', 'status'));
+    setVisible('drawer-schedule-meeting-btn', Boolean(lead.counselling) && AuthModule.can('inquiryDetails', 'followup'));
     setVisible('drawer-edit-lead-btn', AuthModule.can('inquiryDetails', 'edit'));
     setVisible('drawer-mark-lost-btn', AuthModule.can('inquiryDetails', 'markLost'));
     document.querySelectorAll('[data-drawer-quick]').forEach(btn => {
-      const type = btn.dataset.drawerQuick;
-      const required = { admission: 'convert', counselling: 'followup', note: 'note' }[type];
-      const allowed = !required || AuthModule.can('inquiryDetails', required);
-      const blockedByLost = type === 'admission' && ['lost', 'closed'].includes(lead.status);
-      btn.classList.toggle('is-disabled', !allowed || blockedByLost);
-      btn.title = blockedByLost ? 'Reopen inquiry first' : (!allowed ? 'Not available for this role' : '');
+      btn.classList.remove('is-disabled');
+      btn.title = '';
     });
   }
 };

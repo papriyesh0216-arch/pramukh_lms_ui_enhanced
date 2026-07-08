@@ -1,6 +1,7 @@
 /* ============================================================
-   RESPONSIVE.CSS - Additive tablet/mobile responsiveness
-   Desktop UI remains unchanged; rules activate only at breakpoints.
+   RESPONSIVE.CSS — Final loaded override
+   Scope: layout stability, inquiry list fixes, sidebar fixes,
+   and requested dashboard removals only.
    ============================================================ */
 
 :root {
@@ -10,1898 +11,319 @@
 
 .mobile-menu-btn,
 .mobile-nav-backdrop,
-.mobile-bottom-nav {
-  display: none;
-}
-
-@media (max-width: 1180px) {
-  .content-area {
-    padding: 16px;
-  }
-
-  .dashboard-grid,
-  .dashboard-bottom-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dashboard-right-panel,
-  .table-card {
-    grid-column: 1 / -1;
-  }
-
-  .segment-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .lead-card-header {
-    grid-template-columns: 32px 34px 40px minmax(160px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1fr) 80px 142px;
-    gap: 8px;
-  }
-
-  .lead-name,
-  .lead-mini-tag {
-    max-width: 130px;
-  }
-}
-
-@media (max-width: 980px) {
-  body {
-    overflow: hidden;
-  }
-
-  .app-shell {
-    width: 100vw;
-  }
-
-  .sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    width: min(286px, 84vw);
-    transform: translateX(-105%);
-    transition: transform 0.28s ease;
-    box-shadow: 22px 0 48px rgba(15, 26, 46, 0.22);
-    z-index: 1300;
-  }
-
-  body.mobile-nav-open .sidebar {
-    transform: translateX(0);
-  }
-
-  .mobile-nav-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1290;
-    background: rgba(2, 6, 23, 0.44);
-    backdrop-filter: blur(2px);
-  }
-
-  body.mobile-nav-open .mobile-nav-backdrop {
-    display: block;
-  }
-
-  .main-content {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .mobile-menu-btn {
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    z-index: 1280;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-primary);
-    box-shadow: var(--shadow-md);
-    flex-shrink: 0;
-  }
-
-  .topbar {
-    height: auto;
-    min-height: 58px;
-    padding: 10px 12px;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .topbar-search {
-    order: 3;
-    flex: 1 0 100%;
-    max-width: none;
-  }
-
-  .topbar-actions {
-    margin-left: auto;
-  }
-
-  #page-section-title {
-    display: none;
-  }
-
-  .user-info,
-  .topbar-user > i {
-    display: none;
-  }
-
-  .topbar-user {
-    padding: 2px;
-  }
-
-  .dashboard-hero-header,
-  .dashboard-command-panel,
-  .segmentation-card,
-  .future-enhancement-card,
-  .chart-card,
-  .table-card,
-  .tasks-card,
-  .score-guide-card,
-  .mini-calendar-card {
-    border-radius: 12px;
-  }
-
-  .command-panel-grid,
-  .dashboard-grid,
-  .dashboard-bottom-row,
-  .kpi-metrics-row,
-  .assignment-layout,
-  .segmentation-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-right-panel,
-  .table-card {
-    grid-column: auto;
-  }
-
-  .dashboard-command-panel .report-filter-row,
-  .dashboard-command-panel .report-grid,
-  .dashboard-command-panel .journey-analytics,
-  .kpi-row,
-  .journey-analytics,
-  .report-grid,
-  .segmentation-report-grid,
-  .assignment-summary-grid,
-  .future-enhancement-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .data-table {
-    min-width: 680px;
-  }
-
-  .table-card {
-    overflow-x: auto;
-  }
-
-  .leads-toolbar {
-    align-items: stretch;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    width: 100%;
-    flex: 1 1 100%;
-  }
-
-  .toolbar-right {
-    justify-content: space-between;
-  }
-
-  .leads-filter-panel {
-    max-height: 46vh;
-    overflow-y: auto;
-  }
-
-  .lead-card-header {
-    grid-template-columns: 28px 34px 40px minmax(0, 1fr) auto;
-    grid-template-areas:
-      "check num avatar main actions"
-      ". . . status actions"
-      ". . . meta time";
-    align-items: start;
-  }
-
-  .lead-checkbox-cell { grid-area: check; }
-  .lead-number { grid-area: num; }
-  .lead-avatar { grid-area: avatar; }
-  .lead-main-info { grid-area: main; }
-  .lead-status-wrap { grid-area: status; }
-  .lead-meta { grid-area: meta; }
-  .lead-timestamp { grid-area: time; justify-self: start; }
-  .lead-actions { grid-area: actions; flex-wrap: wrap; justify-content: flex-end; max-width: 78px; }
-
-  .lead-name,
-  .lead-mini-tag {
-    max-width: min(220px, 52vw);
-  }
-
-  .lead-detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .lead-detail-col {
-    border-right: 0;
-    border-bottom: 1px solid var(--divider);
-  }
-
-  .lead-detail-col:last-child {
-    border-bottom: 0;
-  }
-
-  .lead-calendar-view .calendar-grid,
-  .cal-weekdays-header,
-  .cal-days-grid {
-    min-width: 760px;
-  }
-
-  .lead-calendar-view,
-  .calendar-grid-wrap {
-    overflow-x: auto;
-  }
-
-  .lead-drawer {
-    width: 100vw !important;
-    max-width: 100vw;
-    min-width: 0;
-  }
-
-  .drawer-topbar {
-    height: auto;
-    min-height: 58px;
-    flex-wrap: wrap;
-    padding: 10px 12px;
-  }
-
-  .drawer-actions {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .drawer-3col,
-  .drawer-2col,
-  .profile-meta-row {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-contacts {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .stage-pipeline {
-    padding-bottom: 8px;
-  }
-}
-
-@media (max-width: 720px) {
-  body {
-    overflow: hidden;
-  }
-
-  html {
-    font-size: 13px;
-  }
-
-  .main-content {
-    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom));
-  }
-
-  .mobile-bottom-nav {
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    bottom: max(8px, var(--mobile-safe-bottom));
-    z-index: 1200;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(62px, 1fr);
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 18px 38px rgba(15, 26, 46, 0.18);
-    backdrop-filter: blur(14px);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .mobile-bottom-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  body.dark .mobile-bottom-nav {
-    background: rgba(7, 24, 39, 0.94);
-  }
-
-  .mobile-bottom-nav--compact {
-    grid-auto-columns: minmax(88px, 1fr);
-    justify-content: stretch;
-  }
-
-  .mobile-bottom-nav__item {
-    min-width: 0;
-    min-height: 54px;
-    padding: 6px 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    border-radius: 12px;
-    color: var(--text-muted);
-    transition: var(--transition);
-  }
-
-  .mobile-bottom-nav__item i {
-    font-size: 14px;
-    color: inherit;
-  }
-
-  .mobile-bottom-nav__item span {
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1.15;
-    text-align: center;
-  }
-
-  .mobile-bottom-nav__item.active,
-  .mobile-bottom-nav__item:focus-visible,
-  .mobile-bottom-nav__item:hover {
-    background: var(--primary-light);
-    color: var(--primary);
-  }
-
-  .mobile-bottom-nav__item--menu {
-    border: 1px solid var(--border);
-    background: var(--bg-subtle);
-  }
-
-  .mobile-bottom-nav__item--current {
-    cursor: default;
-    background: var(--bg-subtle);
-  }
-
-  .content-area,
-  #screen-dashboard .content-area {
-    padding: 12px;
-  }
-
-  #screen-dashboard .content-area,
-  #screen-calendar .content-area,
-  #screen-segmentation .content-area {
-    gap: 14px;
-  }
-
-  #screen-leads .content-area {
-    padding-bottom: 0;
-  }
-
-  #screen-leads {
-    overflow-y: auto;
-    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 8px);
-  }
-
-  #screen-leads .lead-list {
-    flex: 0 0 auto;
-    overflow: visible;
-  }
-
-  .dashboard-hero-header,
-  .dashboard-command-panel {
-    padding: 14px;
-  }
-
-  .dashboard-quick-actions-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dashboard-hero-header h1 {
-    font-size: 22px;
-  }
-
-  .dashboard-header,
-  .section-heading-row,
-  .command-panel-head,
-  .calendar-header {
-    gap: 12px;
-  }
-
-  .dashboard-controls,
-  .section-actions,
-  .report-export-actions,
-  .report-filter-row {
-    width: 100%;
-  }
-
-  .dashboard-controls .btn,
-  .dashboard-controls .date-filter-btn,
-  .section-actions .btn,
-  .report-export-actions .btn {
-    flex: 1 1 calc(50% - 6px);
-    justify-content: center;
-  }
-
-  .dashboard-command-panel .report-filter-row,
-  .dashboard-command-panel .report-grid,
-  .dashboard-command-panel .journey-analytics,
-  .kpi-row,
-  .journey-analytics,
-  .report-grid,
-  .kpi-metrics-row,
-  .segmentation-report-grid,
-  .assignment-summary-grid,
-  .future-enhancement-grid,
-  .segment-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .kpi-card {
-    min-height: 88px;
-  }
-
-  .dashboard-grid,
-  .dashboard-bottom-row,
-  .dashboard-ops-grid,
-  .dashboard-right-panel,
-  .chart-body,
-  .journey-analytics,
-  .report-grid,
-  .segmentation-layout,
-  .assignment-layout,
-  .assignment-workspace {
-    gap: 12px;
-  }
-
-  .chart-card,
-  .table-card,
-  .mini-calendar-card,
-  .tasks-card,
-  .score-guide-card,
-  .segmentation-card,
-  .future-enhancement-card,
-  .assignment-user-card,
-  .assignment-segment-card,
-  .custom-modal-card,
-  .lead-card,
-  .calendar-grid-wrap {
-    box-shadow: var(--shadow-card);
-  }
-
-  .chart-body {
-    min-height: 156px;
-  }
-
-  .chart-canvas-wrap {
-    margin-inline: auto;
-  }
-
-  .chart-card-header,
-  .section-heading-row,
-  .segmentation-card-header,
-  .panel-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .chart-filter-select,
-  .report-filter-row .chart-filter-select {
-    width: 100%;
-  }
-
-  .journey-analytics,
-  .report-grid,
-  .segmentation-report-grid,
-  .assignment-summary-grid,
-  .future-enhancement-grid,
-  .segment-grid,
-  .quick-actions-grid,
-  .segment-form .form-grid,
-  .segment-action-strip {
-    gap: 10px;
-  }
-
-  .leads-toolbar {
-    padding: 10px 12px;
-  }
-
-  .toolbar-left,
-  .toolbar-right,
-  .toolbar-view-toggle,
-  #batch-actions-wrap {
-    gap: 6px;
-  }
-
-  .toolbar-btn {
-    flex: 1 1 auto;
-    justify-content: center;
-    min-width: 42px;
-  }
-
-  .toolbar-view-toggle {
-    width: 100%;
-  }
-
-  .toolbar-view-toggle .toolbar-btn {
-    flex: 1;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    align-items: stretch;
-  }
-
-  .toolbar-left {
-    flex-direction: column;
-  }
-
-  .toolbar-right {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .toolbar-divider {
-    width: 100%;
-    height: 1px;
-    margin: 2px 0;
-  }
-
-  .status-bar,
-  .status-sub-bar {
-    padding-inline: 10px;
-    gap: 6px;
-    overflow-x: auto;
-  }
-
-  .status-tab,
-  .status-sub-tab {
-    padding-inline: 10px;
-  }
-
-  .leads-info-bar {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px;
-  }
-
-  .quick-search-bar,
-  .quick-search-wrap,
-  .quick-search-input {
-    width: 100%;
-  }
-
-  .lead-list {
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .leads-toolbar,
-  .leads-info-bar,
-  .lead-list,
-  .leads-pagination {
-    scroll-margin-bottom: calc(var(--mobile-bottom-nav-height) + 18px);
-  }
-
-  .leads-toolbar,
-  .status-bar,
-  .status-sub-bar,
-  .leads-info-bar,
-  .calendar-header,
-  .segmentation-tab-bar {
-    border-radius: 12px;
-  }
-
-  .leads-toolbar,
-  .leads-filter-panel,
-  .leads-info-bar,
-  .leads-pagination {
-    margin-inline: 12px;
-  }
-
-  .status-bar,
-  .status-sub-bar {
-    margin-inline: 12px;
-    margin-top: 12px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-  }
-
-  .leads-filter-panel {
-    border-radius: 12px;
-    border: 1px solid var(--border);
-  }
-
-  .leads-info-bar {
-    border-radius: 12px;
-    background: var(--bg-card);
-  }
-
-  .lead-card-header {
-    grid-template-columns: 28px 36px minmax(0, 1fr);
-    grid-template-areas:
-      "check avatar main"
-      "num status status"
-      ". meta meta"
-      ". time actions";
-    gap: 9px;
-    padding: 12px;
-  }
-
-  .lead-number {
-    justify-self: center;
-  }
-
-  .lead-actions {
-    max-width: none;
-    justify-content: flex-start;
-  }
-
-  .lead-action-btn {
-    width: 34px;
-    height: 34px;
-  }
-
-  .lead-name {
-    max-width: calc(100vw - 160px);
-  }
-
-  .lead-tags-row {
-    gap: 5px;
-  }
-
-  .lead-card {
-    border-radius: 14px;
-  }
-
-  .leads-pagination {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 12px calc(12px + var(--mobile-safe-bottom));
-  }
-
-  .pagination-btns {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .page-size-select {
-    width: 100%;
-    min-height: 34px;
-  }
-
-  .leads-filter-panel {
-    max-height: none;
-    padding: 12px;
-  }
-
-  .leads-filter-panel > div {
-    width: 100%;
-  }
-
-  .leads-filter-panel select,
-  .leads-filter-panel input {
-    width: 100% !important;
-  }
-
-  .modal-grid-2,
-  .radio-card-grid,
-  .radio-card-grid.cols-3,
-  .segment-form .form-grid.cols-2,
-  .segment-dynamic-fields-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-field.full,
-  .form-field.span-2 {
-    grid-column: auto;
-  }
-
-  .custom-modal-overlay {
-    align-items: flex-end;
-  }
-
-  .custom-modal-card,
-  .custom-modal-card.wide {
-    width: 100vw;
-    max-width: 100vw;
-    max-height: 92vh;
-    border-radius: 16px 16px 0 0;
-  }
-
-  .custom-modal-body {
-    max-height: 70vh;
-  }
-
-  .custom-modal-footer,
-  .form-actions,
-  .segment-form .form-actions,
-  .segment-action-strip {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .custom-modal-footer .btn,
-  .form-actions .btn,
-  .segment-action-chip,
-  .segment-form .form-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .followup-panel-content {
-    width: 100vw;
-  }
-
-  .drawer-content,
-  .followup-panel-content,
-  .custom-modal-card,
-  .day-popup,
-  .dialer-main {
-    margin-bottom: calc(var(--mobile-bottom-nav-height) + 12px);
-  }
-
-  .drawer-body {
-    padding: 12px;
-  }
-
-  .drawer-profile-card {
-    padding: 14px;
-  }
-
-  .drawer-profile-name {
-    font-size: 18px;
-  }
-
-  .info-row {
-    grid-template-columns: 24px 96px minmax(0, 1fr);
-    gap: 8px;
-    padding-inline: 12px;
-  }
-
-  .followup-detail-row {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-
-  .quick-actions-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .day-popup {
-    width: calc(100vw - 20px);
-    max-height: 86vh;
-    overflow-y: auto;
-  }
-
-  .day-popup-counts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .day-lead-row {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .day-lead-actions {
-    width: 100%;
-    justify-content: flex-start;
-    padding-left: 42px;
-  }
-
-  .calendar-header {
-    align-items: stretch;
-    flex-direction: column;
-    padding: 14px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-  }
-
-  .calendar-nav-group {
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-
-  .cal-month-title {
-    min-width: 0;
-    flex: 1 1 100%;
-    order: -1;
-  }
-
-  .cal-days-grid {
-    min-height: 560px;
-  }
-
-  .calendar-grid-wrap {
-    padding-bottom: 12px;
-  }
-
-  .calendar-legend-bar {
-    margin-top: 12px;
-    padding: 10px 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-
-  .table-card,
-  .calendar-grid-wrap,
-  .lead-calendar-view,
-  .assignment-user-list,
-  .assignment-segment-queue {
-    overflow: auto;
-  }
-
-  .segmentation-card,
-  .future-enhancement-card {
-    padding: 14px;
-  }
-
-  .assignment-history-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .segmentation-tab-bar {
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-}
-
-@media (max-width: 460px) {
-  .topbar-actions {
-    gap: 6px;
-  }
-
-  .topbar-icon-btn,
-  .mobile-menu-btn {
-    width: 34px;
-    height: 34px;
-  }
-
-  .dashboard-controls .btn,
-  .dashboard-controls .date-filter-btn,
-  .section-actions .btn,
-  .report-export-actions .btn,
-  .toolbar-btn {
-    flex-basis: 100%;
-  }
-
-  .dashboard-quick-actions-strip {
-    grid-template-columns: 1fr;
-  }
-
-  .mobile-bottom-nav {
-    left: 8px;
-    right: 8px;
-    gap: 4px;
-    padding: 7px 6px;
-  }
-
-  .mobile-bottom-nav__item {
-    min-height: 50px;
-    padding-inline: 2px;
-  }
-
-  .mobile-bottom-nav__item span {
-    font-size: 9px;
-  }
-
-  .lead-card-header {
-    grid-template-columns: 26px minmax(0, 1fr);
-    grid-template-areas:
-      "check main"
-      "avatar main"
-      "num status"
-      ". meta"
-      ". time"
-      ". actions";
-  }
-
-  .lead-avatar {
-    justify-self: center;
-  }
-
-  .lead-phone,
-  .lead-meta-item,
-  .detail-row,
-  .profile-contact-item {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  .lead-name {
-    max-width: calc(100vw - 110px);
-  }
-
-  .lead-mini-tag {
-    max-width: 100%;
-  }
-
-  .kpi-card,
-  .metric-card,
-  .report-tile,
-  .segment-card-item,
-  .assignment-user-card,
-  .assignment-segment-card {
-    padding: 12px;
-  }
-
-  .dialer-main {
-    width: calc(100vw - 20px);
-  }
-
-  .dialer-panel {
-    padding: 14px;
-  }
-
-  .dialer-outcomes {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .cal-nav-btn,
-  .cal-today-btn {
-    flex: 1 1 calc(50% - 6px);
-    justify-content: center;
-  }
+.mobile-bottom-nav { display: none; }
+
+html,
+body { width: 100%; min-height: 100%; }
+body:not(.inquiry-page) { height: 100vh; overflow: hidden !important; }
+.app-shell { height: 100vh !important; min-height: 0 !important; overflow: hidden !important; }
+.main-content,
+.screen.active { min-height: 0 !important; overflow: hidden !important; }
+
+.content-area,
+#screen-dashboard .content-area,
+#screen-calendar .content-area,
+#screen-segmentation .content-area,
+#screen-ams-dashboard .content-area,
+#screen-ams-students .content-area {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
 }
 
 /* ============================================================
-   MOBILE STABILITY PASS
-   Keeps every screen within the viewport, reserves bottom-nav
-   space, and prevents nested scroll traps on phones.
+   DASHBOARD — only requested changes
    ============================================================ */
 
-@media (max-width: 720px) {
-  :root {
-    --mobile-bottom-nav-height: 78px;
-    --mobile-page-gutter: 12px;
-    --mobile-scroll-padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 28px);
-  }
-
-  html,
-  body {
-    width: 100%;
-    max-width: 100%;
-    min-height: 100%;
-    overscroll-behavior-x: none;
-  }
-
-  body {
-    height: 100dvh;
-    overflow: hidden;
-  }
-
-  .app-shell,
-  .main-content,
-  .screen,
-  .screen.active,
-  .content-area {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .main-content {
-    height: 100dvh;
-    padding-bottom: 0;
-    overflow: hidden;
-  }
-
-  .screen.active {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .content-area,
-  #screen-dashboard .content-area,
-  #screen-calendar .content-area,
-  #screen-segmentation .content-area {
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: var(--mobile-page-gutter) var(--mobile-page-gutter) var(--mobile-scroll-padding-bottom);
-    scroll-padding-bottom: var(--mobile-scroll-padding-bottom);
-  }
-
-  .topbar {
-    width: 100%;
-    padding: 10px var(--mobile-page-gutter);
-    row-gap: 10px;
-    overflow: visible;
-  }
-
-  .topbar-actions {
-    min-width: 0;
-    flex: 1 1 auto;
-    justify-content: flex-end;
-  }
-
-  .role-switcher-wrap {
-    min-width: 0;
-    max-width: calc(100vw - 150px);
-    overflow: hidden;
-  }
-
-  .role-switcher-select {
-    min-width: 0;
-    max-width: 118px;
-    text-overflow: ellipsis;
-  }
-
-  .scope-badge {
-    max-width: 92px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .topbar-search input {
-    height: 38px;
-    font-size: 12px;
-  }
-
-  .mobile-bottom-nav {
-    left: var(--mobile-page-gutter);
-    right: var(--mobile-page-gutter);
-    bottom: max(10px, var(--mobile-safe-bottom));
-    height: auto;
-    min-height: 64px;
-    grid-auto-columns: minmax(0, 1fr);
-    overflow: hidden;
-    border-radius: 16px;
-    padding: 7px;
-  }
-
-  .mobile-bottom-nav--compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-columns: minmax(0, 1fr);
-  }
-
-  .mobile-bottom-nav__item {
-    min-width: 0;
-    min-height: 50px;
-    padding: 6px 3px;
-    border-radius: 11px;
-  }
-
-  .mobile-bottom-nav__item span {
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  #screen-dashboard .dashboard-grid,
-  #screen-dashboard .dashboard-bottom-row,
-  #screen-dashboard .kpi-row,
-  #screen-dashboard .kpi-metrics-row,
-  #screen-dashboard .report-grid,
-  #screen-dashboard .journey-analytics {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  #screen-dashboard .dashboard-right-panel,
-  #screen-dashboard .table-card,
-  #screen-dashboard [style*="grid-column"] {
-    grid-column: auto !important;
-  }
-
-  #screen-dashboard .chart-card,
-  #screen-dashboard .table-card,
-  #screen-dashboard .mini-calendar-card,
-  #screen-dashboard .tasks-card,
-  #screen-dashboard .score-guide-card,
-  #screen-dashboard .metric-card,
-  #screen-dashboard .alerts-card {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .data-table {
-    min-width: 0;
-  }
-
-  #screen-dashboard .table-card {
-    overflow-x: auto;
-  }
-
-  #screen-dashboard .table-card .data-table {
-    min-width: 560px;
-  }
-
-  .dashboard-hero-header,
-  .dashboard-command-panel,
-  .dashboard-operations-section {
-    margin-inline: 0;
-  }
-
-  #screen-leads {
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 0 var(--mobile-scroll-padding-bottom);
-    scroll-padding-bottom: var(--mobile-scroll-padding-bottom);
-  }
-
-  #screen-leads .status-bar,
-  #screen-leads .status-sub-bar,
-  #screen-leads .leads-toolbar,
-  #screen-leads .leads-filter-panel,
-  #screen-leads .leads-info-bar,
-  #screen-leads .lead-list,
-  #screen-leads .lead-calendar-view,
-  #screen-leads .leads-pagination {
-    width: calc(100% - (var(--mobile-page-gutter) * 2));
-    max-width: calc(100% - (var(--mobile-page-gutter) * 2));
-    margin-left: var(--mobile-page-gutter);
-    margin-right: var(--mobile-page-gutter);
-  }
-
-  #screen-leads .status-bar,
-  #screen-leads .status-sub-bar {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  #screen-leads .status-bar::-webkit-scrollbar,
-  #screen-leads .status-sub-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  #screen-leads .leads-toolbar,
-  #screen-leads .leads-info-bar,
-  #screen-leads .lead-list,
-  #screen-leads .leads-pagination {
-    flex: 0 0 auto;
-  }
-
-  #screen-leads .lead-list {
-    overflow: visible;
-    min-height: auto;
-    padding: 12px 0;
-  }
-
-  #screen-leads .lead-card,
-  #screen-leads .lead-card-header,
-  #screen-leads .lead-expanded-body,
-  #screen-leads .lead-detail-grid {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .lead-detail-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .lead-assignment-row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .leads-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-  }
-
-  .toolbar-left,
-  .toolbar-right,
-  .quick-search-bar {
-    min-width: 0;
-    width: 100%;
-  }
-
-  #screen-leads .leads-toolbar {
-    display: flex;
-    grid-template-columns: none;
-    align-items: center;
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  #screen-leads .toolbar-left,
-  #screen-leads .toolbar-right {
-    display: flex;
-    grid-template-columns: none;
-    width: auto;
-    min-width: max-content;
-    align-items: center;
-    flex-wrap: nowrap;
-  }
-
-  #screen-leads .toolbar-left > *,
-  #screen-leads .toolbar-right > *,
-  #screen-leads .toolbar-btn,
-  #screen-leads .btn-add-lead,
-  #screen-leads .toolbar-view-toggle,
-  #screen-leads #batch-actions-wrap {
-    min-width: 0;
-    max-width: none;
-  }
-
-  #screen-leads .toolbar-view-toggle,
-  #screen-leads #batch-actions-wrap,
-  #screen-leads .toolbar-divider {
-    grid-column: auto;
-  }
-
-  #screen-leads .toolbar-btn {
-    width: auto;
-    min-height: 36px;
-    padding-inline: 10px;
-    white-space: nowrap;
-    line-height: 1;
-  }
-
-  #screen-leads .btn-add-lead {
-    min-height: 36px;
-  }
-
-  #screen-leads .leads-filter-panel {
-    grid-template-columns: minmax(0, 1fr);
-    overflow: visible;
-  }
-
-  #screen-leads .leads-filter-panel.is-hidden {
-    display: none !important;
-  }
-
-  #screen-leads .leads-filter-panel:not(.is-hidden) {
-    display: grid !important;
-  }
-
-  #screen-leads .leads-filter-panel select,
-  #screen-leads .leads-filter-panel input,
-  #screen-leads .quick-search-input {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  #screen-leads .quick-search-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  #screen-leads .quick-search-bar #saved-filter-btn,
-  #screen-leads .quick-search-wrap {
-    grid-column: 1 / -1;
-  }
-
-  .lead-calendar-view {
-    overflow-x: hidden;
-    padding: 14px;
-  }
-
-  .lead-calendar-view .calendar-grid,
-  .lead-calendar-view .cal-weekdays-header,
-  .lead-calendar-view .cal-days-grid {
-    min-width: 0;
-  }
-
-  .lead-calendar-view .calendar-grid {
-    gap: 6px;
-  }
-
-  .lead-calendar-view .calendar-cell {
-    min-height: 86px;
-    padding: 7px;
-  }
-
-  .lead-calendar-view .calendar-event {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .calendar-header {
-    margin: 0 0 12px;
-  }
-
-  .calendar-nav-group {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .cal-month-title {
-    grid-column: 1 / -1;
-    min-width: 0;
-    text-align: center;
-  }
-
-  .calendar-grid-wrap {
-    flex: 0 0 auto;
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .cal-weekdays-header,
-  .cal-days-grid {
-    min-width: 0;
-  }
-
-  .cal-weekday-label {
-    padding: 8px 2px;
-    font-size: 0;
-  }
-
-  .cal-weekday-label::first-letter {
-    font-size: 10px;
-  }
-
-  .cal-days-grid {
-    grid-template-rows: none;
-    overflow: visible;
-    min-height: 0;
-  }
-
-  .cal-day-cell {
-    min-height: 112px;
-    padding: 7px 5px;
-  }
-
-  .cal-stat-pill {
-    max-width: 100%;
-    padding-inline: 4px;
-    font-size: 9px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .calendar-legend-bar {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 8px 10px;
-  }
-
-  .segmentation-layout,
-  .segmentation-main-panel,
-  .segmentation-side-panel,
-  .segmentation-panel-body,
-  .segment-grid,
-  .assignment-layout,
-  .assignment-workspace {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .segmentation-layout,
-  .assignment-layout,
-  .segment-grid,
-  .future-enhancement-grid,
-  .assignment-summary-grid,
-  .segmentation-report-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .segmentation-tabs,
-  .segmentation-tab-bar {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .segmentation-tabs::-webkit-scrollbar,
-  .segmentation-tab-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .segment-card-item,
-  .assignment-user-card,
-  .assignment-segment-card,
-  .future-module-card {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .drawer-overlay.open {
-    z-index: 1400;
-  }
-
-  .lead-drawer {
-    z-index: 1401;
-  }
-
-  .lead-drawer.open {
-    width: 100% !important;
-    max-width: 100%;
-  }
-
-  .lead-drawer,
-  .followup-panel-content,
-  .custom-modal-card,
-  .custom-modal-card.wide {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .drawer-body {
-    padding-bottom: var(--mobile-scroll-padding-bottom);
-  }
-
-  .drawer-topbar,
-  .drawer-actions,
-  .drawer-breadcrumb {
-    min-width: 0;
-  }
-
-  .drawer-breadcrumb {
-    overflow: hidden;
-    white-space: nowrap;
-  }
-
-  .drawer-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .drawer-actions .btn {
-    min-width: 0;
-    width: 100%;
-    justify-content: center;
-    white-space: normal;
-  }
-
-  .profile-tags,
-  .profile-contacts,
-  .activity-btns,
-  .journey-outcome-chips {
-    min-width: 0;
-    flex-wrap: wrap;
-  }
-
-  .stage-pipeline {
-    display: flex;
-    overflow-x: auto;
-  }
-
-  .stage-node {
-    min-width: 72px;
-  }
-
-  .toast-container {
-    left: var(--mobile-page-gutter);
-    right: var(--mobile-page-gutter);
-    bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 18px);
-  }
-
-  .toast-message {
-    width: 100%;
-    min-width: 0;
-  }
+/* Restore the original dashboard flow. This prevents hero clipping. */
+#screen-dashboard .content-area {
+  display: block !important;
 }
 
-@media (max-width: 460px) {
-  :root {
-    --mobile-page-gutter: 10px;
-  }
-
-  .role-switcher-label {
-    display: none;
-  }
-
-  .role-switcher-select {
-    max-width: 112px;
-    font-size: 11px;
-  }
-
-  .scope-badge {
-    max-width: 84px;
-  }
-
-  .topbar-actions {
-    gap: 5px;
-  }
-
-  .topbar-icon-btn,
-  .mobile-menu-btn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .lead-card-header {
-    grid-template-columns: 28px minmax(0, 1fr);
-    grid-template-areas:
-      "check main"
-      "avatar main"
-      "num status"
-      ". meta"
-      ". time"
-      ". actions";
-  }
-
-  .lead-actions {
-    display: grid;
-    grid-template-columns: repeat(4, 34px);
-    gap: 6px;
-  }
-
-  .cal-day-cell {
-    min-height: 104px;
-  }
-
-  .cal-day-num {
-    width: 22px;
-    height: 22px;
-    font-size: 11px;
-  }
+#screen-dashboard .dashboard-header,
+#screen-dashboard .dashboard-hero-header {
+  display: flex !important;
+  width: auto !important;
+  min-height: 132px !important;
+  margin: 0 0 18px !important;
+  overflow: hidden !important;
 }
+
+#screen-dashboard #kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin-bottom: 18px !important;
+}
+
+/* Remove Lead Journey Analytics and Lead Score Guide. */
+#screen-dashboard #dashboard-journey,
+#screen-dashboard #dashboard-journey-analytics,
+#screen-dashboard .journey-card,
+#screen-dashboard .journey-analytics,
+#screen-dashboard .score-guide-card {
+  display: none !important;
+}
+
+/* Keep existing dashboard grid, but place KPI Metrics first in it. */
+#screen-dashboard #dashboard-insights,
+#screen-dashboard .dashboard-grid {
+  display: grid !important;
+}
+
+#screen-dashboard #dashboard-kpis {
+  order: -10 !important;
+  grid-column: 1 / 4 !important;
+  padding: 18px !important;
+  margin: 0 !important;
+  border-radius: 24px !important;
+  background: rgba(255,255,255,.94) !important;
+  border: 1px solid rgba(16,56,96,.12) !important;
+  box-shadow: 0 18px 42px rgba(16,56,96,.10) !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+body.dark #screen-dashboard #dashboard-kpis {
+  background: rgba(15,34,56,.9) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+
+#screen-dashboard #dashboard-kpis .chart-card-header {
+  padding: 0 0 14px !important;
+  margin: 0 !important;
+  border-bottom: 0 !important;
+}
+
+#screen-dashboard #dashboard-kpis .chart-card-title {
+  font-size: 0 !important;
+}
+
+#screen-dashboard #dashboard-kpis .chart-card-title::after {
+  content: 'KPI Metrics — Action Required';
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--text-primary) !important;
+}
+
+#screen-dashboard #kpi-metrics-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+/* Remove 4th KPI metric only. */
+#screen-dashboard #kpi-metrics-row .metric-leakage {
+  display: none !important;
+}
+
+#screen-dashboard #kpi-metrics-row .metric-card {
+  min-height: 128px !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  border: 1px solid rgba(16,56,96,.10) !important;
+  box-shadow: 0 12px 30px rgba(16,56,96,.07) !important;
+}
+
+body.dark #screen-dashboard #kpi-metrics-row .metric-card {
+  background: rgba(255,255,255,.04) !important;
+}
+
+/* Keep count cards normal/clean. */
+#screen-dashboard .kpi-card {
+  background: #fff !important;
+  box-shadow: 0 14px 34px rgba(16,56,96,.08) !important;
+}
+#screen-dashboard .kpi-card::after { display: none !important; content: none !important; }
+body.dark #screen-dashboard .kpi-card { background: #0f2238 !important; }
 
 /* ============================================================
-   FLUID COMPONENT SCALE
-   Smoothly adapts density from laptop to tablet to phone.
+   INQUIRY LIST — scroll, overflow, visible menus
    ============================================================ */
-
-:root {
-  --fluid-gutter: clamp(12px, 1.45vw, 24px);
-  --fluid-card-pad: clamp(12px, 1.15vw, 20px);
-  --fluid-control-h: clamp(30px, 2.5vw, 38px);
-  --fluid-icon-btn: clamp(30px, 2.5vw, 38px);
-  --fluid-radius: clamp(8px, 0.8vw, 14px);
-  --fluid-font-xs: clamp(9px, 0.72vw, 11px);
-  --fluid-font-sm: clamp(10.5px, 0.82vw, 12px);
-  --fluid-font-base: clamp(12px, 0.92vw, 14px);
-  --fluid-font-md: clamp(13px, 1vw, 16px);
-  --fluid-font-lg: clamp(16px, 1.55vw, 24px);
+#screen-leads {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-bottom: 56px !important;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
 
-.content-area {
-  padding: var(--fluid-gutter);
+#screen-leads .lead-list {
+  position: relative !important;
+  z-index: 1 !important;
+  display: grid !important;
+  gap: 16px !important;
+  padding-bottom: 52px !important;
+  overflow: visible !important;
 }
 
-.card,
-.chart-card,
-.dashboard-hero-header,
-.dashboard-command-panel,
-.dashboard-operations-section,
-.kpi-card,
-.metric-card,
-.mini-calendar-card,
-.tasks-card,
-.score-guide-card,
-.alerts-card,
-.lead-card,
-.lead-calendar-view,
-.segmentation-card,
-.summary-card,
-.assignment-card,
-.assignment-summary-card,
-.assignment-user-card,
-.assignment-segment-card,
-.segment-card-item,
-.future-enhancement-card,
-.drawer-profile-card,
-.drawer-info-card,
-.followup-card,
-.quick-actions-card,
-.drawer-origin-card {
-  border-radius: var(--fluid-radius);
+#screen-leads .lead-card,
+#screen-leads .lead-card-header,
+#screen-leads .lead-expanded-body,
+#screen-leads .lead-actions,
+#screen-leads .more-dropdown { overflow: visible !important; }
+
+#screen-leads .leads-info-bar { display: none !important; }
+#screen-leads:has(#quick-search-input:not(:placeholder-shown)) .leads-info-bar,
+#screen-leads:has(#selected-count-badge[style*="inline"]) .leads-info-bar,
+#screen-leads:has(#selected-count-badge[style*="block"]) .leads-info-bar { display: flex !important; }
+
+#screen-leads .leads-info-bar {
+  margin: 8px 28px 14px !important;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.86) !important;
+  border: 1px solid rgba(16,56,96,.1) !important;
+  box-shadow: 0 8px 22px rgba(16,56,96,.06) !important;
 }
 
-.btn,
-.date-filter-btn,
-.toolbar-btn,
-.chart-filter-select,
-.status-tab,
-.status-sub-tab,
-.segment-action-chip,
-.assignment-filter-btn,
-.seg-tab,
-input,
-select,
-textarea {
-  font-size: var(--fluid-font-sm);
+#screen-leads .lead-card {
+  position: relative !important;
+  z-index: 1 !important;
+  margin: 0 28px 18px !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(16,56,96,.12) !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: 0 18px 42px rgba(16,56,96,.10) !important;
+  backdrop-filter: blur(18px) !important;
 }
 
-.btn,
-.date-filter-btn,
-.toolbar-btn,
-.chart-filter-select,
-.segment-action-chip,
-.assignment-filter-btn,
-.seg-tab {
-  min-height: var(--fluid-control-h);
+#screen-leads .lead-card:hover,
+#screen-leads .lead-card.is-expanded {
+  z-index: 40 !important;
+  border-color: rgba(213,148,58,.28) !important;
+  box-shadow: 0 24px 56px rgba(16,56,96,.16) !important;
 }
 
-.topbar-icon-btn,
-.mobile-menu-btn,
-.lead-action-btn,
-.page-btn,
-.drawer-close-btn,
-.cal-nav-btn,
-.day-action-btn {
-  width: var(--fluid-icon-btn);
-  height: var(--fluid-icon-btn);
+#screen-leads .lead-card-header {
+  position: relative !important;
+  overflow: visible !important;
 }
 
-.dashboard-hero-header h1,
-.section-heading-row h2,
-.command-panel-head h2 {
-  font-size: var(--fluid-font-lg);
+#screen-leads .lead-actions {
+  position: relative !important;
+  z-index: 80 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
 }
 
-.chart-card-title,
-.card-title,
-.segmentation-card-title,
-.panel-heading h2,
-.segment-card-title,
-.assignment-user-name {
-  font-size: var(--fluid-font-md);
+#screen-leads .more-dropdown { position: relative !important; z-index: 1000 !important; }
+#screen-leads .more-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 999999 !important;
+  min-width: 232px !important;
+  padding: 8px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(16,56,96,.14) !important;
+  background: rgba(255,255,255,.98) !important;
+  box-shadow: 0 26px 70px rgba(8,21,38,.24) !important;
+  backdrop-filter: blur(18px) !important;
 }
 
-.dashboard-welcome,
-.chart-card-subtitle,
-.segmentation-card-subtitle,
-.panel-subtitle,
-.lead-phone,
-.lead-meta,
-.segment-card-meta,
-.segment-card-criteria,
-.assignment-segment-meta,
-.assignment-segment-date {
-  font-size: var(--fluid-font-sm);
+#screen-leads .dropdown-item {
+  min-height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 11px !important;
+  border-radius: 12px !important;
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
 }
 
-.scope-badge,
-.role-switcher-label,
-.kpi-label,
-.summary-label,
-.seg-report-label,
-.lead-mini-tag,
-.status-count {
-  font-size: var(--fluid-font-xs);
+/* Toolbar title */
+.leads-toolbar {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin: 18px 28px 0 !important;
+  padding: 18px !important;
+  overflow: visible !important;
 }
-
-@media (max-width: 980px) {
-  :root {
-    --fluid-gutter: clamp(12px, 2vw, 18px);
-    --fluid-card-pad: clamp(12px, 1.8vw, 16px);
-    --fluid-control-h: clamp(30px, 4vw, 36px);
-    --fluid-icon-btn: clamp(30px, 4vw, 36px);
-    --fluid-radius: clamp(8px, 1.4vw, 12px);
-  }
-}
-
-@media (max-width: 720px) {
-  :root {
-    --fluid-gutter: clamp(10px, 3vw, 14px);
-    --fluid-card-pad: clamp(10px, 3vw, 14px);
-    --fluid-control-h: clamp(30px, 8vw, 36px);
-    --fluid-icon-btn: clamp(30px, 8vw, 34px);
-    --fluid-radius: 12px;
-    --fluid-font-xs: clamp(8.5px, 2.3vw, 10px);
-    --fluid-font-sm: clamp(10px, 2.8vw, 11.5px);
-    --fluid-font-base: clamp(11.5px, 3vw, 13px);
-    --fluid-font-md: clamp(12.5px, 3.4vw, 15px);
-    --fluid-font-lg: clamp(18px, 5vw, 22px);
-  }
-
-  .topbar {
-    position: relative;
-    z-index: 1250;
-    flex: 0 0 auto;
-    display: grid;
-    grid-template-columns: var(--fluid-icon-btn) minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    align-items: center;
-    gap: 8px;
-    min-height: 0;
-    height: auto;
-    padding: 8px var(--mobile-page-gutter) 10px;
-    overflow: visible;
-  }
-
-  .mobile-menu-btn {
-    top: 10px;
-    left: var(--mobile-page-gutter);
-  }
-
-  .topbar-spacer,
-  #page-section-title {
-    display: none !important;
-  }
-
-  .topbar-actions {
-    grid-column: 2 / 4;
-    grid-row: 1;
-    width: 100%;
-    min-width: 0;
-    justify-content: flex-end;
-    gap: 6px;
-  }
-
-  .topbar-search {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    order: initial;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .topbar-search input {
-    height: var(--fluid-control-h);
-    border-radius: 11px;
-  }
-
-  .role-switcher-wrap {
-    min-height: var(--fluid-control-h);
-    padding: 3px 5px;
-    gap: 5px;
-  }
-
-  .user-avatar {
-    width: var(--fluid-icon-btn);
-    height: var(--fluid-icon-btn);
-    font-size: var(--fluid-font-xs);
-  }
-
-  .content-area > :last-child,
-  #screen-leads > :last-child,
-  .drawer-body > :last-child {
-    margin-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 18px);
-  }
-
-  .dashboard-hero-header,
-  .dashboard-command-panel,
-  .dashboard-operations-section,
-  .chart-card-header,
-  .card-header,
-  .segmentation-card,
-  .summary-card,
-  .segment-card-item,
-  .assignment-user-card,
-  .assignment-segment-card,
-  .lead-card-header {
-    padding: var(--fluid-card-pad);
-  }
-
-  .dashboard-controls,
-  .section-actions,
-  .report-export-actions,
-  .segment-action-strip,
-  .form-actions,
-  .assignment-filter-row {
-    gap: 6px;
-  }
-
-  .toolbar-btn:not(.btn-add-lead) {
-    font-size: 0;
-    min-height: 34px;
-    padding: 0;
-  }
-
-  .toolbar-btn:not(.btn-add-lead) i {
-    margin: 0;
-    font-size: 13px;
-  }
-
-  .btn-add-lead,
-  .btn-mass-admit {
-    min-height: 38px;
-    font-size: var(--fluid-font-sm);
-    padding-inline: 10px;
-  }
-
-  .status-tab,
-  .status-sub-tab {
-    min-height: 38px;
-    padding-inline: 10px;
-  }
-
-  .mobile-bottom-nav {
-    min-height: clamp(58px, 15vw, 66px);
-  }
-
-  .mobile-bottom-nav__item {
-    min-height: clamp(46px, 12vw, 52px);
-  }
-}
-
-@media (max-width: 460px) {
-  .topbar {
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    padding-top: 7px;
-  }
-
-  .topbar-user {
-    display: none;
-  }
-
-  .role-switcher-wrap {
-    max-width: min(190px, calc(100vw - 132px));
-  }
-
-  .scope-badge {
-    max-width: 76px;
-  }
-
-  .dashboard-controls .btn,
-  .dashboard-controls .date-filter-btn,
-  .section-actions .btn,
-  .report-export-actions .btn {
-    min-height: 36px;
-    font-size: var(--fluid-font-sm);
-  }
-
-  .toolbar-btn:not(.btn-add-lead),
-  .lead-action-btn {
-    min-height: 32px;
-  }
-
-  .btn-add-lead,
-  .btn-mass-admit {
-    min-height: 36px;
-  }
-}
-
-/* Inquiry List toolbar: tools row, separator, search row */
-#screen-leads .leads-toolbar {
+.leads-toolbar::before {
+  content: 'Inquiry List Tools';
+  flex: 0 0 100%;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  overflow: visible;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+.leads-toolbar::after {
+  content: 'Filters, selection, import/export, communication and bulk lead actions';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.toolbar-left,.toolbar-right { gap: 10px !important; flex-wrap: wrap !important; }
+button,.btn,.toolbar-btn,.action-btn,.topbar-icon-btn,.date-filter-btn,.export-btn,.sidebar-collapse-btn,.account-settings-trigger,.mobile-menu-btn,.mobile-bottom-nav__item { opacity: 1 !important; visibility: visible !important; }
+.toolbar-btn,.action-btn,.topbar-icon-btn,.mobile-menu-btn,.sidebar-collapse-btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; }
+.toolbar-btn i,.action-btn i,.topbar-icon-btn i,.mobile-menu-btn i,.btn i { color: currentColor !important; opacity: 1 !important; visibility: visible !important; }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar { width: var(--sidebar-width) !important; height: 100vh !important; display: flex !important; flex-direction: column !important; overflow-y: auto !important; overflow-x: hidden !important; }
+.sidebar-nav { flex: 1 1 auto !important; width: 100% !important; }
+.nav-subitem,.nav-sub-subitem,.sidebar-collapse-btn,.account-settings-trigger { width: 100% !important; min-height: 42px !important; display: flex !important; align-items: center !important; gap: 10px !important; text-align: left !important; }
+.nav-subitem > i:first-child,.nav-sub-subitem > i:first-child,.sidebar-collapse-btn > i:first-child,.account-settings-trigger > i:first-child { width: 22px !important; min-width: 22px !important; height: 22px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; color: currentColor !important; font-size: 13px !important; opacity: 1 !important; visibility: visible !important; }
+body.sidebar-collapsed .sidebar,.app-shell.sidebar-collapsed .sidebar,.sidebar.collapsed { width: var(--sidebar-collapsed) !important; align-items: center !important; }
+body.sidebar-collapsed .logo-text,body.sidebar-collapsed .sidebar-search,body.sidebar-collapsed .help-text,.app-shell.sidebar-collapsed .logo-text,.app-shell.sidebar-collapsed .sidebar-search,.app-shell.sidebar-collapsed .help-text,.sidebar.collapsed .logo-text,.sidebar.collapsed .sidebar-search,.sidebar.collapsed .help-text { display: none !important; }
+body.sidebar-collapsed .nav-subitem,body.sidebar-collapsed .nav-sub-subitem,body.sidebar-collapsed .sidebar-collapse-btn,body.sidebar-collapsed .account-settings-trigger,.app-shell.sidebar-collapsed .nav-subitem,.app-shell.sidebar-collapsed .nav-sub-subitem,.app-shell.sidebar-collapsed .sidebar-collapse-btn,.app-shell.sidebar-collapsed .account-settings-trigger,.sidebar.collapsed .nav-subitem,.sidebar.collapsed .nav-sub-subitem,.sidebar.collapsed .sidebar-collapse-btn,.sidebar.collapsed .account-settings-trigger { width: 44px !important; height: 44px !important; min-height: 44px !important; padding: 0 !important; margin: 4px auto !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0 !important; font-size: 0 !important; line-height: 0 !important; overflow: hidden !important; }
+body.sidebar-collapsed .nav-subitem > i,body.sidebar-collapsed .nav-sub-subitem > i,body.sidebar-collapsed .sidebar-collapse-btn > i,body.sidebar-collapsed .account-settings-trigger > i,.app-shell.sidebar-collapsed .nav-subitem > i,.app-shell.sidebar-collapsed .nav-sub-subitem > i,.app-shell.sidebar-collapsed .sidebar-collapse-btn > i,.app-shell.sidebar-collapsed .account-settings-trigger > i,.sidebar.collapsed .nav-subitem > i,.sidebar.collapsed .nav-sub-subitem > i,.sidebar.collapsed .sidebar-collapse-btn > i,.sidebar.collapsed .account-settings-trigger > i { width: 22px !important; min-width: 22px !important; height: 22px !important; margin: 0 !important; font-size: 14px !important; line-height: 1 !important; opacity: 1 !important; visibility: visible !important; }
+body.sidebar-collapsed .nav-subitem[data-submenu] #inquiry-lead-chevron,.app-shell.sidebar-collapsed .nav-subitem[data-submenu] #inquiry-lead-chevron,.sidebar.collapsed .nav-subitem[data-submenu] #inquiry-lead-chevron { display: none !important; }
+body.sidebar-collapsed .nav-submenu,.app-shell.sidebar-collapsed .nav-submenu,.sidebar.collapsed .nav-submenu { width: 52px !important; max-height: none !important; display: flex !important; flex-direction: column !important; align-items: center !important; margin: 2px auto !important; padding: 0 !important; border-left: 0 !important; overflow: visible !important; }
+body.sidebar-collapsed .nav-sub-subitem:not(:has(i))::before,.app-shell.sidebar-collapsed .nav-sub-subitem:not(:has(i))::before,.sidebar.collapsed .nav-sub-subitem:not(:has(i))::before { content: '\f03a'; font-family: 'Font Awesome 6 Free'; font-weight: 900; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1180px) {
+  .content-area { padding: 18px !important; }
+  #screen-dashboard #kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  #screen-dashboard #dashboard-kpis { grid-column: 1 / -1 !important; }
+  #screen-dashboard #kpi-metrics-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  #screen-leads .lead-detail-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 }
 
-#screen-leads .toolbar-left {
-  flex: 1 1 100%;
-  width: 100%;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-#screen-leads .toolbar-right {
-  flex: 1 1 100%;
-  width: 100%;
-  min-width: 0;
-  margin-left: 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-#screen-leads .toolbar-search-wrap {
-  flex: 0 1 50%;
-  width: 50%;
-  min-width: 320px;
-  max-width: 50%;
-}
-
-#screen-leads .toolbar-search-wrap .quick-search-input {
-  width: 100%;
+@media (max-width: 980px) {
+  .sidebar { position: fixed !important; inset: 0 auto 0 0 !important; width: min(286px, 84vw) !important; transform: translateX(-105%) !important; transition: transform .28s ease !important; box-shadow: 22px 0 48px rgba(15,26,46,.22) !important; z-index: 1300 !important; }
+  body.mobile-nav-open .sidebar { transform: translateX(0) !important; }
+  .mobile-nav-backdrop { position: fixed !important; inset: 0 !important; z-index: 1290 !important; background: rgba(2,6,23,.44) !important; backdrop-filter: blur(2px) !important; }
+  body.mobile-nav-open .mobile-nav-backdrop { display: block !important; }
+  .mobile-menu-btn { width: 40px !important; height: 40px !important; display: inline-flex !important; position: fixed !important; top: 12px !important; left: 12px !important; z-index: 1280 !important; border-radius: 14px !important; border: 1px solid var(--border) !important; background: var(--bg-card) !important; color: var(--academy-blue) !important; box-shadow: var(--shadow-md) !important; }
+  .content-area { padding: 16px !important; }
+  #screen-leads .lead-list-switch,#screen-leads .archived-lead-view,.status-bar,.status-sub-bar,.leads-toolbar,.leads-filter-panel,.leads-info-bar,.leads-pagination,#screen-leads .lead-card { margin-left: 14px !important; margin-right: 14px !important; }
+  #screen-leads .lead-list-switch,#screen-leads .lead-detail-grid { grid-template-columns: 1fr !important; }
+  .leads-toolbar::after { position: static !important; flex: 0 0 100% !important; }
 }
 
 @media (max-width: 720px) {
-  #screen-leads .toolbar-search-wrap {
-    flex: 1 1 100%;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-  }
+  html { font-size: 13px !important; }
+  .main-content { padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom)) !important; }
+  .content-area,#screen-dashboard .content-area { padding: 12px !important; }
+  #screen-dashboard #kpi-row,#screen-dashboard #kpi-metrics-row { grid-template-columns: 1fr !important; }
+  #screen-dashboard #dashboard-kpis { grid-column: 1 / -1 !important; }
+  #screen-leads { padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 10px) !important; }
+  .mobile-bottom-nav { position: fixed !important; left: 10px !important; right: 10px !important; bottom: max(8px, var(--mobile-safe-bottom)) !important; z-index: 1200 !important; display: grid !important; grid-auto-flow: column !important; grid-auto-columns: minmax(62px,1fr) !important; gap: 6px !important; padding: 8px !important; border: 1px solid var(--border) !important; border-radius: 22px !important; background: rgba(255,255,255,.94) !important; box-shadow: 0 18px 38px rgba(15,26,46,.18) !important; backdrop-filter: blur(14px) !important; overflow-x: auto !important; scrollbar-width: none !important; }
+  .mobile-bottom-nav__item { min-height: 54px !important; padding: 6px 4px !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 4px !important; border-radius: 14px !important; color: var(--text-muted) !important; }
+  .mobile-bottom-nav__item.active,.mobile-bottom-nav__item:hover { background: linear-gradient(135deg, var(--academy-blue), var(--academy-gold)) !important; color: #fff !important; }
 }

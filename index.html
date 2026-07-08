@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -891,7 +891,7 @@
               </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px">
-              <label
+              <labelLead Score Guide
                 style="
                   font-size: 10px;
                   font-weight: 700;
@@ -1779,9 +1779,6 @@
           >
             <i class="fas fa-calendar-check"></i> Schedule Counselling
           </button>
-          <button class="btn btn-outline btn-sm" id="drawer-more-actions-btn">
-            <i class="fas fa-ellipsis-h"></i> Change status
-          </button>
           <button class="drawer-close-btn" id="drawer-close-btn">
             <i class="fas fa-times"></i>
           </button>
@@ -1795,14 +1792,6 @@
           <div class="drawer-profile-info">
             <div class="drawer-profile-name">
               <span id="drawer-lead-name">Rahul Patel</span>
-              <i
-                class="fas fa-star"
-                style="color: var(--warning); font-size: 14px"
-              ></i>
-              <i
-                class="fas fa-fire"
-                style="color: var(--danger); font-size: 14px"
-              ></i>
             </div>
             <div class="profile-enq-id" id="drawer-enq-id-2">ENQ0002387</div>
             <div class="profile-tags" id="drawer-profile-tags"></div>
@@ -1811,19 +1800,7 @@
           </div>
         </div>
 
-        <!-- Lead Stage Pipeline -->
-        <div class="stage-pipeline-card">
-          <div class="drawer-card-header">
-            <div class="drawer-card-title">
-              <i class="fas fa-route"></i> Lead Journey
-            </div>
-          </div>
-          <div style="padding: 12px 20px">
-            <div class="stage-pipeline" id="drawer-pipeline"></div>
-          </div>
-        </div>
-
-        <!-- 3-Column Layout: Info | Communications | Score+Followup -->
+        <!-- 3-Column Layout: Info | Communications | Actions -->
         <div class="drawer-3col">
           <!-- Column 1: Inquiry Origin + Lead Information -->
           <div class="drawer-left-stack">
@@ -1919,7 +1896,7 @@
             </div>
           </div>
 
-          <div class="drawer-info-card">
+          <div class="drawer-info-card" id="drawer-counselling-card">
             <div class="drawer-card-header">
               <div class="drawer-card-title">
                 <i class="fas fa-comments"></i> Counselling History
@@ -1928,128 +1905,8 @@
             <div class="comm-list" id="drawer-counselling-history"></div>
           </div>
 
-          <div class="drawer-info-card">
-            <div class="drawer-card-header">
-              <div class="drawer-card-title">
-                <i class="fas fa-sticky-note"></i> Internal Notes
-              </div>
-              <span class="state-chip">Staff only</span>
-            </div>
-            <div class="comm-list" id="drawer-internal-notes"></div>
-          </div>
-
-          <!-- Column 3: Score + Follow-up + Quick Actions -->
+          <!-- Column 3: Quick Actions -->
           <div class="drawer-right-stack">
-            <!-- Lead Score -->
-            <div class="score-card">
-              <div class="drawer-card-header">
-                <div class="drawer-card-title">
-                  <i class="fas fa-star"></i> Lead Score
-                </div>
-                <div>
-                  <div style="font-size: 10px; color: var(--text-muted)">
-                    Priority
-                  </div>
-                  <div
-                    style="
-                      font-size: 12px;
-                      font-weight: 700;
-                      color: var(--danger);
-                    "
-                    id="drawer-priority-value"
-                  >
-                    🔥 High
-                  </div>
-                </div>
-              </div>
-              <div class="score-gauge-wrap">
-                <div style="text-align: center; padding: 12px 0">
-                  <div
-                    style="
-                      font-size: 40px;
-                      font-weight: 900;
-                      color: var(--primary);
-                    "
-                    id="drawer-score-value"
-                  >
-                    85
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted)">
-                    /100 · Score: High
-                  </div>
-                </div>
-              </div>
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 8px;
-                  padding: 0 14px 12px;
-                "
-              >
-                <div
-                  style="
-                    background: var(--bg);
-                    border-radius: var(--radius);
-                    padding: 8px 10px;
-                  "
-                >
-                  <div
-                    style="
-                      font-size: 10px;
-                      color: var(--text-muted);
-                      margin-bottom: 2px;
-                    "
-                  >
-                    Lead Age
-                  </div>
-                  <div
-                    style="font-size: 12px; font-weight: 700"
-                    id="drawer-lead-age"
-                  >
-                    2 Days
-                  </div>
-                </div>
-                <div
-                  style="
-                    background: var(--bg);
-                    border-radius: var(--radius);
-                    padding: 8px 10px;
-                  "
-                >
-                  <div
-                    style="
-                      font-size: 10px;
-                      color: var(--text-muted);
-                      margin-bottom: 2px;
-                    "
-                  >
-                    Assigned On
-                  </div>
-                  <div
-                    style="font-size: 11px; font-weight: 600"
-                    id="drawer-assigned-on"
-                  >
-                    15 May 2025
-                  </div>
-                </div>
-              </div>
-              <div class="score-rows" id="drawer-score-rows"></div>
-            </div>
-
-            <!-- Next Follow-Up -->
-            <div class="followup-card">
-              <div class="drawer-card-header">
-                <div class="drawer-card-title">
-                  <i class="fas fa-calendar-check"></i> Next Follow-Up
-                </div>
-                <div class="drawer-edit-link">
-                  <i class="fas fa-edit"></i> Edit
-                </div>
-              </div>
-              <div id="drawer-followup-details"></div>
-            </div>
-
             <!-- Quick Actions -->
             <div class="quick-actions-card">
               <div class="drawer-card-header">
@@ -2070,7 +1927,7 @@
                   </div>
                   <span class="qa-label">Send Brochure</span>
                 </div>
-                <div class="quick-action-btn" data-drawer-quick="fee">
+                <div class="quick-action-btn" data-drawer-quick="course">
                   <div
                     class="qa-icon"
                     style="
@@ -2078,64 +1935,27 @@
                       color: var(--success);
                     "
                   >
-                    <i class="fas fa-rupee-sign"></i>
+                    <i class="fas fa-book-open"></i>
                   </div>
-                  <span class="qa-label">Fee Structure</span>
+                  <span class="qa-label">Course Details</span>
                 </div>
-                <div class="quick-action-btn" data-drawer-quick="batch">
+                <div class="quick-action-btn" data-drawer-quick="edit-buttons">
                   <div
                     class="qa-icon"
                     style="
-                      background: var(--warning-light);
-                      color: var(--warning);
+                      background: var(--primary-light);
+                      color: var(--primary);
                     "
                   >
-                    <i class="fas fa-users-class"></i>
+                    <i class="fas fa-sliders-h"></i>
                   </div>
-                  <span class="qa-label">Batch Details</span>
-                </div>
-                <div class="quick-action-btn" data-drawer-quick="admission">
-                  <div
-                    class="qa-icon"
-                    style="
-                      background: var(--danger-light);
-                      color: var(--danger);
-                    "
-                  >
-                    <i class="fas fa-file-signature"></i>
-                  </div>
-                  <span class="qa-label">Convert to Admission</span>
-                </div>
-                <div class="quick-action-btn" data-drawer-quick="counselling">
-                  <div
-                    class="qa-icon"
-                    style="
-                      background: var(--purple-light);
-                      color: var(--purple);
-                    "
-                  >
-                    <i class="fas fa-handshake"></i>
-                  </div>
-                  <span class="qa-label">Counselling</span>
-                </div>
-                <div class="quick-action-btn" data-drawer-quick="note">
-                  <div
-                    class="qa-icon"
-                    style="
-                      background: var(--neutral-light);
-                      color: var(--text-secondary);
-                    "
-                  >
-                    <i class="fas fa-sticky-note"></i>
-                  </div>
-                  <span class="qa-label">Add Note</span>
+                  <span class="qa-label">Edit Buttons</span>
                 </div>
               </div>
             </div>
 
-            <!-- Mark as Lost -->
             <button class="mark-lost-btn" id="drawer-mark-lost-btn">
-              <i class="fas fa-user-times"></i> Mark as Lost
+              <i class="fas fa-user-times"></i> Close Inquiry
             </button>
           </div>
         </div>

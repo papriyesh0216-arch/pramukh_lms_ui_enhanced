@@ -1719,6 +1719,18 @@ body.dark #theme-toggle .fa-moon { color: var(--warning); }
   flex-direction: column;
   animation: slideInRight 0.3s ease;
 }
+.followup-panel-content.inquiry-funnel-panel {
+  width: min(980px, 94vw);
+}
+.inquiry-funnel-panel .inquiry-journey-card {
+  margin-bottom: 14px;
+}
+.inquiry-funnel-panel .stage-pipeline {
+  grid-template-columns: repeat(9, minmax(92px, 1fr));
+}
+.quick-button-modal .quick-button-form-body {
+  background: var(--bg-card);
+}
 .panel-header {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);

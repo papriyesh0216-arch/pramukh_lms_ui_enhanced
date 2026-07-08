@@ -1868,12 +1868,12 @@ const LeadsModule = {
     overlay.innerHTML = `
       <div class="custom-modal-card">
         <div class="custom-modal-header">
-          <span class="custom-modal-title"><i class="fas fa-user-times" style="color:var(--danger)"></i> Mark as Lost</span>
+          <span class="custom-modal-title"><i class="fas fa-user-times" style="color:var(--danger)"></i> Close Inquiry</span>
           <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
         </div>
         <div class="custom-modal-body">
           <div class="form-field">
-            <label>Lost Reason *</label>
+            <label>Close Reason *</label>
             <select id="lost-reason-select" required>
               <option>Not Interested</option>
               <option>Joined Elsewhere</option>
@@ -3041,6 +3041,7 @@ const LeadsModule = {
           <button class="panel-close" onclick="document.getElementById('followup-history-overlay').remove()"><i class="fas fa-times"></i></button>
         </div>
         <div class="panel-body">
+          ${typeof DrawerModule !== 'undefined' ? DrawerModule.buildJourneyHtml(lead) : ''}
           <div class="lead-detail-grid" style="grid-template-columns:1fr;margin-bottom:14px">
             <div class="lead-detail-col" style="border-right:0">
               <div class="detail-row"><span class="detail-label">Handled By</span><span class="detail-value">${lead.assignedTo || lead.owner || 'Unassigned'}</span></div>
