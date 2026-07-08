@@ -1316,7 +1316,7 @@ window.SegmentationModule = SegmentationModule;
 // Close dropdowns on outside click
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.more-dropdown')) {
-    document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
+    document.querySelectorAll('.more-dropdown-menu, .sort-dropdown-menu').forEach(m => m.remove());
   }
   if (!e.target.closest('.date-picker-modal')) {
     // Date picker handled separately

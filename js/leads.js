@@ -1560,22 +1560,21 @@ const LeadsModule = {
 
   setupSortDropdown(e) {
     e.stopPropagation();
-    document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
+    document.querySelectorAll('.more-dropdown-menu, .sort-dropdown-menu').forEach(m => m.remove());
     const btn = document.getElementById('sort-toggle-btn');
     if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const menuWidth = 240;
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - menuWidth - 12);
     
     const menu = document.createElement('div');
-    menu.className = 'more-dropdown-menu';
+    menu.className = 'sort-dropdown-menu';
     menu.style.cssText = `
-      position: absolute;
-      top: ${btn.offsetTop + btn.offsetHeight + 4}px;
-      left: ${btn.offsetLeft}px;
-      z-index: 500;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-xl);
-      min-width: 180px;
+      position: fixed;
+      top: ${rect.bottom + 8}px;
+      left: ${left}px;
+      z-index: 12000;
+      min-width: ${menuWidth}px;
     `;
     
     const sortOpts = this.getSortOptions();
@@ -1588,12 +1587,12 @@ const LeadsModule = {
       </div>
     `).join('');
     
-    document.querySelector('.leads-toolbar').appendChild(menu);
+    document.body.appendChild(menu);
   },
 
   setSortOption(opt) {
     this.sortOption = opt;
-    document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
+    document.querySelectorAll('.more-dropdown-menu, .sort-dropdown-menu').forEach(m => m.remove());
     this.applyFilters();
     this.showToast(`Sorted by ${this.getSortLabel(opt)}`, 'info');
   },
