@@ -84,6 +84,32 @@ const DashboardModule = {
       #screen-dashboard .alerts-card {
         display: none !important;
       }
+
+      /* Dashboard charts: keep the three chart cards in one full row. */
+      #screen-dashboard #dashboard-insights {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 16px !important;
+        align-items: stretch !important;
+      }
+      #screen-dashboard #dashboard-kpis {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+      }
+      #screen-dashboard #dashboard-insights > .chart-card {
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 270px !important;
+      }
+      #screen-dashboard #dashboard-insights > .chart-card .chart-body {
+        height: 150px !important;
+      }
+      #screen-dashboard #dashboard-insights > .chart-card #funnel-container {
+        min-height: 150px !important;
+      }
+
       #screen-dashboard .dashboard-performance-calendar-row {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
@@ -152,7 +178,8 @@ const DashboardModule = {
         }
       }
       @media (max-width: 1100px) {
-        #screen-dashboard .dashboard-performance-calendar-row {
+        #screen-dashboard .dashboard-performance-calendar-row,
+        #screen-dashboard #dashboard-insights {
           grid-template-columns: 1fr !important;
         }
         #screen-dashboard #kpi-row {
@@ -242,11 +269,10 @@ const DashboardModule = {
   },
 
   preparePerformanceCalendarLayout() {
-    const dashboard = document.querySelector('#screen-dashboard .content-area');
     const insights = document.getElementById('dashboard-insights');
     const table = document.querySelector('#screen-dashboard .table-card');
     const support = document.getElementById('dashboard-support');
-    if (!dashboard || !insights || !table || !support) return;
+    if (!insights || !table || !support) return;
 
     let row = document.getElementById('dashboard-performance-calendar-row');
     if (!row) {
