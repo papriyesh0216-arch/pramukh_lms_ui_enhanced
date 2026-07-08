@@ -5,8 +5,9 @@
 const DashboardModule = {
   charts: {},
   kpiResizeBound: false,
-  dashboardGoalsApplied: false,
-  dashboardActivityView: 'today',
+  dashboardActivityView: 'calendar',
+  dashboardActivityTimer: null,
+  dashboardActivityOrder: ['calendar', 'today', 'recent'],
 
   cssVar(name) {
     return getComputedStyle(document.body).getPropertyValue(name).trim();
@@ -32,12 +33,14 @@ const DashboardModule = {
       this.renderStatusChart();
       this.renderFunnelChart();
       this.applyDashboardGoalLayout();
+      this.startDashboardActivityCarousel();
     }, 100);
     this.setupDateFilter();
     this.setupJourneyCourseFilter();
     this.setupMiniCalNav();
     this.setupMiniCalRedirect();
     this.applyDashboardGoalLayout();
+    this.startDashboardActivityCarousel();
   },
 
   injectDashboardGoalStyles() {
@@ -45,154 +48,49 @@ const DashboardModule = {
     const style = document.createElement('style');
     style.id = 'dashboard-goal-layout-style';
     style.textContent = `
-      #screen-dashboard #kpi-row {
-        display: grid !important;
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        gap: 12px !important;
-        margin-bottom: 18px !important;
-      }
-      #screen-dashboard #kpi-row .kpi-card {
-        min-height: 92px !important;
-        padding: 12px 14px !important;
-        gap: 10px !important;
-        align-items: center !important;
-        border-radius: 16px !important;
-      }
-      #screen-dashboard #kpi-row .kpi-icon-wrap {
-        width: 38px !important;
-        height: 38px !important;
-        min-width: 38px !important;
-        border-radius: 12px !important;
-        font-size: 15px !important;
-      }
-      #screen-dashboard #kpi-row .kpi-label {
-        font-size: 9.5px !important;
-        line-height: 1.15 !important;
-        margin-bottom: 4px !important;
-        white-space: normal !important;
-      }
-      #screen-dashboard #kpi-row .kpi-value {
-        font-size: 22px !important;
-        line-height: 1 !important;
-        margin-bottom: 4px !important;
-      }
-      #screen-dashboard #kpi-row .kpi-meta {
-        gap: 4px !important;
-        font-size: 10px !important;
-        flex-wrap: wrap !important;
-      }
-      #screen-dashboard .alerts-card {
-        display: none !important;
-      }
+      #screen-dashboard #kpi-row { display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; gap:12px !important; margin-bottom:18px !important; }
+      #screen-dashboard #kpi-row .kpi-card { min-height:92px !important; padding:12px 14px !important; gap:10px !important; align-items:center !important; border-radius:16px !important; }
+      #screen-dashboard #kpi-row .kpi-icon-wrap { width:38px !important; height:38px !important; min-width:38px !important; border-radius:12px !important; font-size:15px !important; }
+      #screen-dashboard #kpi-row .kpi-label { font-size:9.5px !important; line-height:1.15 !important; margin-bottom:4px !important; white-space:normal !important; }
+      #screen-dashboard #kpi-row .kpi-value { font-size:22px !important; line-height:1 !important; margin-bottom:4px !important; }
+      #screen-dashboard #kpi-row .kpi-meta { gap:4px !important; font-size:10px !important; flex-wrap:wrap !important; }
+      #screen-dashboard .alerts-card { display:none !important; }
 
-      /* Dashboard charts: keep the three chart cards in one full row. */
-      #screen-dashboard #dashboard-insights {
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: 16px !important;
-        align-items: stretch !important;
-      }
-      #screen-dashboard #dashboard-kpis {
-        grid-column: 1 / -1 !important;
-        width: 100% !important;
-      }
-      #screen-dashboard #dashboard-insights > .chart-card {
-        grid-column: auto !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        min-height: 270px !important;
-      }
-      #screen-dashboard #dashboard-insights > .chart-card .chart-body {
-        height: 150px !important;
-      }
-      #screen-dashboard #dashboard-insights > .chart-card #funnel-container {
-        min-height: 150px !important;
-      }
+      #screen-dashboard #dashboard-insights { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:16px !important; align-items:stretch !important; }
+      #screen-dashboard #dashboard-kpis { grid-column:1/-1 !important; width:100% !important; }
+      #screen-dashboard #dashboard-insights > .chart-card { grid-column:auto !important; grid-row:auto !important; width:100% !important; min-width:0 !important; min-height:270px !important; }
+      #screen-dashboard #dashboard-insights > .chart-card .chart-body { height:150px !important; }
+      #screen-dashboard #dashboard-insights > .chart-card #funnel-container { min-height:150px !important; }
 
-      #screen-dashboard .dashboard-performance-calendar-row {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-        gap: 16px !important;
-        align-items: stretch !important;
-        margin: 16px 0 14px !important;
-      }
+      #screen-dashboard .dashboard-performance-calendar-row { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; gap:16px !important; align-items:stretch !important; margin:16px 0 14px !important; }
       #screen-dashboard .dashboard-performance-calendar-row .table-card,
-      #screen-dashboard .dashboard-performance-calendar-row .dashboard-right-panel {
-        grid-column: auto !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-      }
-      #screen-dashboard .dashboard-performance-calendar-row .table-card {
-        overflow: hidden !important;
-      }
-      #screen-dashboard .dashboard-performance-calendar-row .data-table {
-        min-width: 640px !important;
-      }
-      #screen-dashboard .dashboard-performance-calendar-row .table-card {
-        overflow-x: auto !important;
-      }
-      #screen-dashboard .dashboard-performance-calendar-row .dashboard-right-panel {
-        position: relative !important;
-        display: grid !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        gap: 14px !important;
-      }
-      #screen-dashboard .dashboard-activity-switcher {
-        position: absolute !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        z-index: 5 !important;
-        width: 34px !important;
-        height: 34px !important;
-        border-radius: 999px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        border: 1px solid rgba(16,56,96,.16) !important;
-        background: rgba(255,255,255,.94) !important;
-        color: var(--academy-blue, #003860) !important;
-        box-shadow: 0 10px 24px rgba(16,56,96,.16) !important;
-        cursor: pointer !important;
-      }
-      #screen-dashboard .dashboard-activity-switcher:hover {
-        background: linear-gradient(135deg, var(--academy-blue, #003860), var(--primary, #0077B6)) !important;
-        color: #fff !important;
-      }
-      #screen-dashboard .dashboard-activity-switcher.prev { left: -12px !important; }
-      #screen-dashboard .dashboard-activity-switcher.next { right: -12px !important; }
-      #screen-dashboard .dashboard-right-panel .tasks-card {
-        display: none !important;
-      }
-      #screen-dashboard .dashboard-right-panel .tasks-card.dashboard-activity-active {
-        display: block !important;
-      }
-      #screen-dashboard .dashboard-right-panel .tasks-list {
-        max-height: 260px !important;
-      }
-      @media (max-width: 1440px) {
-        #screen-dashboard #kpi-row {
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        }
-      }
-      @media (max-width: 1100px) {
-        #screen-dashboard .dashboard-performance-calendar-row,
-        #screen-dashboard #dashboard-insights {
-          grid-template-columns: 1fr !important;
-        }
-        #screen-dashboard #kpi-row {
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        }
-      }
-      @media (max-width: 760px) {
-        #screen-dashboard #kpi-row {
-          grid-template-columns: 1fr !important;
-        }
-        #screen-dashboard .dashboard-activity-switcher.prev { left: 8px !important; }
-        #screen-dashboard .dashboard-activity-switcher.next { right: 8px !important; }
-      }
+      #screen-dashboard .dashboard-performance-calendar-row .dashboard-right-panel { grid-column:auto !important; grid-row:auto !important; width:100% !important; min-width:0 !important; margin:0 !important; }
+      #screen-dashboard .dashboard-performance-calendar-row .table-card { overflow-x:auto !important; }
+      #screen-dashboard .dashboard-performance-calendar-row .data-table { min-width:640px !important; }
+
+      #screen-dashboard #dashboard-support { position:relative !important; min-height:410px !important; overflow:hidden !important; border-radius:24px !important; background:rgba(255,255,255,.94) !important; border:1px solid rgba(16,56,96,.10) !important; box-shadow:0 18px 42px rgba(16,56,96,.10) !important; }
+      body.dark #screen-dashboard #dashboard-support { background:rgba(15,34,56,.9) !important; border-color:rgba(255,255,255,.10) !important; }
+      #screen-dashboard #dashboard-support .dashboard-carousel-slide { position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; margin:0 !important; border:0 !important; border-radius:24px !important; box-shadow:none !important; opacity:0 !important; pointer-events:none !important; transform:translateX(18px) scale(.985) !important; transition:opacity .45s ease, transform .45s ease !important; overflow:auto !important; }
+      #screen-dashboard #dashboard-support .dashboard-carousel-slide.dashboard-activity-active { opacity:1 !important; pointer-events:auto !important; transform:translateX(0) scale(1) !important; }
+      #screen-dashboard #dashboard-support .mini-calendar-card.dashboard-carousel-slide { padding:14px 16px 16px !important; }
+      #screen-dashboard #dashboard-support .tasks-card.dashboard-carousel-slide { padding:18px !important; background:transparent !important; }
+      #screen-dashboard #dashboard-support .tasks-list { max-height:none !important; }
+      #screen-dashboard #dashboard-support .mini-cal-header { border-radius:18px !important; padding:12px !important; background:linear-gradient(135deg,var(--academy-blue,#003860),#6d28d9) !important; color:#fff !important; }
+      #screen-dashboard #dashboard-support .mini-cal-title { color:#fff !important; font-weight:900 !important; }
+      #screen-dashboard #dashboard-support .mini-cal-nav { background:rgba(255,255,255,.92) !important; color:var(--academy-blue,#003860) !important; }
+      #screen-dashboard #dashboard-support .mini-cal-days { min-height:210px !important; }
+
+      #screen-dashboard .dashboard-activity-switcher { position:absolute !important; top:50% !important; transform:translateY(-50%) !important; z-index:20 !important; width:36px !important; height:36px !important; border-radius:999px !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; border:1px solid rgba(16,56,96,.16) !important; background:rgba(255,255,255,.96) !important; color:var(--academy-blue,#003860) !important; box-shadow:0 10px 24px rgba(16,56,96,.18) !important; cursor:pointer !important; }
+      #screen-dashboard .dashboard-activity-switcher:hover { background:linear-gradient(135deg,var(--academy-blue,#003860),var(--primary,#0077B6)) !important; color:#fff !important; }
+      #screen-dashboard .dashboard-activity-switcher.prev { left:10px !important; }
+      #screen-dashboard .dashboard-activity-switcher.next { right:10px !important; }
+      #screen-dashboard .dashboard-activity-dots { position:absolute !important; left:50% !important; bottom:12px !important; transform:translateX(-50%) !important; z-index:21 !important; display:flex !important; gap:6px !important; }
+      #screen-dashboard .dashboard-activity-dot { width:7px !important; height:7px !important; border-radius:999px !important; background:rgba(16,56,96,.22) !important; }
+      #screen-dashboard .dashboard-activity-dot.active { width:18px !important; background:var(--academy-blue,#003860) !important; }
+
+      @media (max-width:1440px){ #screen-dashboard #kpi-row{grid-template-columns:repeat(3,minmax(0,1fr)) !important;} }
+      @media (max-width:1100px){ #screen-dashboard .dashboard-performance-calendar-row,#screen-dashboard #dashboard-insights{grid-template-columns:1fr !important;} #screen-dashboard #kpi-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important;} }
+      @media (max-width:760px){ #screen-dashboard #kpi-row{grid-template-columns:1fr !important;} #screen-dashboard #dashboard-support{min-height:390px !important;} }
     `;
     document.head.appendChild(style);
   },
@@ -233,15 +131,9 @@ const DashboardModule = {
         <div class="kpi-body">
           <div class="kpi-label">${k.label}</div>
           <div class="kpi-value">${k.value}</div>
-          <div class="kpi-meta">
-            <span class="${k.up ? 'growth-up' : 'growth-down'}">
-              <i class="fas fa-arrow-${k.up ? 'up' : 'down'}"></i>${k.growth}
-            </span>
-            <span class="kpi-date">${k.date}</span>
-          </div>
+          <div class="kpi-meta"><span class="${k.up ? 'growth-up' : 'growth-down'}"><i class="fas fa-arrow-${k.up ? 'up' : 'down'}"></i>${k.growth}</span><span class="kpi-date">${k.date}</span></div>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   },
 
   renderKPIs() {
@@ -284,79 +176,72 @@ const DashboardModule = {
     if (table.parentElement !== row) row.appendChild(table);
     if (support.parentElement !== row) row.appendChild(support);
 
-    this.prepareActivityArrows(support);
+    this.prepareActivityCarousel(support);
   },
 
-  prepareActivityArrows(support) {
-    if (!support || support.dataset.activityArrowsReady === 'true') return;
-    support.dataset.activityArrowsReady = 'true';
+  prepareActivityCarousel(support) {
+    if (!support || support.dataset.carouselReady === 'true') return;
+    support.dataset.carouselReady = 'true';
 
+    const calendarCard = support.querySelector('.mini-calendar-card');
     const todayCard = support.querySelector('.tasks-card:not(.recent-activities-card)');
     const recentCard = support.querySelector('.recent-activities-card');
-    if (todayCard) todayCard.classList.add('dashboard-today-activity-card');
-    if (recentCard) recentCard.classList.add('dashboard-recent-activity-card');
+
+    calendarCard?.classList.add('dashboard-carousel-slide', 'dashboard-calendar-card');
+    todayCard?.classList.add('dashboard-carousel-slide', 'dashboard-today-activity-card');
+    recentCard?.classList.add('dashboard-carousel-slide', 'dashboard-recent-activity-card');
 
     const prev = document.createElement('button');
     prev.type = 'button';
     prev.className = 'dashboard-activity-switcher prev';
-    prev.title = 'Show previous activity panel';
-    prev.setAttribute('aria-label', 'Show previous activity panel');
+    prev.title = 'Previous panel';
+    prev.setAttribute('aria-label', 'Previous panel');
     prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
 
     const next = document.createElement('button');
     next.type = 'button';
     next.className = 'dashboard-activity-switcher next';
-    next.title = 'Show next activity panel';
-    next.setAttribute('aria-label', 'Show next activity panel');
+    next.title = 'Next panel';
+    next.setAttribute('aria-label', 'Next panel');
     next.innerHTML = '<i class="fas fa-chevron-right"></i>';
 
-    const toggle = () => this.toggleDashboardActivityPanel();
-    prev.addEventListener('click', toggle);
-    next.addEventListener('click', toggle);
+    const dots = document.createElement('div');
+    dots.className = 'dashboard-activity-dots';
+    dots.innerHTML = this.dashboardActivityOrder.map(v => `<span class="dashboard-activity-dot" data-view="${v}"></span>`).join('');
+
+    prev.addEventListener('click', () => this.stepDashboardActivity(-1, true));
+    next.addEventListener('click', () => this.stepDashboardActivity(1, true));
     support.appendChild(prev);
     support.appendChild(next);
+    support.appendChild(dots);
   },
 
-  toggleDashboardActivityPanel() {
-    this.dashboardActivityView = this.dashboardActivityView === 'today' ? 'recent' : 'today';
+  stepDashboardActivity(direction = 1, restart = false) {
+    const idx = this.dashboardActivityOrder.indexOf(this.dashboardActivityView);
+    const nextIndex = (idx + direction + this.dashboardActivityOrder.length) % this.dashboardActivityOrder.length;
+    this.dashboardActivityView = this.dashboardActivityOrder[nextIndex];
     this.updateActivityPanelVisibility();
+    if (restart) this.startDashboardActivityCarousel();
+  },
+
+  startDashboardActivityCarousel() {
+    if (this.dashboardActivityTimer) clearInterval(this.dashboardActivityTimer);
+    this.dashboardActivityTimer = setInterval(() => this.stepDashboardActivity(1, false), 2000);
   },
 
   updateActivityPanelVisibility() {
     const support = document.getElementById('dashboard-support');
     if (!support) return;
-    const todayCard = support.querySelector('.dashboard-today-activity-card');
-    const recentCard = support.querySelector('.dashboard-recent-activity-card');
-    todayCard?.classList.toggle('dashboard-activity-active', this.dashboardActivityView === 'today');
-    recentCard?.classList.toggle('dashboard-activity-active', this.dashboardActivityView === 'recent');
+    support.querySelector('.dashboard-calendar-card')?.classList.toggle('dashboard-activity-active', this.dashboardActivityView === 'calendar');
+    support.querySelector('.dashboard-today-activity-card')?.classList.toggle('dashboard-activity-active', this.dashboardActivityView === 'today');
+    support.querySelector('.dashboard-recent-activity-card')?.classList.toggle('dashboard-activity-active', this.dashboardActivityView === 'recent');
+    support.querySelectorAll('.dashboard-activity-dot').forEach(dot => dot.classList.toggle('active', dot.dataset.view === this.dashboardActivityView));
   },
 
   renderLeadJourneyAnalytics() {
     const container = document.getElementById('dashboard-journey-analytics');
     if (!container) return;
-    const selectedCourse = document.getElementById('dashboard-journey-course')?.value || 'all';
-    const scopedLeads = this.getScopedLeads();
-    const baseTotal = Math.max((window.APP_DATA?.LEAD_DATA || []).filter(l => !l.archived).length, 1);
-    const scopeFactor = Math.max(scopedLeads.length / baseTotal, scopedLeads.length ? 0.08 : 0);
-    const courseFactor = { all: 1, upsc: 0.42, gpsc: 0.31, sankalp: 0.18 }[selectedCourse] || 1;
-    const stages = [
-      { name: 'Inquiry Created', count: 2350, pct: 100, state: 'done' },
-      { name: 'Lead Assigned', count: 2214, pct: 94, state: 'done' },
-      { name: 'First Contact', count: 1876, pct: 80, state: 'done' },
-      { name: 'Follow-up', count: 987, pct: 42, state: 'current' },
-      { name: 'Counselling', count: 423, pct: 18, state: 'current' },
-      { name: 'Qualified Lead', count: 235, pct: 10, state: 'upcoming' },
-      { name: 'Admission Form Started', count: 146, pct: 6, state: 'upcoming' },
-      { name: 'Fee Paid', count: 104, pct: 4, state: 'upcoming' },
-      { name: 'Student Created', count: 94, pct: 4, state: 'upcoming' }
-    ];
-    container.innerHTML = stages.map(stage => `
-      <div class="journey-analytics-step ${stage.state}">
-        <div class="journey-step-head"><span>${stage.name}</span><strong>${Math.max(scopedLeads.length ? 1 : 0, Math.round(stage.count * scopeFactor * courseFactor)).toLocaleString()}</strong></div>
-        <div class="journey-progress-track"><div class="journey-progress-fill" style="width:${stage.pct}%"></div></div>
-        <div class="journey-step-meta">${stage.pct}% of inquiries</div>
-      </div>
-    `).join('');
+    container.innerHTML = '';
   },
 
   setupJourneyCourseFilter() {
@@ -365,10 +250,9 @@ const DashboardModule = {
 
   renderMetrics() {
     const metrics = [
-      { cls: 'metric-untouch', icon: 'fa-eye-slash', name: 'Untouched Leads', count: 47, desc: 'Never Contacted', view: 'pending' },
-      { cls: 'metric-overdue', icon: 'fa-clock', name: 'Overdue Follow-ups', count: 23, desc: 'Past Due Date', view: 'overdue' },
-      { cls: 'metric-hot', icon: 'fa-fire', name: 'Hot Leads', count: 15, desc: 'High Priority', view: 'hot' },
-      { cls: 'metric-leakage', icon: 'fa-filter', name: 'Lead Leakage Lost', count: 38, desc: 'Dropped Leads', view: 'lost' },
+      { cls: 'metric-untouch', icon: 'fa-eye-slash', name: 'Untouched Leads', count: 47, desc: 'Never Contacted' },
+      { cls: 'metric-overdue', icon: 'fa-clock', name: 'Overdue Follow-ups', count: 23, desc: 'Past Due Date' },
+      { cls: 'metric-hot', icon: 'fa-fire', name: 'Hot Leads', count: 15, desc: 'High Priority' },
     ];
     const container = document.getElementById('kpi-metrics-row');
     if (!container) return;
@@ -377,8 +261,7 @@ const DashboardModule = {
         <div class="metric-top"><div><div class="metric-name">${m.name}</div><div class="metric-desc">${m.desc}</div></div><div class="metric-icon-wrap"><i class="fas ${m.icon}"></i></div></div>
         <div class="metric-count">${m.count}</div>
         <button class="metric-view-btn">View Leads <i class="fas fa-arrow-right"></i></button>
-      </div>
-    `).join('');
+      </div>`).join('');
   },
 
   renderAlerts() {
@@ -402,8 +285,7 @@ const DashboardModule = {
         <td><div class="counselor-cell"><div class="counselor-avatar" style="background:${c.color}">${c.initials}</div><span>${c.name}</span></div></td>
         <td><strong>${c.assigned}</strong></td><td>${c.contacted}</td><td>${c.interested}</td><td><strong>${c.admissions}</strong></td>
         <td><div class="progress-bar-wrap"><div class="progress-bar"><div class="progress-bar-fill" style="width:${c.rate}%"></div></div><span class="pct-label">${c.rate}%</span></div></td>
-      </tr>
-    `).join('');
+      </tr>`).join('');
   },
 
   renderSegmentationChart() {
@@ -441,8 +323,7 @@ const DashboardModule = {
     if (!container) return;
     const data = window.APP_DATA.FUNNEL_DATA;
     container.innerHTML = data.map(d => `
-      <div class="funnel-stage"><span class="funnel-label">${d.label}</span><div class="funnel-bar-outer"><div class="funnel-bar-fill" style="width:${d.pct}%; background:${d.color}">${d.pct > 15 ? d.pct + '%' : ''}</div></div><span class="funnel-count">${d.count.toLocaleString()}</span></div>
-    `).join('');
+      <div class="funnel-stage"><span class="funnel-label">${d.label}</span><div class="funnel-bar-outer"><div class="funnel-bar-fill" style="width:${d.pct}%; background:${d.color}">${d.pct > 15 ? d.pct + '%' : ''}</div></div><span class="funnel-count">${d.count.toLocaleString()}</span></div>`).join('');
   },
 
   renderMiniCalendar() {
@@ -480,8 +361,7 @@ const DashboardModule = {
       { type: 'task-email', icon: 'fa-list-check', name: 'Pending task: send brochure to Sneha', course: 'Sankalp Programme', time: '04:00 PM' },
     ];
     const container = document.getElementById('tasks-list');
-    if (!container) return;
-    container.innerHTML = tasks.map(t => `<div class="task-item"><div class="task-icon ${t.type}"><i class="fas ${t.icon}"></i></div><div class="task-body"><div class="task-name">${t.name}</div><div class="task-course">${t.course}</div></div><div class="task-time">${t.time}</div></div>`).join('');
+    if (container) container.innerHTML = tasks.map(t => `<div class="task-item"><div class="task-icon ${t.type}"><i class="fas ${t.icon}"></i></div><div class="task-body"><div class="task-name">${t.name}</div><div class="task-course">${t.course}</div></div><div class="task-time">${t.time}</div></div>`).join('');
   },
 
   renderRecentActivities() {
@@ -506,13 +386,7 @@ const DashboardModule = {
       const modal = document.createElement('div');
       modal.id = 'date-picker-modal';
       modal.className = 'date-picker-modal';
-      modal.innerHTML = `
-        <div class="date-picker-panel">
-          <h3><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:8px"></i>Custom Date Range</h3>
-          <div class="date-range-row"><div class="date-input-group"><label>From Date</label><input type="date" id="date-from" value="2026-06-01"></div><div class="date-input-group"><label>To Date</label><input type="date" id="date-to" value="2026-06-26"></div></div>
-          <div class="quick-ranges"><button class="quick-range-btn active" onclick="DashboardModule.setRange('month',this)">This Month</button><button class="quick-range-btn" onclick="DashboardModule.setRange('week',this)">This Week</button><button class="quick-range-btn" onclick="DashboardModule.setRange('today',this)">Today</button><button class="quick-range-btn" onclick="DashboardModule.setRange('quarter',this)">Quarter</button></div>
-          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline btn-sm" onclick="document.getElementById('date-picker-modal').remove()">Cancel</button><button class="btn btn-primary btn-sm" onclick="DashboardModule.applyDateFilter()"><i class="fas fa-check"></i> Apply Filter</button></div>
-        </div>`;
+      modal.innerHTML = `<div class="date-picker-panel"><h3><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:8px"></i>Custom Date Range</h3><div class="date-range-row"><div class="date-input-group"><label>From Date</label><input type="date" id="date-from" value="2026-06-01"></div><div class="date-input-group"><label>To Date</label><input type="date" id="date-to" value="2026-06-26"></div></div><div class="quick-ranges"><button class="quick-range-btn active" onclick="DashboardModule.setRange('month',this)">This Month</button><button class="quick-range-btn" onclick="DashboardModule.setRange('week',this)">This Week</button><button class="quick-range-btn" onclick="DashboardModule.setRange('today',this)">Today</button><button class="quick-range-btn" onclick="DashboardModule.setRange('quarter',this)">Quarter</button></div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline btn-sm" onclick="document.getElementById('date-picker-modal').remove()">Cancel</button><button class="btn btn-primary btn-sm" onclick="DashboardModule.applyDateFilter()"><i class="fas fa-check"></i> Apply Filter</button></div></div>`;
       document.body.appendChild(modal);
       modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     });
@@ -593,7 +467,6 @@ const DashboardModule = {
       { cls: 'kpi-converted', icon: 'fa-graduation-cap', label: 'Total Admission Form', value: admissions.toLocaleString(), date: 'Selected Day', growth: '+8%', up: true },
       { cls: 'kpi-lost', icon: 'fa-user-times', label: 'Close Leads', value: closed.toLocaleString(), date: 'Selected Day', growth: '-2%', up: true },
     ]);
-
     window.APP_DATA.COUNSELOR_DATA.forEach(c => {
       c.assigned = Math.floor(Math.random() * 30) + 5;
       c.contacted = Math.floor(c.assigned * 0.8);
