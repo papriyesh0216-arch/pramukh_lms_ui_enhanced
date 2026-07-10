@@ -237,12 +237,33 @@ const LeadsModule = {
     return statuses[stageKey] || [];
   },
 
+  getFollowupStageStatusDefinitions(stageKey) {
+    if (stageKey === 'counselling') {
+      return [
+        { key: 'schedule', label: 'Schedule' },
+        { key: 'reschedules', label: 'Reschedule' }
+      ];
+    }
+    const statuses = this.getStageStatusDefinitions(stageKey);
+    if (statuses.length) return statuses;
+    const stage = this.getStageDefinitions().find((item) => item.key === stageKey && item.key !== 'all');
+    return stage ? [{ key: stage.key, label: stage.label }] : [];
+  },
+
+  getMentorOptions() {
+    const counselorNames = (window.APP_DATA?.COUNSELOR_DATA || []).map((mentor) => mentor.name);
+    const leadOwners = this.leads.flatMap((lead) => [lead.assignedTo, lead.owner]);
+    return [...new Set([...counselorNames, ...leadOwners].filter((name) => name && name !== 'Unassigned'))].sort();
+  },
+
   formatStageLabel(stageKey) {
     return this.getStageDefinitions().find((stage) => stage.key === stageKey)?.label || 'Pending';
   },
 
   formatStageStatusLabel(stageKey, stageStatusKey) {
-    return this.getStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label || '';
+    return this.getFollowupStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label
+      || this.getStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label
+      || '';
   },
 
   normalizeLeadStageData(lead) {
@@ -1165,17 +1186,24 @@ const LeadsModule = {
   syncFollowupStageVisibility() {
     const stageKey = document.getElementById('f-stage')?.value || '';
     const statusSelect = document.getElementById('f-stage-status');
+    const mentorWrap = document.getElementById('f-mentor-wrap');
+    const mentorInput = document.getElementById('f-mentor');
     const dateWrap = document.getElementById('f-date-wrap');
     const timeWrap = document.getElementById('f-time-wrap');
     const dateInput = document.getElementById('f-date');
     const timeInput = document.getElementById('f-time');
     const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
-    const stage = this.getBulkStageModalOptions().find((item) => item.key === stageKey);
+    const stageStatuses = this.getFollowupStageStatusDefinitions(stageKey);
 
     if (statusSelect) {
-      statusSelect.innerHTML = '<option value="">Select Stage Status</option>' + (stage?.statuses || []).map((status) => (
+      statusSelect.innerHTML = '<option value="">Select Stage Status</option>' + stageStatuses.map((status) => (
         `<option value="${status.key}">${status.label}</option>`
       )).join('');
+    }
+    if (mentorWrap) mentorWrap.hidden = stageKey !== 'counselling';
+    if (mentorInput) {
+      mentorInput.required = stageKey === 'counselling';
+      if (stageKey !== 'counselling') mentorInput.value = '';
     }
     if (dateWrap) dateWrap.hidden = shouldHideSchedule;
     if (timeWrap) timeWrap.hidden = shouldHideSchedule;
@@ -1783,7 +1811,6 @@ const LeadsModule = {
     menu.className = 'more-dropdown-menu';
     const items = [];
     if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('followup', ${id})"><i class="fas fa-redo"></i> Manage Follow-up</div>`);
-    if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('counselling', ${id})"><i class="fas fa-comments"></i> Schedule Counselling</div>`);
     if (this.can('inquiryList', 'export')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('print', ${id})"><i class="fas fa-print"></i> Print Inquiry Form</div>`);
     if (this.can('inquiryList', 'edit')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('duplicate_scan', ${id})"><i class="fas fa-clone"></i> Duplicate Scan</div>`);
     if (this.can('inquiryList', 'delete')) items.push('<div class="dropdown-divider"></div>');
@@ -2602,6 +2629,9 @@ const LeadsModule = {
     
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
+    const mentorOptions = this.getMentorOptions()
+      .map((mentor) => `<option value="${this.escapeHtml(mentor)}"></option>`)
+      .join('');
     
     const listHTML = lead.communications.length > 0 
       ? lead.communications.map(c => `
@@ -2660,6 +2690,13 @@ const LeadsModule = {
                   <label>Followed By</label>
                   <div class="readonly-field" id="f-followed-by">${lead.assignedTo || lead.owner || 'Unassigned'}</div>
                 </div>
+                <div class="form-field full" id="f-mentor-wrap" hidden>
+                  <label>Assign Mentor *</label>
+                  <input type="text" id="f-mentor" list="followup-mentor-options" placeholder="Search mentor name" autocomplete="off">
+                  <datalist id="followup-mentor-options">
+                    ${mentorOptions}
+                  </datalist>
+                </div>
                 <div class="form-field full">
                   <label>Purpose *</label>
                   <textarea id="f-purpose" rows="3" required placeholder="Enter purpose"></textarea>
@@ -2688,23 +2725,27 @@ const LeadsModule = {
     const refNo = document.getElementById('f-ref')?.value.trim() || '';
     const followupDate = document.getElementById('f-date').value;
     const followupTime = document.getElementById('f-time').value;
+    const assignedMentor = document.getElementById('f-mentor')?.value.trim() || '';
     const purpose = document.getElementById('f-purpose').value.trim();
     const followedBy = document.getElementById('f-followed-by')?.textContent || lead.assignedTo || lead.owner || 'Unassigned';
     const needsSchedule = !['closed', 'admission_form'].includes(stageKey);
-    if (!stageKey || !purpose || (needsSchedule && !followupDate)) return;
+    if (!stageKey || !purpose || (needsSchedule && !followupDate) || (stageKey === 'counselling' && !assignedMentor)) return;
+    const validStatusKeys = this.getFollowupStageStatusDefinitions(stageKey).map((status) => status.key);
+    if (stageStatus && !validStatusKeys.includes(stageStatus)) return;
 
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
+    const mentorText = stageKey === 'counselling' ? `. Mentor: ${assignedMentor}` : '';
 
     const newComm = {
       type: 'followup',
       day: now.getDate().toString(),
       month: months[now.getMonth()],
       title: 'Follow-up Management',
-      desc: `${this.formatStageLabel(stageKey)}${stageStatus ? ` - ${this.formatStageStatusLabel(stageKey, stageStatus)}` : ''}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`,
+      desc: `${this.formatStageLabel(stageKey)}${stageStatus ? ` - ${this.formatStageStatusLabel(stageKey, stageStatus)}` : ''}${mentorText}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`,
       time: followupTime || now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       by: followedBy,
-      followupData: { stageKey, stageStatus, refNo, followupDate: needsSchedule ? followupDate : '', followupTime: needsSchedule ? followupTime : '', purpose, followedBy }
+      followupData: { stageKey, stageStatus, refNo, followupDate: needsSchedule ? followupDate : '', followupTime: needsSchedule ? followupTime : '', purpose, followedBy, assignedMentor }
     };
 
     lead.communications.unshift(newComm);
@@ -2716,6 +2757,7 @@ const LeadsModule = {
     lead.followupTime = needsSchedule ? followupTime : '';
     lead.followupPurpose = purpose;
     lead.followupManagement = newComm.followupData;
+    if (stageKey === 'counselling') lead.assignedMentor = assignedMentor;
     this.normalizeLeadStageData(lead);
     this.stampLeadModified(lead);
     if (stageKey === 'counselling') {
