@@ -53,6 +53,10 @@ const DrawerModule = {
       LeadsModule.showFollowupHistory(this.currentLead.id);
       return;
     }
+    if (action === 'lost') {
+      LeadsModule.showManageFollowup(this.currentLead.id, 'closed');
+      return;
+    }
     LeadsModule.action(action, this.currentLead.id);
     if (['edit', 'followup', 'counselling', 'changeclass'].includes(action)) return;
     const refreshed = this.findLead(this.currentLead.id);
@@ -68,10 +72,7 @@ const DrawerModule = {
       LeadsModule.whatsapp(this.currentLead.id);
     } else if (type === 'email') {
       LeadsModule.email(this.currentLead.id);
-    } else if (type === 'meeting') {
-      LeadsModule.showCounsellingModal(this.currentLead.id);
-      return;
-    } else {
+    } else if (type === 'followup') {
       LeadsModule.showManageFollowup(this.currentLead.id);
       return;
     }
@@ -242,11 +243,6 @@ const DrawerModule = {
                 </div>
               `;
             }).join('')}
-            <div class="journey-outcome-chips">
-              <span class="alt-outcome-chip">Lost Lead</span>
-              <span class="alt-outcome-chip">Closed Inquiry</span>
-              <span class="alt-outcome-chip">Reopened Inquiry</span>
-            </div>
           </div>
         </div>
       </div>

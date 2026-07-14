@@ -143,8 +143,6 @@ const InquiryFormPage = {
     const isCourseInquiry = finalInquiryType === 'Course Inquiry';
 
     const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
-    const isClass3Course = isCourseInquiry && courseSelect?.value === 'Class -3';
-
 
     // Ensure batch options are synced whenever course changes
     this.syncBatchOptionsWithCourse();
@@ -160,8 +158,7 @@ const InquiryFormPage = {
     }
 
     if (batchSelect) {
-      // Goal 2: For Class 3, batch should NOT be mandatory.
-      batchSelect.required = isCourseInquiry && needsBatchMode && !isClass3Course;
+      batchSelect.required = false;
 
       if (!needsBatchMode) batchSelect.value = '';
 
@@ -173,8 +170,7 @@ const InquiryFormPage = {
     }
 
     modeInputs.forEach((input) => {
-      // Goal 2: For Class 3, mode should also be optional.
-      input.required = isCourseInquiry && needsBatchMode && !isClass3Course;
+      input.required = isCourseInquiry && needsBatchMode;
       if (!needsBatchMode) input.checked = false;
     });
 
@@ -283,14 +279,9 @@ const InquiryFormPage = {
       const query = document.getElementById('i-query').value.trim();
       const requiresCourse = inquiryType === 'Course Inquiry';
       const requiresBatchMode = requiresCourse && this.courseNeedsBatchMode(course);
+      const missingMode = requiresBatchMode && !mode;
 
-      // Goal 2: For Class 3, both batch and mode should be optional.
-      const isClass3 = requiresCourse && course === 'Class -3';
-      const shouldRequireBatchMode = requiresBatchMode && !isClass3;
-      const missingMode = shouldRequireBatchMode && !mode;
-      const missingBatch = shouldRequireBatchMode && !batch;
-
-      if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (!requiresCourse && !query) || (requiresCourse && !course) || missingMode || missingBatch) {
+      if (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (!requiresCourse && !query) || (requiresCourse && !course) || missingMode) {
 
 
         if (statusEl) {

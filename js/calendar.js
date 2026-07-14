@@ -7,6 +7,8 @@ const CalendarModule = {
   today: new Date(2026, 5, 26),
   selectedDate: new Date(2026, 5, 26),
   viewMode: 'week',
+  displayMode: 'calendar',
+  calendarFilter: 'all',
 
   init() {
     this.renderCalendar();
@@ -121,33 +123,103 @@ const CalendarModule = {
     if (pagination) pagination.style.display = 'flex';
   },
 
-  openLeadRow(leadId) {
+  openLeadRow(leadId, event) {
+    this.openInquiryRows([leadId], event);
+  },
+
+  openInquiryRows(leadIds = [], event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
     if (typeof LeadsModule === 'undefined') return;
-    const lead = LeadsModule.leads.find((item) => item.id === leadId);
-    if (!lead) return;
-    if (window.AuthModule && !AuthModule.isInScope(lead)) {
-      LeadsModule.showToast?.('This inquiry is outside the current role scope.', 'warning');
+
+    const requestedIds = new Set(leadIds.map(Number));
+    const leads = LeadsModule.leads.filter((lead) => requestedIds.has(Number(lead.id)));
+    const scopedLeads = window.AuthModule
+      ? leads.filter((lead) => AuthModule.isInScope(lead))
+      : leads;
+
+    if (!scopedLeads.length) {
+      LeadsModule.showToast?.('No inquiries are available for this calendar item.', 'warning');
       return;
     }
 
-    this.goToInquiryList(false);
-    LeadsModule.viewMode = 'row';
-    LeadsModule.activeStatus = 'all';
-    LeadsModule.activeSubStatus = '';
-    LeadsModule.currentPage = 1;
-    LeadsModule.selectedLeads?.clear?.();
-    this.clearLeadFilterControls();
-    document.querySelectorAll('.status-tab, .status-sub-tab').forEach((tab) => tab.classList.remove('active'));
-    document.getElementById('status-tab-all')?.classList.add('active');
-    LeadsModule.renderStageStatusBar?.();
-    LeadsModule.filteredLeads = [lead];
-    this.showLeadRowContainer();
-    LeadsModule.updateViewToggleButton?.();
-    LeadsModule.renderLeads?.();
-    LeadsModule.updateSelectAllCheckboxState?.();
-    LeadsModule.updateSelectionUI?.();
-    LeadsModule.syncCollapseAllButton?.();
-    LeadsModule.showToast?.(`Opened ${lead.name}`, 'info');
+    this.closeInquiryPopup();
+    this.popupLeadIds = scopedLeads.map((lead) => lead.id);
+    const overlay = document.createElement('div');
+    overlay.className = 'calendar-inquiry-popup-overlay';
+    overlay.id = 'calendar-inquiry-popup';
+    overlay.innerHTML = `
+      <section class="calendar-inquiry-popup-card" role="dialog" aria-modal="true" aria-labelledby="calendar-inquiry-popup-title">
+        <header class="calendar-inquiry-popup-header">
+          <div>
+            <span class="calendar-inquiry-popup-eyebrow">Inquiry Row List</span>
+            <h2 id="calendar-inquiry-popup-title">${scopedLeads.length} ${scopedLeads.length === 1 ? 'Inquiry' : 'Inquiries'}</h2>
+          </div>
+          <button type="button" class="calendar-inquiry-popup-close" onclick="CalendarModule.closeInquiryPopup()" aria-label="Close inquiry rows">
+            <i class="fas fa-times"></i>
+          </button>
+        </header>
+        <div class="calendar-inquiry-popup-body">
+          <div class="calendar-inquiry-popup-list">
+            ${scopedLeads.map((lead, index) => LeadsModule.renderLeadCard(lead, index + 1, { idPrefix: 'calendar-popup-' })).join('')}
+          </div>
+        </div>
+      </section>
+    `;
+    overlay.addEventListener('click', (clickEvent) => {
+      if (clickEvent.target === overlay) this.closeInquiryPopup();
+    });
+    document.body.appendChild(overlay);
+
+    this.popupKeyHandler = (keyEvent) => {
+      if (keyEvent.key === 'Escape') this.closeInquiryPopup();
+    };
+    document.addEventListener('keydown', this.popupKeyHandler);
+    overlay.querySelector('.calendar-inquiry-popup-close')?.focus();
+  },
+
+  openDateInquiryRows(dateKey, type, event) {
+    const normalizedKey = this.parseDateKey(dateKey);
+    if (!normalizedKey) return;
+    const [year, month, day] = normalizedKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    let items = this.getItemsForDate(date, false);
+    if (['overdue', 'followup', 'pending'].includes(type)) {
+      items = items.filter((item) => this.getCalendarItemCategory(item) === type);
+    }
+    const leadIds = [...new Set(items.map((item) => item.lead?.id).filter(Boolean))];
+    this.openInquiryRows(leadIds, event);
+  },
+
+  closeInquiryPopup() {
+    document.getElementById('calendar-inquiry-popup')?.remove();
+    this.popupLeadIds = [];
+    if (this.popupKeyHandler) {
+      document.removeEventListener('keydown', this.popupKeyHandler);
+      this.popupKeyHandler = null;
+    }
+  },
+
+  refreshInquiryPopup() {
+    const overlay = document.getElementById('calendar-inquiry-popup');
+    if (!overlay || !this.popupLeadIds?.length || typeof LeadsModule === 'undefined') return;
+    const requestedIds = new Set(this.popupLeadIds.map(Number));
+    const leads = LeadsModule.leads.filter((lead) => requestedIds.has(Number(lead.id)));
+    const scopedLeads = window.AuthModule
+      ? leads.filter((lead) => AuthModule.isInScope(lead))
+      : leads;
+    if (!scopedLeads.length) {
+      this.closeInquiryPopup();
+      return;
+    }
+    const title = overlay.querySelector('#calendar-inquiry-popup-title');
+    const list = overlay.querySelector('.calendar-inquiry-popup-list');
+    if (title) title.textContent = `${scopedLeads.length} ${scopedLeads.length === 1 ? 'Inquiry' : 'Inquiries'}`;
+    if (list) {
+      list.innerHTML = scopedLeads
+        .map((lead, index) => LeadsModule.renderLeadCard(lead, index + 1, { idPrefix: 'calendar-popup-' }))
+        .join('');
+    }
   },
 
   renderCalendar() {
@@ -275,7 +347,7 @@ const CalendarModule = {
     const badge = type === 'followup' ? item.time : (type === 'pending' ? 'Pending' : 'Overdue');
     const colorClass = type === 'overdue' ? 'danger' : (type === 'pending' ? 'warning' : 'primary');
     return `
-      <button type="button" class="calendar-lead-item" onclick="CalendarModule.openLeadRow(${item.lead.id})">
+      <button type="button" class="calendar-lead-item" onclick="CalendarModule.openLeadRow(${item.lead.id}, event)">
         <span class="calendar-avatar" style="background:${item.color}">${this.initials(item.lead.name)}</span>
         <span class="calendar-lead-copy">
           <strong>${this.escapeHtml(item.lead.name)}</strong>
@@ -290,52 +362,67 @@ const CalendarModule = {
   },
 
   renderMetricCard(type) {
-    const selectedCounts = this.getCalendarCounts(this.dateKey(this.selectedDate));
+    const metricItems = this.getPeriodItems(false);
+    const uniqueCount = (filterType) => {
+      const ids = metricItems
+        .filter((item) => filterType === 'all' || this.getCalendarItemCategory(item) === filterType)
+        .map((item) => item.lead?.id)
+        .filter(Boolean);
+      return new Set(ids).size;
+    };
     const data = {
       all: {
         icon: 'fa-table-cells-large',
         title: 'All',
         subtitle: 'Total Tasks',
-        value: selectedCounts.pending + selectedCounts.overdue + selectedCounts.followup + selectedCounts.completed,
+        value: uniqueCount('all'),
         color: 'blue'
       },
       overdue: {
         icon: 'fa-clock',
         title: 'Overdue',
         subtitle: 'Past Due Date',
-        value: this.getLeadGroups().overdue.length,
+        value: uniqueCount('overdue'),
         color: 'red'
       },
       followup: {
         icon: 'fa-calendar-day',
         title: 'Follow-up Due',
         subtitle: 'Due Today',
-        value: selectedCounts.followup,
+        value: uniqueCount('followup'),
         color: 'sky'
       },
       pending: {
         icon: 'fa-calendar-plus',
         title: 'Pending Leads',
         subtitle: 'No Follow-up Set',
-        value: selectedCounts.pending,
+        value: uniqueCount('pending'),
         color: 'gold'
       }
     }[type];
+    const selectable = ['all', 'overdue', 'followup', 'pending'].includes(type);
+    const tagName = selectable ? 'button' : 'div';
+    const selected = this.calendarFilter === type;
 
     return `
-      <div class="calendar-metric-card ${data.color}">
+      <${tagName}
+        ${selectable ? 'type="button"' : ''}
+        class="calendar-metric-card ${data.color} ${selectable ? 'is-selectable' : ''} ${selected ? 'is-selected' : ''}"
+        ${selectable ? `onclick="CalendarModule.setCalendarFilter('${type}')" aria-pressed="${selected}"` : ''}
+      >
         <div class="metric-icon"><i class="fas ${data.icon}"></i></div>
         <div class="metric-copy">
           <strong>${data.value}</strong>
           <span>${data.title}</span>
           <small>${data.subtitle}</small>
         </div>
-        ${type === 'all' ? '<i class="fas fa-check metric-check"></i>' : ''}
-      </div>
+        ${selected ? '<i class="fas fa-check metric-check"></i>' : ''}
+      </${tagName}>
     `;
   },
 
   renderPlannerView() {
+    if (this.displayMode === 'row') return this.renderRowPlanner();
     if (this.viewMode === 'day') return this.renderDayPlanner();
     if (this.viewMode === 'month') return this.renderMonthPlanner();
     return this.renderWeekPlanner();
@@ -361,6 +448,51 @@ const CalendarModule = {
           ${this.renderViewButton('week', 'fa-calendar-week', 'Week View')}
           ${this.renderViewButton('day', 'fa-list', 'Day View')}
           ${this.renderViewButton('month', 'fa-calendar-days', 'Month View')}
+          ${this.renderDisplayToggleButton()}
+        </div>
+      </div>
+    `;
+  },
+
+  renderDisplayToggleButton() {
+    const showCalendar = this.displayMode === 'row';
+    const icon = showCalendar ? 'fa-calendar-days' : 'fa-list';
+    const label = showCalendar ? 'Calendar View' : 'Row View';
+    return `
+      <button
+        type="button"
+        class="calendar-display-toggle"
+        onclick="CalendarModule.toggleDisplayMode()"
+        title="${label}"
+        aria-label="${label}"
+      >
+        <i class="fas ${icon}"></i>
+      </button>
+    `;
+  },
+
+  renderRowPlanner() {
+    const visibleItems = this.getPeriodItems(true);
+    const leads = [];
+    const seen = new Set();
+    visibleItems.forEach((item) => {
+      if (!item.lead || seen.has(item.lead.id)) return;
+      seen.add(item.lead.id);
+      leads.push(item.lead);
+    });
+    const title = this.viewMode === 'day'
+      ? `${this.weekdayLong(this.selectedDate)}, ${this.monthNames()[this.selectedDate.getMonth()]} ${this.selectedDate.getDate()}, ${this.selectedDate.getFullYear()}`
+      : this.viewMode === 'month'
+        ? `${this.monthNames()[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`
+        : this.formatDateRange(this.startOfWeek(this.selectedDate), this.addDays(this.startOfWeek(this.selectedDate), 6));
+
+    return `
+      <div class="calendar-card-v2 week-planner-card calendar-row-planner-card">
+        ${this.renderPlannerToolbar(title, this.viewMode)}
+        <div class="calendar-row-list">
+          ${leads.length
+            ? leads.map((lead, index) => LeadsModule.renderLeadCard(lead, index + 1, { idPrefix: 'calendar-row-' })).join('')
+            : '<div class="calendar-row-empty">No inquiries require action for this period.</div>'}
         </div>
       </div>
     `;
@@ -396,7 +528,7 @@ const CalendarModule = {
 
   renderDayPlanner() {
     const hours = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM'];
-    const dayItems = this.getWeekItems().filter((item) => item.dateKey === this.dateKey(this.selectedDate));
+    const dayItems = this.getItemsForDate(this.selectedDate, true);
     const title = `${this.weekdayLong(this.selectedDate)}, ${this.monthNames()[this.selectedDate.getMonth()]} ${this.selectedDate.getDate()}, ${this.selectedDate.getFullYear()}`;
 
     return `
@@ -460,24 +592,33 @@ const CalendarModule = {
 
   renderMonthCell(day, date, muted) {
     const key = date ? this.dateKey(date) : '';
-    const counts = date ? this.getCalendarCounts(key) : { pending: 0, overdue: 0, followup: 0, completed: 0 };
-    const items = date ? this.getWeekItems().filter((item) => item.dateKey === key).slice(0, 2) : [];
+    const allItems = date ? this.getItemsForDate(date, false) : [];
+    const counts = allItems.reduce((result, item) => {
+      const category = this.getCalendarItemCategory(item);
+      if (Object.prototype.hasOwnProperty.call(result, category)) result[category] += 1;
+      return result;
+    }, { pending: 0, overdue: 0, followup: 0 });
     const isSelected = date && key === this.dateKey(this.selectedDate);
     const isToday = date && key === this.dateKey(this.today);
+    const visibleCounts = {
+      pending: ['all', 'pending'].includes(this.calendarFilter) ? counts.pending : 0,
+      overdue: ['all', 'overdue'].includes(this.calendarFilter) ? counts.overdue : 0,
+      followup: ['all', 'followup'].includes(this.calendarFilter) ? counts.followup : 0
+    };
     const countPills = [
-      counts.pending ? `<span class="month-count pending">${counts.pending} Pending</span>` : '',
-      counts.overdue ? `<span class="month-count overdue">${counts.overdue} Overdue</span>` : '',
-      counts.followup ? `<span class="month-count followup">${counts.followup} Follow-ups</span>` : '',
-      counts.completed ? `<span class="month-count done">${counts.completed} Done</span>` : ''
+      visibleCounts.pending ? `<span class="month-count pending">${visibleCounts.pending} Pending</span>` : '',
+      visibleCounts.overdue ? `<span class="month-count overdue">${visibleCounts.overdue} Overdue</span>` : '',
+      visibleCounts.followup ? `<span class="month-count followup">${visibleCounts.followup} Follow-up Due</span>` : ''
     ].join('');
 
     return `
-      <button type="button" class="month-day-cell ${muted ? 'is-muted' : ''} ${isSelected ? 'is-selected' : ''} ${isToday ? 'is-today' : ''}" ${date ? `onclick="CalendarModule.selectDate('${key}')"` : 'tabindex="-1"'}>
+      <button
+        type="button"
+        class="month-day-cell ${muted ? 'is-muted' : ''} ${isSelected ? 'is-selected' : ''} ${isToday ? 'is-today' : ''}"
+        ${date ? `onclick="CalendarModule.openDateInquiryRows('${key}', CalendarModule.calendarFilter, event)" aria-label="Open inquiries for ${key}"` : 'disabled tabindex="-1"'}
+      >
         <span class="month-day-num">${day}</span>
         <span class="month-counts">${countPills}</span>
-        <span class="month-events">
-          ${items.map((item) => `<span class="month-event event-${item.type}">${item.time} ${this.escapeHtml(item.lead.name)}</span>`).join('')}
-        </span>
       </button>
     `;
   },
@@ -496,7 +637,7 @@ const CalendarModule = {
     return `
       <div class="week-hour-cell">
         ${items.map((item) => `
-          <button type="button" class="week-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.id})">
+          <button type="button" class="week-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.id}, event)">
             <span>${item.time}</span>
             <strong>${item.title}</strong>
             <small>${this.escapeHtml(item.lead.name)}</small>
@@ -508,7 +649,7 @@ const CalendarModule = {
 
   renderAgendaEvent(item) {
     return `
-      <button type="button" class="agenda-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.id})">
+      <button type="button" class="agenda-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.id}, event)">
         <span>${item.time}</span>
         <strong>${item.title}</strong>
         <small>${this.escapeHtml(item.lead.name)} - ${this.escapeHtml(item.lead.course || '-')}</small>
@@ -535,9 +676,9 @@ const CalendarModule = {
     };
   },
 
-  getWeekItems() {
+  getBaseWeekItems(anchorDate = this.selectedDate) {
     const leads = this.getScopedLeads();
-    const weekStart = this.startOfWeek(this.selectedDate);
+    const weekStart = this.startOfWeek(anchorDate);
     const definitions = [
       [0, '9:00 AM', 'counselling', 'Counselling', 0],
       [0, '11:00 AM', 'followup', 'Follow-up', 3],
@@ -571,6 +712,49 @@ const CalendarModule = {
         lead
       };
     }).filter((item) => item.lead);
+  },
+
+  filterCalendarItems(items, filter = this.calendarFilter) {
+    if (filter === 'overdue') return items.filter((item) => this.getCalendarItemCategory(item) === 'overdue');
+    if (filter === 'followup') return items.filter((item) => this.getCalendarItemCategory(item) === 'followup');
+    if (filter === 'pending') return items.filter((item) => this.getCalendarItemCategory(item) === 'pending');
+    return items;
+  },
+
+  getCalendarItemCategory(item) {
+    const title = String(item?.title || '').toLowerCase();
+    if (title.includes('overdue')) return 'overdue';
+    if (item?.type === 'pending') return 'pending';
+    if (title.includes('follow-up')) return 'followup';
+    if (title.includes('counselling')) return 'counselling';
+    return item?.type || 'pending';
+  },
+
+  getWeekItems() {
+    return this.filterCalendarItems(this.getBaseWeekItems(this.selectedDate));
+  },
+
+  getItemsForDate(date, filtered = true) {
+    const key = this.dateKey(date);
+    const items = this.getBaseWeekItems(date).filter((item) => item.dateKey === key);
+    return filtered ? this.filterCalendarItems(items) : items;
+  },
+
+  getPeriodItems(filtered = true) {
+    let items = [];
+    if (this.viewMode === 'day') {
+      items = this.getItemsForDate(this.selectedDate, false);
+    } else if (this.viewMode === 'month') {
+      const year = this.currentDate.getFullYear();
+      const month = this.currentDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        items.push(...this.getItemsForDate(new Date(year, month, day), false));
+      }
+    } else {
+      items = this.getBaseWeekItems(this.selectedDate);
+    }
+    return filtered ? this.filterCalendarItems(items) : items;
   },
 
   getCalendarCounts(dateKey) {
@@ -634,6 +818,17 @@ const CalendarModule = {
 
   setViewMode(mode) {
     this.viewMode = mode;
+    this.renderCalendar();
+  },
+
+  setCalendarFilter(filter) {
+    if (!['all', 'overdue', 'followup', 'pending'].includes(filter)) return;
+    this.calendarFilter = filter;
+    this.renderCalendar();
+  },
+
+  toggleDisplayMode() {
+    this.displayMode = this.displayMode === 'calendar' ? 'row' : 'calendar';
     this.renderCalendar();
   },
 

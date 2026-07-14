@@ -6,7 +6,7 @@ const LEAD_DATA = [
   {
     id: 1, enqNo: 'ENQ0002387', name: 'Rahul Patel', phone: '9876543210', whatsapp: '9876543210',
     email: 'rahulpatel@gmail.com', state: 'Gujarat', district: 'Ahmedabad', city: 'Ahmedabad, Gujarat', course: 'UPSC',
-    batch: 'Foundation', mode: 'Class', source: 'Instagram Ad', campaign: 'UPSC May 2025',
+    batch: 'Foundation', mode: 'Offline', source: 'Instagram Ad', campaign: 'UPSC May 2025',
     inquiryDate: '15 May 2025', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
     status: 'interested', statusLabel: 'Interested', priority: 'high',
     leadScore: 85, leadAge: '2 Days', academicStatus: 'College Student',
@@ -26,7 +26,7 @@ const LEAD_DATA = [
   {
     id: 2, enqNo: 'ENQ1921', name: 'Naimesh', phone: '98795133', whatsapp: '98795133',
     email: 'naimesh22481@gmail.com', state: 'Gujarat', district: 'Ahmedabad', city: 'Ahmedabad, Gujarat', course: 'GPSC-Class1,2',
-    batch: 'Foundation', mode: 'residental', source: 'Website', campaign: '-',
+    batch: 'Foundation', mode: 'Offline', source: 'Website', campaign: '-',
     inquiryDate: '25-06-2026 02:16 PM', owner: 'Apurva Mahipatbhai Jani', ownerTeam: 'Admin',
     status: 'pending', statusLabel: 'Pending', priority: 'medium',
     leadScore: 60, leadAge: '0 Days', academicStatus: 'Graducation Completed',
@@ -38,7 +38,7 @@ const LEAD_DATA = [
   {
     id: 3, enqNo: 'ENQ1922', name: 'Banoth Mahesh', phone: '9520986849', whatsapp: '9520986849',
     email: 'mahesh.banoth@gmail.com', state: 'Gujarat', district: 'Ahmedabad', city: 'Ahmedabad, Gujarat', course: 'UPSC',
-    batch: 'Foundation', mode: 'Class', source: 'Walk-in', campaign: '-',
+    batch: 'Foundation', mode: 'Offline', source: 'Walk-in', campaign: '-',
     inquiryDate: '25-06-2026 01:57 PM', owner: 'Jignesh Trivedi', ownerTeam: 'Admin',
     status: 'pending', statusLabel: 'Pending', priority: 'medium',
     leadScore: 55, leadAge: '0 Days', academicStatus: 'Graducation Completed',
@@ -65,7 +65,7 @@ const LEAD_DATA = [
   {
     id: 5, enqNo: 'ENQ1889', name: 'Hardik Patel', phone: '9876512345', whatsapp: '9876512345',
     email: 'hardik.patel@gmail.com', state: 'Gujarat', district: 'Vadodara', city: 'Vadodara, Gujarat', course: 'UPSC',
-    batch: 'Foundation', mode: 'Class', source: 'Google Ads', campaign: 'UPSC May 2025',
+    batch: 'Foundation', mode: 'Offline', source: 'Google Ads', campaign: 'UPSC May 2025',
     inquiryDate: '13 May 2025', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
     status: 'interested', statusLabel: 'Interested', priority: 'high',
     leadScore: 90, leadAge: '6 Days', academicStatus: 'Graducation Completed',
@@ -91,7 +91,7 @@ const LEAD_DATA = [
   {
     id: 7, enqNo: 'ENQ1950', name: 'Mehul Shah', phone: '9876001122', whatsapp: '9876001122',
     email: 'mehul.shah@gmail.com', state: 'Gujarat', district: 'Ahmedabad', city: 'Ahmedabad, Gujarat', course: 'UPSC',
-    batch: 'Foundation', mode: 'Class', source: 'Website Inquiry Form', campaign: 'UPSC July 2026',
+    batch: 'Foundation', mode: 'Offline', source: 'Website Inquiry Form', campaign: 'UPSC July 2026',
     inquiryDate: '27-06-2026 10:30 AM', owner: 'Hary Sir', ownerTeam: 'UPSC Team',
     status: 'followup', statusLabel: 'Follow-up', priority: 'medium',
     leadScore: 76, leadAge: '1 Day', academicStatus: 'College Student',
