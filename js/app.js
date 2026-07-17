@@ -322,7 +322,7 @@ const App = {
       { id: 'segmentation-build', label: 'Build', icon: 'fa-pen-ruler', tab: 'segments' },
       { id: 'segmentation-library', label: 'Library', icon: 'fa-layer-group', tab: 'segments' },
       { id: 'segmentation-assign', label: 'Assign', icon: 'fa-user-check', tab: 'assignments' }
-    ]
+    ],
   },
 
   init() {

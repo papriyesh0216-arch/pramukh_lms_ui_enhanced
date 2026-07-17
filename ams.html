@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="css/sidebar.css" />
     <link rel="stylesheet" href="css/dashboard.css" />
     <link rel="stylesheet" href="css/ams.css" />
+    <link rel="stylesheet" href="css/otr-form.css" />
     <link rel="stylesheet" href="css/responsive.css" />
   </head>
   <body>
@@ -67,6 +68,15 @@
               Admission Student List
             </div>
 
+            <div
+              class="nav-subitem"
+              data-screen="ams-otr"
+              onclick="AMSApp.showScreen('ams-otr')"
+            >
+              <i class="fas fa-file-circle-plus" style="width: 12px; color: inherit"></i>
+              OTR Form
+            </div>
+
             <div class="nav-group-title">Admission Operations</div>
             <div class="nav-subitem nav-sub-subitem-muted">
               <i class="fas fa-file-signature" style="width: 12px; color: inherit"></i>
@@ -94,6 +104,17 @@
         </nav>
 
         <div class="sidebar-account">
+          <button
+            type="button"
+            class="sidebar-collapse-btn"
+            id="ams-sidebar-collapse-btn"
+            onclick="AMSApp.toggleSidebarCollapsed()"
+            title="Collapse sidebar"
+            aria-label="Collapse sidebar"
+          >
+            <i class="fas fa-angles-left"></i>
+            <span>Collapse Sidebar</span>
+          </button>
           <div
             class="nav-subitem account-settings-trigger"
             data-account-settings
@@ -227,7 +248,7 @@
                 <button class="btn btn-outline btn-sm" onclick="AMSApp.showScreen('ams-dashboard')">
                   <i class="fas fa-building-columns"></i> Dashboard
                 </button>
-                <button class="btn btn-primary btn-sm">
+                <button class="btn btn-primary btn-sm" onclick="AMSApp.showScreen('ams-otr')">
                   <i class="fas fa-plus"></i> New Admission
                 </button>
               </div>
@@ -276,6 +297,54 @@
           </div>
         </div>
 
+        <div class="screen" id="screen-ams-otr">
+          <div class="content-area ams-content otr-page">
+            <div class="otr-page-header">
+              <div>
+                <div class="section-eyebrow">Admission Management System</div>
+                <h1><i class="fas fa-file-circle-plus"></i> One Time Registration Form</h1>
+                <p>Complete all seven steps to create an admission student record.</p>
+              </div>
+              <button class="btn btn-outline btn-sm" type="button" onclick="AMSApp.showScreen('ams-students')">
+                <i class="fas fa-users-viewfinder"></i> Student List
+              </button>
+            </div>
+
+            <div class="otr-shell">
+              <main class="otr-form-card">
+                <form id="otr-form" novalidate>
+                  <div id="otr-form-alert" class="otr-alert" role="alert" aria-live="polite" hidden></div>
+                  <div id="otr-sections"></div>
+                  <div class="otr-form-actions">
+                    <div>
+                      <strong>Complete all required fields before submitting.</strong>
+                      <span>Your information is stored only in the AMS.</span>
+                    </div>
+                    <button class="btn btn-success" id="otr-submit" type="submit">
+                      <i class="fas fa-circle-check"></i> Submit OTR
+                    </button>
+                  </div>
+                </form>
+              </main>
+            </div>
+          </div>
+        </div>
+
+        <div class="otr-profile-modal" id="otr-profile-modal" aria-hidden="true">
+          <div class="otr-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="otr-profile-title">
+            <div class="otr-profile-head">
+              <div>
+                <span class="section-eyebrow">AMS Student Record</span>
+                <h2 id="otr-profile-title">OTR Profile</h2>
+              </div>
+              <button class="otr-profile-close" type="button" aria-label="Close student profile" onclick="AMSOTR.closeProfile()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="otr-profile-body" id="otr-profile-body"></div>
+          </div>
+        </div>
+
         <nav
           class="mobile-bottom-nav"
           id="mobile-bottom-nav"
@@ -285,8 +354,10 @@
     </div>
 
     <script src="js/data.js"></script>
+    <script src="js/indian-locations.js"></script>
     <script src="js/ams-data.js"></script>
     <script src="js/ams.js"></script>
+    <script src="js/otr-form.js"></script>
     <script>
       const AMSAccountSettings = {
         notifications: [
@@ -407,10 +478,12 @@
         titles: {
           "ams-dashboard": "Admission Dashboard",
           "ams-students": "Admission Student List",
+          "ams-otr": "OTR Form",
         },
 
         init() {
           AMSAccountSettings.init();
+          this.restoreSidebarState();
           this.setupResponsiveShell();
           this.showScreen("ams-dashboard");
           window.AMSModule?.init?.();
@@ -430,12 +503,42 @@
           this.renderMobileBottomNav();
         },
 
+        updateSidebarToggle(isCollapsed) {
+          const button = document.getElementById("ams-sidebar-collapse-btn");
+          if (!button) return;
+          const label = isCollapsed ? "Expand sidebar" : "Collapse sidebar";
+          button.title = label;
+          button.setAttribute("aria-label", label);
+          button.innerHTML = isCollapsed
+            ? '<i class="fas fa-angles-right"></i><span>Expand Sidebar</span>'
+            : '<i class="fas fa-angles-left"></i><span>Collapse Sidebar</span>';
+        },
+
+        toggleSidebarCollapsed() {
+          document.body.classList.toggle("sidebar-collapsed");
+          const isCollapsed = document.body.classList.contains("sidebar-collapsed");
+          this.updateSidebarToggle(isCollapsed);
+          try {
+            localStorage.setItem("pa-ams-sidebar-collapsed", isCollapsed ? "1" : "0");
+          } catch (error) {}
+        },
+
+        restoreSidebarState() {
+          let isCollapsed = false;
+          try {
+            isCollapsed = localStorage.getItem("pa-ams-sidebar-collapsed") === "1";
+          } catch (error) {}
+          document.body.classList.toggle("sidebar-collapsed", isCollapsed);
+          this.updateSidebarToggle(isCollapsed);
+        },
+
         renderMobileBottomNav() {
           const nav = document.getElementById("mobile-bottom-nav");
           if (!nav) return;
           const items = [
             { screen: "ams-dashboard", icon: "fa-building-columns", label: "Dashboard" },
             { screen: "ams-students", icon: "fa-users-viewfinder", label: "Students" },
+            { screen: "ams-otr", icon: "fa-file-circle-plus", label: "OTR" },
           ];
           nav.classList.add("mobile-bottom-nav--compact");
           nav.innerHTML = items

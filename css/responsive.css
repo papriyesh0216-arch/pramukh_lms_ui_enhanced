@@ -169,6 +169,25 @@ body.dark #screen-dashboard .kpi-card { background: #0f2238 !important; }
 #screen-leads .lead-actions,
 #screen-leads .more-dropdown { overflow: visible !important; }
 
+/* Inquiry Row View overlays must not inherit the shared card clipping rule. */
+#screen-leads .lead-card {
+  contain: none !important;
+  clip-path: none !important;
+}
+
+#screen-leads .lead-card:has(.more-dropdown-menu),
+#screen-leads .lead-card:has(.lead-action-btn[data-tip]:hover) {
+  z-index: 2000 !important;
+}
+
+#screen-leads .lead-action-btn[data-tip]:hover {
+  z-index: 2001 !important;
+}
+
+#screen-leads .lead-action-btn[data-tip]:hover::after {
+  z-index: 2002 !important;
+}
+
 #screen-leads .leads-info-bar { display: none !important; }
 #screen-leads:has(#quick-search-input:not(:placeholder-shown)) .leads-info-bar,
 #screen-leads:has(#selected-count-badge[style*="inline"]) .leads-info-bar,
