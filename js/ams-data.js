@@ -15,7 +15,7 @@ const AMS_STATUS_FLOW = [
 const AMS_OTR_SAMPLE_RECORDS = [
   {
     id: 'OTR-SAMPLE-001',
-    admissionNo: 'AMS-OTR-2026-0001',
+    otrNo: 'AMS-OTR-2026-0001',
     createdAt: '2026-07-12T05:30:00.000Z',
     updatedAt: '2026-07-12T05:30:00.000Z',
     statusKey: 'form_submitted',
@@ -70,7 +70,7 @@ const AMS_OTR_SAMPLE_RECORDS = [
   },
   {
     id: 'OTR-SAMPLE-002',
-    admissionNo: 'AMS-OTR-2026-0002',
+    otrNo: 'AMS-OTR-2026-0002',
     createdAt: '2026-07-13T06:15:00.000Z',
     updatedAt: '2026-07-13T06:15:00.000Z',
     statusKey: 'form_submitted',
@@ -124,7 +124,7 @@ const AMS_OTR_SAMPLE_RECORDS = [
   },
   {
     id: 'OTR-SAMPLE-003',
-    admissionNo: 'AMS-OTR-2026-0003',
+    otrNo: 'AMS-OTR-2026-0003',
     createdAt: '2026-07-14T08:45:00.000Z',
     updatedAt: '2026-07-14T08:45:00.000Z',
     statusKey: 'form_submitted',
@@ -285,7 +285,7 @@ function buildAdmissionRowsFromLeads(leads = []) {
         leadId: lead.id,
         sourceLeadNo: lead.enqNo,
         leadStatus: lead.statusLabel,
-        admissionNo: `ADM-2026-${String(148 + index).padStart(4, '0')}`,
+        otrNo: `AMS-OTR-2026-${String(148 + index).padStart(4, '0')}`,
         name: lead.name,
         phone: lead.phone,
         email: lead.email,

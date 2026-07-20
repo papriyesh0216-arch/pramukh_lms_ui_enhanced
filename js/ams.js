@@ -17,7 +17,7 @@ const AMSModule = {
     const otrStudents = window.AMSOTR?.getStudentRows?.() || [];
     return otrStudents.reduce((rows, otrStudent) => {
       const existingIndex = rows.findIndex(student =>
-        student.admissionNo === otrStudent.admissionNo ||
+        (student.otrNo && otrStudent.otrNo && student.otrNo === otrStudent.otrNo) ||
         student.email?.toLowerCase() === otrStudent.email?.toLowerCase() ||
         student.phone === otrStudent.phone
       );
@@ -26,7 +26,7 @@ const AMSModule = {
       rows[existingIndex] = {
         ...existing,
         ...otrStudent,
-        admissionNo: existing.admissionNo,
+        otrNo: existing.otrNo || otrStudent.otrNo,
         sourceLeadNo: existing.sourceLeadNo,
         leadStatus: existing.leadStatus,
         course: existing.course,
@@ -210,7 +210,7 @@ const AMSModule = {
     const status = this.activeStatus || document.getElementById('ams-status-filter')?.value || 'all';
     const course = document.getElementById('ams-course-filter')?.value || 'all';
     const rows = this.students.filter(student => {
-      const haystack = `${student.admissionNo} ${student.name} ${student.phone} ${student.course} ${student.batch}`.toLowerCase();
+      const haystack = `${student.otrNo} ${student.name} ${student.phone} ${student.course} ${student.batch}`.toLowerCase();
       return (!query || haystack.includes(query))
         && (status === 'all' || student.statusKey === status)
         && (course === 'all' || student.course === course);
@@ -224,7 +224,7 @@ const AMSModule = {
         : '';
       return `
         <tr>
-          <td><strong>${this.escape(student.admissionNo)}</strong><br><span class="ams-muted">Source: ${this.escape(source)}</span></td>
+          <td><strong>${this.escape(student.otrNo)}</strong><br><span class="ams-muted">Source: ${this.escape(source)}</span></td>
           <td>
             <div class="ams-student-cell">
               <div class="ams-avatar">${this.initials(student.name)}</div>

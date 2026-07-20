@@ -1,0 +1,59 @@
+/* Standalone student-facing AMS OTR entry point */
+body.otr-public-page {
+  width: 100%;
+  min-height: 100vh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 10% 7%, rgba(213, 148, 58, 0.12), transparent 27%),
+    radial-gradient(circle at 92% 16%, rgba(16, 56, 96, 0.12), transparent 32%),
+    linear-gradient(135deg, #f8fbff, #eef5fb 52%, #fff9ef);
+}
+
+body.otr-public-page.dark {
+  background:
+    radial-gradient(circle at 10% 7%, rgba(242, 184, 91, 0.1), transparent 27%),
+    radial-gradient(circle at 92% 16%, rgba(43, 117, 184, 0.18), transparent 32%),
+    linear-gradient(135deg, #07111f, #0b1a2c 52%, #101827);
+}
+
+.otr-public-shell { width: 100%; min-height: 100vh; padding: 16px clamp(12px, 2.5vw, 32px) 24px; }
+.otr-public-topbar { position: relative; z-index: 5; display: flex; width: min(1680px, 100%); min-height: 64px; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto 16px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 18px; background: var(--bg-card); box-shadow: var(--shadow-card); }
+.otr-public-brand { display: flex; gap: 11px; align-items: center; min-width: 0; }
+.otr-public-logo { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; overflow: hidden; border-radius: 13px; background: linear-gradient(135deg, var(--academy-blue), var(--academy-gold)); box-shadow: 0 8px 20px rgba(16, 56, 96, 0.18); }
+.otr-public-logo img { width: 36px; height: 36px; object-fit: contain; }
+.otr-public-brand > div { display: grid; gap: 1px; min-width: 0; }
+.otr-public-brand strong { overflow: hidden; color: var(--text-primary); font-size: 15px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.otr-public-brand span { color: var(--text-muted); font-size: 10px; }
+.otr-theme-toggle { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-subtle); color: var(--primary); box-shadow: var(--shadow-sm); }
+.otr-theme-toggle:hover, .otr-theme-toggle:focus-visible { border-color: var(--primary); outline: 0; background: var(--primary-light); }
+
+.otr-public-stage { width: min(1680px, 100%); margin: 0 auto; }
+.otr-public-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 14px; padding: 18px clamp(16px, 2vw, 24px); border: 1px solid var(--border); border-radius: 18px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
+.otr-public-eyebrow { display: block; margin-bottom: 4px; color: var(--academy-gold); font-size: 9px; font-weight: 850; letter-spacing: 0.09em; text-transform: uppercase; }
+.otr-public-intro h1 { margin: 0; color: var(--text-primary); font-size: clamp(22px, 3vw, 32px); letter-spacing: -0.035em; }
+.otr-public-intro p { max-width: 72ch; margin: 5px 0 0; color: var(--text-muted); font-size: 12px; }
+.otr-public-meta { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.otr-public-meta span { display: inline-flex; gap: 6px; align-items: center; padding: 6px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-subtle); color: var(--text-secondary); font-size: 8px; font-weight: 700; white-space: nowrap; }
+.otr-public-meta i { color: var(--success); }
+.otr-public-footer { display: flex; width: min(1680px, 100%); align-items: center; justify-content: space-between; gap: 12px; margin: 15px auto 0; padding: 0 4px; color: var(--text-muted); font-size: 9px; }
+.otr-public-footer span { display: inline-flex; gap: 6px; align-items: center; }
+.otr-public-footer i { color: var(--success); }
+
+@media (max-width: 760px) {
+  .otr-public-shell { padding: 10px 10px 20px; }
+  .otr-public-topbar { min-height: 58px; margin-bottom: 10px; border-radius: 14px; }
+  .otr-public-logo { width: 40px; height: 40px; }
+  .otr-public-intro { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 10px; padding: 15px; border-radius: 14px; }
+  .otr-public-meta { justify-content: flex-start; }
+  .otr-public-footer { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .otr-public-brand span { display: none; }
+  .otr-public-brand strong { font-size: 13px; }
+  .otr-public-intro h1 { font-size: 21px; }
+  .otr-public-meta { display: grid; width: 100%; }
+  .otr-public-meta span { justify-content: center; white-space: normal; }
+}

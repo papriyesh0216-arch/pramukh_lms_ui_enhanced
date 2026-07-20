@@ -22,7 +22,10 @@
     <link rel="stylesheet" href="css/sidebar.css" />
     <link rel="stylesheet" href="css/dashboard.css" />
     <link rel="stylesheet" href="css/ams.css" />
+    <link rel="stylesheet" href="css/ams-student-list.css" />
     <link rel="stylesheet" href="css/otr-form.css" />
+    <link rel="stylesheet" href="css/ams-interviews.css" />
+    <link rel="stylesheet" href="css/ams-interview-structures.css" />
     <link rel="stylesheet" href="css/responsive.css" />
   </head>
   <body>
@@ -70,11 +73,19 @@
 
             <div
               class="nav-subitem"
-              data-screen="ams-otr"
-              onclick="AMSApp.showScreen('ams-otr')"
+              onclick="window.open('otr-form.html', '_blank', 'noopener')"
             >
-              <i class="fas fa-file-circle-plus" style="width: 12px; color: inherit"></i>
-              OTR Form
+              <i class="fas fa-arrow-up-right-from-square" style="width: 12px; color: inherit"></i>
+              Student OTR Form
+            </div>
+
+            <div
+              class="nav-subitem"
+              data-screen="ams-interviews"
+              onclick="AMSApp.showScreen('ams-interviews')"
+            >
+              <i class="fas fa-calendar-check" style="width: 12px; color: inherit"></i>
+              Interview Scheduling
             </div>
 
             <div class="nav-group-title">Admission Operations</div>
@@ -231,102 +242,70 @@
         </div>
 
         <div class="screen" id="screen-ams-students">
-          <div class="status-bar ams-status-bar" id="ams-status-bar"></div>
-          <div class="content-area ams-content">
-            <div class="page-header">
-              <div>
-                <h1 class="page-title">
-                  <i class="fas fa-users-viewfinder"></i>
-                  Admission Student List
-                </h1>
-                <div class="page-subtitle">
-                  Skeleton list for admitted students, applications, fees,
-                  documents, batches, scholarship, and onboarding state.
-                </div>
-              </div>
-              <div class="ams-header-actions">
-                <button class="btn btn-outline btn-sm" onclick="AMSApp.showScreen('ams-dashboard')">
-                  <i class="fas fa-building-columns"></i> Dashboard
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="AMSApp.showScreen('ams-otr')">
-                  <i class="fas fa-plus"></i> New Admission
-                </button>
-              </div>
-            </div>
+          <div class="content-area ams-content amsl-page">
+            <section class="amsl-stage-nav" id="amsl-stage-nav" aria-label="Admission stages"></section>
+            <section class="amsl-status-nav" id="amsl-status-nav" aria-label="Stage statuses"></section>
 
-            <div class="ams-filter-bar">
-              <div class="ams-search">
-                <i class="fas fa-search"></i>
-                <input id="ams-search-input" placeholder="Search student, admission no., course, mobile..." />
+            <section class="amsl-tools-card">
+              <div class="amsl-tools-head">
+                <strong>Admission List Tools</strong>
+                <span>Filters, selection, export, communication and admission actions</span>
               </div>
-              <select id="ams-status-filter">
-                <option value="all">All Status</option>
-                <option value="form_pending">Form Pending</option>
-                <option value="form_submitted">Form Submitted</option>
-                <option value="document_verification">Document Verification</option>
-                <option value="fee_pending">Fee Pending</option>
-                <option value="batch_allocation">Batch Allocation</option>
-                <option value="onboarded">Onboarded</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <select id="ams-course-filter">
-                <option value="all">All Courses</option>
-                <option value="UPSC Foundation">UPSC Foundation</option>
-                <option value="GPSC Class 1-2">GPSC Class 1-2</option>
-                <option value="Sankalp Programme">Sankalp Programme</option>
-              </select>
-            </div>
+              <div class="amsl-tool-row" aria-label="Admission list tools">
+                <button type="button" data-amsl-action="selection" data-tooltip="Select admission records" title="Select admission records"><i class="fas fa-check-double"></i></button>
+                <button type="button" data-amsl-action="focus-filters" data-tooltip="Open admission filters" title="Open admission filters"><i class="fas fa-filter"></i></button>
+                <button type="button" data-amsl-action="refresh" data-tooltip="Refresh admission records" title="Refresh admission records"><i class="fas fa-rotate"></i></button>
+                <button type="button" data-amsl-action="new" data-tooltip="Create new admission" title="Create new admission"><i class="fas fa-plus"></i></button>
+                <button type="button" data-amsl-action="export" data-tooltip="Export admission records" title="Export admission records"><i class="fas fa-file-export"></i></button>
+                <button type="button" data-amsl-action="email-selected" data-tooltip="Email selected students" title="Email selected students"><i class="fas fa-envelope"></i></button>
+              </div>
+              <div class="amsl-filter-row" id="amsl-filter-row">
+                <label class="amsl-search"><i class="fas fa-search"></i><input id="amsl-search" placeholder="Search student, admission no., course, mobile..." /></label>
+                <label><i class="fas fa-filter"></i><select id="amsl-status-filter" aria-label="Status filter"><option value="all">Status</option></select></label>
+                <label><i class="fas fa-layer-group"></i><select id="amsl-course-filter" aria-label="Course filter"><option value="all">Course</option></select></label>
+                <label><i class="fas fa-database"></i><select id="amsl-batch-filter" aria-label="Batch filter"><option value="all">Batch</option></select></label>
+                <label><i class="fas fa-user"></i><select id="amsl-owner-filter" aria-label="Owner filter"><option value="all">Owner</option></select></label>
+                <label><i class="fas fa-calendar-day"></i><input id="amsl-date-filter" type="date" aria-label="Admission date filter" /></label>
+                <button class="amsl-clear" type="button" data-amsl-action="clear">Clear filters</button>
+                <button class="amsl-filter-control" type="button" data-amsl-action="filter-summary" data-tooltip="View active filters" title="View active filters"><i class="fas fa-sliders"></i></button>
+              </div>
+            </section>
 
-            <div class="ams-table-wrap">
-              <table class="data-table ams-table">
-                <thead>
-                  <tr>
-                    <th>Admission</th>
-                    <th>Student</th>
-                    <th>Course / Batch</th>
-                    <th>Application</th>
-                    <th>Documents</th>
-                    <th>Fees</th>
-                    <th>Owner</th>
-                    <th>Next Step</th>
-                  </tr>
-                </thead>
-                <tbody id="ams-student-table-body"></tbody>
-              </table>
-            </div>
+            <section class="amsl-table-card">
+              <div class="amsl-selection-bar" id="amsl-selection-bar" hidden></div>
+              <div class="amsl-table-scroll">
+                <table class="amsl-table">
+                  <thead><tr><th>Admission</th><th>Student</th><th>Stage / Status</th><th>Documents</th><th>Owner</th><th>Actions</th></tr></thead>
+                  <tbody id="amsl-table-body"></tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </div>
 
-        <div class="screen" id="screen-ams-otr">
-          <div class="content-area ams-content otr-page">
-            <div class="otr-page-header">
-              <div>
-                <div class="section-eyebrow">Admission Management System</div>
-                <h1><i class="fas fa-file-circle-plus"></i> One Time Registration Form</h1>
-                <p>Complete all seven steps to create an admission student record.</p>
-              </div>
-              <button class="btn btn-outline btn-sm" type="button" onclick="AMSApp.showScreen('ams-students')">
-                <i class="fas fa-users-viewfinder"></i> Student List
-              </button>
-            </div>
+        <div class="amsl-modal" id="amsl-modal" aria-hidden="true">
+          <div class="amsl-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="amsl-modal-title">
+            <header><div><span>Admission Management System</span><h2 id="amsl-modal-title">Admission Student</h2></div><button type="button" data-amsl-close aria-label="Close dialog"><i class="fas fa-times"></i></button></header>
+            <div class="amsl-modal-body" id="amsl-modal-body"></div>
+          </div>
+        </div>
 
-            <div class="otr-shell">
-              <main class="otr-form-card">
-                <form id="otr-form" novalidate>
-                  <div id="otr-form-alert" class="otr-alert" role="alert" aria-live="polite" hidden></div>
-                  <div id="otr-sections"></div>
-                  <div class="otr-form-actions">
-                    <div>
-                      <strong>Complete all required fields before submitting.</strong>
-                      <span>Your information is stored only in the AMS.</span>
-                    </div>
-                    <button class="btn btn-success" id="otr-submit" type="submit">
-                      <i class="fas fa-circle-check"></i> Submit OTR
-                    </button>
-                  </div>
-                </form>
-              </main>
+        <div class="screen" id="screen-ams-interviews">
+          <div class="content-area ams-content ams-interview-page">
+            <div id="ams-interview-root"></div>
+          </div>
+        </div>
+
+        <div class="im-modal" id="ams-interview-modal" aria-hidden="true">
+          <div class="im-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="im-modal-title" aria-describedby="im-modal-context" tabindex="-1">
+            <div class="im-modal-head">
+              <div>
+                <span id="im-modal-context">Interview Scheduling &amp; Management</span>
+                <h2 id="im-modal-title">Interview</h2>
+              </div>
+              <button type="button" data-im-close aria-label="Close dialog"><i class="fas fa-times"></i></button>
             </div>
+            <div class="im-modal-body" id="im-modal-body"></div>
           </div>
         </div>
 
@@ -358,6 +337,9 @@
     <script src="js/ams-data.js"></script>
     <script src="js/ams.js"></script>
     <script src="js/otr-form.js"></script>
+    <script src="js/ams-student-list.js"></script>
+    <script src="js/ams-interviews.js"></script>
+    <script src="js/ams-interview-structures.js"></script>
     <script>
       const AMSAccountSettings = {
         notifications: [
@@ -479,6 +461,7 @@
           "ams-dashboard": "Admission Dashboard",
           "ams-students": "Admission Student List",
           "ams-otr": "OTR Form",
+          "ams-interviews": "Interview Scheduling & Management",
         },
 
         init() {
@@ -487,9 +470,15 @@
           this.setupResponsiveShell();
           this.showScreen("ams-dashboard");
           window.AMSModule?.init?.();
+          window.AMSStudentList?.init?.();
+          window.AMSInterviews?.init?.();
         },
 
         showScreen(name) {
+          if (name === "ams-otr") {
+            window.open("otr-form.html", "_blank", "noopener");
+            return;
+          }
           document.querySelectorAll(".screen").forEach((screen) => {
             screen.classList.remove("active");
           });
@@ -539,6 +528,7 @@
             { screen: "ams-dashboard", icon: "fa-building-columns", label: "Dashboard" },
             { screen: "ams-students", icon: "fa-users-viewfinder", label: "Students" },
             { screen: "ams-otr", icon: "fa-file-circle-plus", label: "OTR" },
+            { screen: "ams-interviews", icon: "fa-calendar-check", label: "Interviews" },
           ];
           nav.classList.add("mobile-bottom-nav--compact");
           nav.innerHTML = items

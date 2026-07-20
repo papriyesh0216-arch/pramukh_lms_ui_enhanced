@@ -39,12 +39,44 @@ const AMSOTR = {
   },
 
   init() {
+    if (!document.body.classList.contains('otr-public-page')) this.seedSampleRecords();
+    this.setupStandaloneTheme();
+    this.bindProfileEvents();
     if (!document.getElementById('otr-form')) return;
-    this.seedSampleRecords();
     this.renderSections();
     this.bindEvents();
     this.addAchievement();
     this.addGovernmentExam();
+  },
+
+  setupStandaloneTheme() {
+    if (!document.body.classList.contains('otr-public-page')) return;
+    const toggle = document.getElementById('theme-toggle');
+    const icon = document.getElementById('theme-icon');
+    let isDark = false;
+    try {
+      const saved = localStorage.getItem('pa-theme');
+      isDark = saved === 'dark' || (!saved && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+    } catch (error) {}
+    const apply = value => {
+      document.body.classList.toggle('dark', value);
+      if (icon) icon.className = value ? 'fas fa-moon' : 'fas fa-sun';
+    };
+    apply(isDark);
+    toggle?.addEventListener('click', () => {
+      isDark = !document.body.classList.contains('dark');
+      apply(isDark);
+      try { localStorage.setItem('pa-theme', isDark ? 'dark' : 'light'); } catch (error) {}
+    });
+  },
+
+  bindProfileEvents() {
+    document.getElementById('otr-profile-modal')?.addEventListener('click', event => {
+      if (event.target.id === 'otr-profile-modal') this.closeProfile();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') this.closeProfile();
+    });
   },
 
   seedSampleRecords() {
@@ -53,7 +85,7 @@ const AMSOTR = {
     const records = this.getRecords();
     const additions = samples.filter(sample => !records.some(record =>
       record.id === sample.id ||
-      record.admissionNo === sample.admissionNo ||
+      record.otrNo === sample.otrNo ||
       record.personal?.email?.toLowerCase() === sample.personal.email.toLowerCase() ||
       record.personal?.phone === sample.personal.phone
     ));
@@ -299,12 +331,6 @@ const AMSOTR = {
     });
     document.getElementById('otr-form')?.addEventListener('input', event => {
       this.clearFieldError(event.target);
-    });
-    document.getElementById('otr-profile-modal')?.addEventListener('click', event => {
-      if (event.target.id === 'otr-profile-modal') this.closeProfile();
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') this.closeProfile();
     });
   },
 
@@ -598,7 +624,7 @@ const AMSOTR = {
     const record = {
       ...payload,
       id: existing?.id || `OTR-${Date.now()}`,
-      admissionNo: existing?.admissionNo || admissionMatch?.admissionNo || `AMS-OTR-${new Date().getFullYear()}-${sequence}`,
+      otrNo: this.normalizeOtrNo(existing?.otrNo || admissionMatch?.otrNo || `AMS-OTR-${new Date().getFullYear()}-${sequence}`),
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       statusKey: 'form_submitted',
@@ -617,7 +643,7 @@ const AMSOTR = {
     window.AMSModule?.renderStudents?.();
     this.reset();
     if (typeof AMSApp !== 'undefined') AMSApp.showScreen('ams-students');
-    this.showToast(`${record.admissionNo} created for ${record.personal.fullName}.`);
+    this.showToast(`${record.otrNo} created for ${record.personal.fullName}.`);
   },
 
   reset() {
@@ -643,10 +669,21 @@ const AMSOTR = {
       const allowedPersonalFields = ['fullName', 'dateOfBirth', 'gender', 'religion', 'phone', 'differentWhatsapp', 'whatsapp', 'email'];
       let changed = false;
       const sanitized = records.map(record => {
-        if (!record?.personal) return record;
-        const personal = Object.fromEntries(allowedPersonalFields.map(key => [key, record.personal[key] || '']));
-        changed ||= Object.keys(record.personal).some(key => !allowedPersonalFields.includes(key));
-        return { ...record, personal };
+        if (!record || typeof record !== 'object') return record;
+        const normalized = { ...record };
+        const otrNo = this.normalizeOtrNo(normalized.otrNo || normalized.admissionNo);
+        if (normalized.otrNo !== otrNo) {
+          normalized.otrNo = otrNo;
+          changed = true;
+        }
+        if (Object.prototype.hasOwnProperty.call(normalized, 'admissionNo')) {
+          delete normalized.admissionNo;
+          changed = true;
+        }
+        if (!normalized.personal) return normalized;
+        const personal = Object.fromEntries(allowedPersonalFields.map(key => [key, normalized.personal[key] || '']));
+        changed ||= Object.keys(normalized.personal).some(key => !allowedPersonalFields.includes(key));
+        return { ...normalized, personal };
       });
       if (changed) localStorage.setItem(this.storageKey, JSON.stringify(sanitized));
       return sanitized;
@@ -657,7 +694,7 @@ const AMSOTR = {
 
   getStudentRows() {
     return this.getRecords().map(record => ({
-      admissionNo: record.admissionNo,
+      otrNo: record.otrNo,
       name: record.personal.fullName,
       phone: record.personal.phone,
       email: record.personal.email,
@@ -679,6 +716,13 @@ const AMSOTR = {
       dueDate: new Date(record.updatedAt).toLocaleDateString('en-IN'),
       otrId: record.id
     }));
+  },
+
+  normalizeOtrNo(value) {
+    const otrNo = String(value || '').trim();
+    if (/^ADM-\d{4}-/i.test(otrNo)) return otrNo.replace(/^ADM-/i, 'AMS-OTR-');
+    if (/^OTR-\d{4}-/i.test(otrNo)) return `AMS-${otrNo}`;
+    return otrNo;
   },
 
   openProfile(id) {
@@ -706,7 +750,7 @@ const AMSOTR = {
       .filter(([, value]) => value)
       .map(([key, value]) => [`Exam ${index + 1} · ${this.titleCase(key)}`, value]));
     body.innerHTML = `
-      <div class="otr-profile-banner"><div class="otr-profile-avatar">${this.initials(record.personal.fullName)}</div><div><strong>${this.escape(record.admissionNo)}</strong><span>Submitted ${new Date(record.updatedAt).toLocaleString('en-IN')}</span></div><span class="badge badge-primary">${this.escape(record.status)}</span></div>
+      <div class="otr-profile-banner"><div class="otr-profile-avatar">${this.initials(record.personal.fullName)}</div><div><strong>${this.escape(record.otrNo)}</strong><span>Submitted ${new Date(record.updatedAt).toLocaleString('en-IN')}</span></div><span class="badge badge-primary">${this.escape(record.status)}</span></div>
       ${section('Personal Details', 'fa-user', Object.entries(record.personal).map(([key, value]) => [this.titleCase(key), value]))}
       ${section('Correspondence Address', 'fa-location-dot', Object.entries(record.address).map(([key, value]) => [this.titleCase(key), value]))}
       ${section('Education', 'fa-graduation-cap', educationRows.length ? educationRows : [['Education', 'Not provided']])}
