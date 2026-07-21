@@ -54,7 +54,7 @@ const LeadsModule = {
         {
           id: 10, enqNo: 'ENQ1001', name: 'Amit Kumar', phone: '9988776655', whatsapp: '9988776655',
           email: 'amit.kumar@gmail.com', state: 'Gujarat', district: 'Surat', city: 'Surat, Gujarat', course: 'UPSC',
-          batch: 'Foundation', mode: 'Class', source: 'Instagram Ad', campaign: 'UPSC May 2026',
+          batch: 'Foundation', mode: 'Offline', source: 'Instagram Ad', campaign: 'UPSC May 2026',
           inquiryDate: '26-06-2026 10:00 AM', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
           status: 'exam', statusLabel: 'Exam Scheduled', priority: 'medium',
           leadScore: 75, leadAge: '0 Days', academicStatus: 'College Student',
@@ -91,7 +91,7 @@ const LeadsModule = {
         {
           id: 13, enqNo: 'ENQ1004', name: 'Kunal Patel', phone: '9733445566', whatsapp: '9733445566',
           email: 'kunal.patel@gmail.com', state: 'Gujarat', district: 'Vadodara', city: 'Vadodara, Gujarat', course: 'UPSC',
-          batch: 'Foundation', mode: 'Class', source: 'Walk-in', campaign: '-',
+          batch: 'Foundation', mode: 'Offline', source: 'Walk-in', campaign: '-',
           inquiryDate: '23-06-2026 04:00 PM', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
           status: 'admission_rejected', statusLabel: 'Admission Rejected', priority: 'low',
           leadScore: 40, leadAge: '3 Days', academicStatus: 'Graducation Completed',
@@ -150,7 +150,7 @@ const LeadsModule = {
         lead.batch = '';
         lead.mode = '';
       } else if (!lead.batch) {
-        lead.batch = 'Foundation';
+        lead.batch = '';
       }
       this.normalizeLeadStageData(lead);
       lead.createdAt = lead.createdAt || lead.inquiryDate;
@@ -194,9 +194,8 @@ const LeadsModule = {
 
   normalizeLearningMode(mode, course) {
     if (!this.courseNeedsBatchMode(course)) return '';
-    if (mode === 'residental' || mode === 'Residential Mode') return 'residental';
     if (mode === 'Online') return 'Online';
-    return 'Class';
+    return 'Offline';
   },
 
   courseNeedsBatchMode(course) {
@@ -237,12 +236,30 @@ const LeadsModule = {
     return statuses[stageKey] || [];
   },
 
+  getFollowupStageStatusDefinitions(stageKey) {
+    if (stageKey === 'counselling') {
+      return [
+        { key: 'schedule', label: 'Schedule' },
+        { key: 'reschedules', label: 'Reschedule' }
+      ];
+    }
+    return this.getStageStatusDefinitions(stageKey);
+  },
+
+  getMentorOptions() {
+    const counselorNames = (window.APP_DATA?.COUNSELOR_DATA || []).map((mentor) => mentor.name);
+    const leadOwners = this.leads.flatMap((lead) => [lead.assignedTo, lead.owner]);
+    return [...new Set([...counselorNames, ...leadOwners].filter((name) => name && name !== 'Unassigned'))].sort();
+  },
+
   formatStageLabel(stageKey) {
     return this.getStageDefinitions().find((stage) => stage.key === stageKey)?.label || 'Pending';
   },
 
   formatStageStatusLabel(stageKey, stageStatusKey) {
-    return this.getStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label || '';
+    return this.getFollowupStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label
+      || this.getStageStatusDefinitions(stageKey).find((item) => item.key === stageStatusKey)?.label
+      || '';
   },
 
   normalizeLeadStageData(lead) {
@@ -583,6 +600,7 @@ const LeadsModule = {
     this.syncCollapseAllButton();
     this.updateSortButtonLabel();
     this.applyToolbarPermissions?.();
+    if (typeof CalendarModule !== 'undefined') CalendarModule.refreshInquiryPopup?.();
   },
 
   normalizeSource(value = '') {
@@ -844,15 +862,16 @@ const LeadsModule = {
     this.updateSelectAllCheckboxState();
   },
 
-  renderLeadCard(lead, num) {
+  renderLeadCard(lead, num, options = {}) {
     const stageKey = this.getLeadStatusKey(lead);
     const stageStatusLabel = this.formatStageStatusLabel(stageKey, this.getLeadSubStatusKey(lead));
     const statusClass = `status-${stageKey}`;
     const isExpanded = this.allExpanded;
     const isSelected = this.selectedLeads.has(lead.id);
+    const idPrefix = options.idPrefix || '';
 
     return `
-      <div class="lead-card ${isExpanded ? 'is-expanded' : ''}" id="lead-card-${lead.id}">
+      <div class="lead-card ${isExpanded ? 'is-expanded' : ''}" id="${idPrefix}lead-card-${lead.id}">
         <div class="lead-card-header" onclick="LeadsModule.handleRowClick(event, ${lead.id})">
           <button
             type="button"
@@ -906,13 +925,13 @@ const LeadsModule = {
                 <i class="fas fa-ellipsis-v"></i>
               </button>
             </div>
-            <button class="lead-action-btn collapse-btn" data-tip="${isExpanded ? 'Collapse' : 'Expand'}" onclick="LeadsModule.toggleExpand(${lead.id}); event.stopPropagation()">
-              <i class="fas fa-chevron-${isExpanded ? 'up' : 'down'}" id="chevron-${lead.id}"></i>
+            <button class="lead-action-btn collapse-btn" data-tip="${isExpanded ? 'Collapse' : 'Expand'}" onclick="LeadsModule.toggleExpand(${lead.id}, event); event.stopPropagation()">
+              <i class="fas fa-chevron-${isExpanded ? 'up' : 'down'}" id="${idPrefix}chevron-${lead.id}"></i>
             </button>
           </div>
         </div>
 
-        <div class="lead-expanded-body" id="lead-body-${lead.id}" style="display:${isExpanded ? 'block' : 'none'}">
+        <div class="lead-expanded-body" id="${idPrefix}lead-body-${lead.id}" style="display:${isExpanded ? 'block' : 'none'}">
           <div class="lead-detail-grid">
             <div class="lead-detail-col">
               <div class="detail-row">
@@ -971,7 +990,7 @@ const LeadsModule = {
           </div>
           <div class="lead-assignment-row">
             <span><i class="fas fa-user-check"></i> Inquiry Assigned to <strong>${lead.assignedTo}</strong> on ${lead.assignedDate}</span>
-            ${this.can('inquiryList', 'status') ? `<button class="edit-assign-btn" onclick="LeadsModule.action('changeclass', ${lead.id})"><i class="fas fa-edit"></i></button>` : ''}
+            ${this.can('inquiryList', 'assign') ? `<button class="edit-assign-btn" type="button" title="Assign Counsellor" aria-label="Assign Counsellor" onclick="LeadsModule.showAssignCounsellorModal(${lead.id})"><i class="fas fa-user-edit"></i></button>` : ''}
           </div>
         </div>
       </div>
@@ -990,10 +1009,11 @@ const LeadsModule = {
     DrawerModule.open(id);
   },
 
-  toggleExpand(id) {
-    const body = document.getElementById(`lead-body-${id}`);
-    const card = document.getElementById(`lead-card-${id}`);
-    const chevron = document.getElementById(`chevron-${id}`);
+  toggleExpand(id, event) {
+    const clickedCard = event?.currentTarget?.closest('.lead-card');
+    const card = clickedCard || document.getElementById(`lead-card-${id}`);
+    const body = card?.querySelector('.lead-expanded-body') || document.getElementById(`lead-body-${id}`);
+    const chevron = card?.querySelector('.collapse-btn i') || document.getElementById(`chevron-${id}`);
     if (!body) return;
     const isVisible = body.style.display !== 'none';
     body.style.display = isVisible ? 'none' : 'block';
@@ -1005,8 +1025,8 @@ const LeadsModule = {
   },
 
   syncCollapseAllButton() {
-    const cards = document.querySelectorAll('.lead-card');
-    const expanded = document.querySelectorAll('.lead-card.is-expanded');
+    const cards = document.querySelectorAll('#lead-list .lead-card');
+    const expanded = document.querySelectorAll('#lead-list .lead-card.is-expanded');
     const toggleBtn = document.getElementById('collapse-toggle-btn');
     if (!toggleBtn) return;
     if (cards.length > 0 && expanded.length === cards.length) {
@@ -1164,18 +1184,29 @@ const LeadsModule = {
 
   syncFollowupStageVisibility() {
     const stageKey = document.getElementById('f-stage')?.value || '';
+    const statusWrap = document.getElementById('f-stage-status-wrap');
     const statusSelect = document.getElementById('f-stage-status');
+    const mentorWrap = document.getElementById('f-mentor-wrap');
+    const mentorInput = document.getElementById('f-mentor');
     const dateWrap = document.getElementById('f-date-wrap');
     const timeWrap = document.getElementById('f-time-wrap');
     const dateInput = document.getElementById('f-date');
     const timeInput = document.getElementById('f-time');
     const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
-    const stage = this.getBulkStageModalOptions().find((item) => item.key === stageKey);
+    const stageStatuses = this.getFollowupStageStatusDefinitions(stageKey);
 
     if (statusSelect) {
-      statusSelect.innerHTML = '<option value="">Select Stage Status</option>' + (stage?.statuses || []).map((status) => (
+      statusSelect.innerHTML = '<option value="">Select Stage Status</option>' + stageStatuses.map((status) => (
         `<option value="${status.key}">${status.label}</option>`
       )).join('');
+      statusSelect.disabled = stageStatuses.length === 0;
+      if (!stageStatuses.length) statusSelect.value = '';
+    }
+    if (statusWrap) statusWrap.hidden = stageStatuses.length === 0;
+    if (mentorWrap) mentorWrap.hidden = stageKey !== 'counselling';
+    if (mentorInput) {
+      mentorInput.required = stageKey === 'counselling';
+      if (stageKey !== 'counselling') mentorInput.value = '';
     }
     if (dateWrap) dateWrap.hidden = shouldHideSchedule;
     if (timeWrap) timeWrap.hidden = shouldHideSchedule;
@@ -1523,7 +1554,7 @@ const LeadsModule = {
           city: `${district}, ${state}`,
           course,
           batch: this.courseNeedsBatchMode(course) ? (get('batch') || 'Foundation') : '',
-          mode: this.courseNeedsBatchMode(course) ? (get('mode') || 'Class') : '',
+          mode: this.courseNeedsBatchMode(course) ? this.normalizeLearningMode(get('mode') || 'Offline', course) : '',
           source: 'Inquiry Form',
           campaign: '-',
           inquiryDate: new Date().toLocaleString('en-IN'),
@@ -1560,22 +1591,21 @@ const LeadsModule = {
 
   setupSortDropdown(e) {
     e.stopPropagation();
-    document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
+    document.querySelectorAll('.more-dropdown-menu, .sort-dropdown-menu').forEach(m => m.remove());
     const btn = document.getElementById('sort-toggle-btn');
     if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const menuWidth = 240;
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - menuWidth - 12);
     
     const menu = document.createElement('div');
-    menu.className = 'more-dropdown-menu';
+    menu.className = 'sort-dropdown-menu';
     menu.style.cssText = `
-      position: absolute;
-      top: ${btn.offsetTop + btn.offsetHeight + 4}px;
-      left: ${btn.offsetLeft}px;
-      z-index: 500;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-xl);
-      min-width: 180px;
+      position: fixed;
+      top: ${rect.bottom + 8}px;
+      left: ${left}px;
+      z-index: 12000;
+      min-width: ${menuWidth}px;
     `;
     
     const sortOpts = this.getSortOptions();
@@ -1588,12 +1618,12 @@ const LeadsModule = {
       </div>
     `).join('');
     
-    document.querySelector('.leads-toolbar').appendChild(menu);
+    document.body.appendChild(menu);
   },
 
   setSortOption(opt) {
     this.sortOption = opt;
-    document.querySelectorAll('.more-dropdown-menu').forEach(m => m.remove());
+    document.querySelectorAll('.more-dropdown-menu, .sort-dropdown-menu').forEach(m => m.remove());
     this.applyFilters();
     this.showToast(`Sorted by ${this.getSortLabel(opt)}`, 'info');
   },
@@ -1660,9 +1690,8 @@ const LeadsModule = {
         <label>Mode</label>
         <select id="filter-mode" onchange="LeadsModule.applyFilters()">
           <option value="all">All Modes</option>
-          <option value="residental">Residental</option>
-          <option value="Class">Classroom</option>
           <option value="Online">Online</option>
+          <option value="Offline">Offline</option>
         </select>
       </div>
       <div class="filter-field">
@@ -1784,7 +1813,6 @@ const LeadsModule = {
     menu.className = 'more-dropdown-menu';
     const items = [];
     if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('followup', ${id})"><i class="fas fa-redo"></i> Manage Follow-up</div>`);
-    if (this.can('inquiryList', 'followup')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('counselling', ${id})"><i class="fas fa-comments"></i> Schedule Counselling</div>`);
     if (this.can('inquiryList', 'export')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('print', ${id})"><i class="fas fa-print"></i> Print Inquiry Form</div>`);
     if (this.can('inquiryList', 'edit')) items.push(`<div class="dropdown-item" onclick="LeadsModule.action('duplicate_scan', ${id})"><i class="fas fa-clone"></i> Duplicate Scan</div>`);
     if (this.can('inquiryList', 'delete')) items.push('<div class="dropdown-divider"></div>');
@@ -1842,6 +1870,70 @@ const LeadsModule = {
       DrawerModule.open(id);
       setTimeout(() => window.print(), 150);
     }
+  },
+
+  showAssignCounsellorModal(id) {
+    if (!this.can('inquiryList', 'assign')) {
+      this.showToast('This action is not available for the current role.', 'warning');
+      return;
+    }
+    const lead = this.leads.find((item) => item.id === id);
+    if (!lead) return;
+    document.getElementById('assign-counsellor-overlay')?.remove();
+
+    const configuredCounsellors = (window.APP_DATA?.COUNSELOR_DATA || []).map((counsellor) => counsellor.name);
+    const counsellors = [...new Set((configuredCounsellors.length ? configuredCounsellors : this.getMentorOptions()).filter(Boolean))];
+    const currentCounsellor = lead.assignedTo || lead.owner || '';
+    if (currentCounsellor && !counsellors.includes(currentCounsellor)) counsellors.unshift(currentCounsellor);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'assign-counsellor-overlay';
+    overlay.className = 'custom-modal-overlay';
+    overlay.innerHTML = `
+      <div class="custom-modal-card">
+        <div class="custom-modal-header">
+          <span class="custom-modal-title"><i class="fas fa-user-edit" style="color:var(--primary)"></i> Assign Counsellor</span>
+          <button class="custom-modal-close" type="button" onclick="this.closest('.custom-modal-overlay').remove()"><i class="fas fa-times"></i></button>
+        </div>
+        <form onsubmit="event.preventDefault(); LeadsModule.assignCounsellor(${lead.id})">
+          <div class="custom-modal-body">
+            <div class="form-field">
+              <label for="assign-counsellor-select">Counsellor *</label>
+              <select id="assign-counsellor-select" required>
+                <option value="">Select Counsellor</option>
+                ${counsellors.map((name) => `<option value="${this.escapeHtml(name)}" ${name === currentCounsellor ? 'selected' : ''}>${this.escapeHtml(name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="custom-modal-footer">
+            <button class="btn btn-outline btn-sm" type="button" onclick="this.closest('.custom-modal-overlay').remove()">Cancel</button>
+            <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-user-check"></i> Assign</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  },
+
+  assignCounsellor(id) {
+    if (!this.can('inquiryList', 'assign')) return;
+    const lead = this.leads.find((item) => item.id === id);
+    const counsellor = document.getElementById('assign-counsellor-select')?.value || '';
+    if (!lead || !counsellor) return;
+
+    const card = document.getElementById(`lead-card-${id}`);
+    const wasExpanded = card?.classList.contains('is-expanded') || false;
+    const now = new Date();
+    lead.assignedTo = counsellor;
+    lead.owner = counsellor;
+    lead.assignedDate = now.toLocaleString('en-IN', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    this.recordTimelineAction(lead, 'Inquiry Reassigned', `Assigned to ${counsellor}.`);
+    document.getElementById('assign-counsellor-overlay')?.remove();
+    this.applyFilters();
+    if (wasExpanded && !this.allExpanded) this.toggleExpand(id);
+    this.showToast(`${lead.name} assigned to ${counsellor}`, 'success');
   },
 
   recordTimelineAction(lead, title, desc) {
@@ -1920,7 +2012,7 @@ const LeadsModule = {
     const email = isEdit ? lead.email : '';
     const city = isEdit ? lead.city : 'Ahmedabad';
     const course = isEdit ? lead.course : 'UPSC Foundation';
-    const mode = isEdit ? lead.mode : 'Classroom';
+    const mode = isEdit ? this.normalizeLearningMode(lead.mode, course) : 'Offline';
     const source = isEdit ? lead.source : 'Instagram Ad';
     const priority = isEdit ? lead.priority : 'medium';
     const query = isEdit ? lead.query : '';
@@ -1964,10 +2056,8 @@ const LeadsModule = {
               <div class="form-field">
                 <label>Preferred Learning Mode</label>
                 <select id="m-mode">
-                  <option value="Classroom" ${mode === 'Classroom' ? 'selected' : ''}>Classroom</option>
                   <option value="Online" ${mode === 'Online' ? 'selected' : ''}>Online</option>
-                  <option value="Residential Mode" ${mode === 'Residential Mode' ? 'selected' : ''}>Residential Mode</option>
-                  <option value="Walk-in" ${mode === 'Walk-in' ? 'selected' : ''}>Walk-in</option>
+                  <option value="Offline" ${mode === 'Offline' ? 'selected' : ''}>Offline</option>
                 </select>
               </div>
               <div class="form-field">
@@ -2173,7 +2263,6 @@ const LeadsModule = {
     const needsBatchMode = this.courseNeedsBatchMode(courseSelect?.value);
     const academicStatus = document.getElementById('m-academic-status')?.value;
     const isSchoolStudent = academicStatus === 'School Student';
-    const isClass3Course = isCourseInquiry && courseSelect?.value === 'Class -3';
 
     document.getElementById('m-course-wrap').hidden = !isCourseInquiry;
     document.getElementById('m-batch-wrap').hidden = !isCourseInquiry || !needsBatchMode;
@@ -2186,11 +2275,11 @@ const LeadsModule = {
     }
     if (batchSelect) {
       this.renderLeadBatchOptions(batchSelect, courseSelect?.value);
-      batchSelect.required = !optionalForm && isCourseInquiry && needsBatchMode && !isClass3Course;
+      batchSelect.required = false;
       if (!needsBatchMode) batchSelect.value = '';
     }
     modeInputs.forEach((input) => {
-      input.required = !optionalForm && isCourseInquiry && needsBatchMode && !isClass3Course;
+      input.required = !optionalForm && isCourseInquiry && needsBatchMode;
       if (!needsBatchMode) input.checked = false;
     });
     if (query) {
@@ -2319,7 +2408,7 @@ const LeadsModule = {
                 </select>
               </div>
               <div class="form-field" id="m-batch-wrap" hidden>
-                <label>Batch Selection${requiredMark}</label>
+                <label>Batch Selection (Optional)</label>
                 <select id="m-batch">
                   <option value="">Select Batch</option>
                   <option value="Foundation" ${batch === 'Foundation' ? 'selected' : ''}>Foundation</option>
@@ -2331,9 +2420,8 @@ const LeadsModule = {
               <div class="form-field" id="m-mode-wrap" hidden>
                 <label>Mode Of Learning${requiredMark}</label>
                 <div class="radio-inline-group">
-                  ${this.renderModeOption('residental', mode, 'Residental')}
-                  ${this.renderModeOption('Class', mode, 'ClassRoom')}
                   ${this.renderModeOption('Online', mode, 'Online')}
+                  ${this.renderModeOption('Offline', mode, 'Offline')}
                 </div>
               </div>
               <div class="form-field full" id="m-query-wrap">
@@ -2372,8 +2460,7 @@ const LeadsModule = {
     const requiresBatchMode = inquiryType === 'Course Inquiry' && this.courseNeedsBatchMode(course);
     const optionalForm = !isEdit && document.getElementById('add-lead-form')?.dataset.optional === 'true';
     const isSchoolStudent = academicStatus === 'School Student';
-    const isClass3Course = inquiryType === 'Course Inquiry' && course === 'Class -3';
-    if (!optionalForm && (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (inquiryType === 'General Inquiry' && !query) || (inquiryType === 'Course Inquiry' && !selectedCourse) || (requiresBatchMode && !isClass3Course && (!batch || !mode)) || (inquiryType === 'Course Inquiry' && isSchoolStudent && !query))) return;
+    if (!optionalForm && (!name || !phone || !email || !state || !district || !academicStatus || !inquiryType || (inquiryType === 'General Inquiry' && !query) || (inquiryType === 'Course Inquiry' && !selectedCourse) || (requiresBatchMode && !mode) || (inquiryType === 'Course Inquiry' && isSchoolStudent && !query))) return;
     const displayLocation = district && state ? `${district}, ${state}` : district || state || '-';
 
     if (isEdit) {
@@ -2597,12 +2684,15 @@ const LeadsModule = {
     this.showToast(`Counselling saved for ${lead.name}`, 'success');
   },
 
-  showManageFollowup(id) {
+  showManageFollowup(id, initialStageKey = '') {
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
     
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
+    const mentorOptions = this.getMentorOptions()
+      .map((mentor) => `<option value="${this.escapeHtml(mentor)}"></option>`)
+      .join('');
     
     const listHTML = lead.communications.length > 0 
       ? lead.communications.map(c => `
@@ -2639,7 +2729,7 @@ const LeadsModule = {
                     ${this.getBulkStageModalOptions().map((stage) => `<option value="${stage.key}">${stage.label}</option>`).join('')}
                   </select>
                 </div>
-                <div class="form-field">
+                <div class="form-field" id="f-stage-status-wrap" hidden>
                   <label>Follow-up Stage Status</label>
                   <select id="f-stage-status">
                     <option value="">Select Stage Status</option>
@@ -2661,6 +2751,13 @@ const LeadsModule = {
                   <label>Followed By</label>
                   <div class="readonly-field" id="f-followed-by">${lead.assignedTo || lead.owner || 'Unassigned'}</div>
                 </div>
+                <div class="form-field full" id="f-mentor-wrap" hidden>
+                  <label>Assign Mentor *</label>
+                  <input type="text" id="f-mentor" list="followup-mentor-options" placeholder="Search mentor name" autocomplete="off">
+                  <datalist id="followup-mentor-options">
+                    ${mentorOptions}
+                  </datalist>
+                </div>
                 <div class="form-field full">
                   <label>Purpose *</label>
                   <textarea id="f-purpose" rows="3" required placeholder="Enter purpose"></textarea>
@@ -2677,6 +2774,9 @@ const LeadsModule = {
       </div>
     `;
     document.body.appendChild(overlay);
+    const stageSelect = document.getElementById('f-stage');
+    const validStageKeys = this.getBulkStageModalOptions().map((stage) => stage.key);
+    if (stageSelect && validStageKeys.includes(initialStageKey)) stageSelect.value = initialStageKey;
     this.syncFollowupStageVisibility();
   },
 
@@ -2689,23 +2789,27 @@ const LeadsModule = {
     const refNo = document.getElementById('f-ref')?.value.trim() || '';
     const followupDate = document.getElementById('f-date').value;
     const followupTime = document.getElementById('f-time').value;
+    const assignedMentor = document.getElementById('f-mentor')?.value.trim() || '';
     const purpose = document.getElementById('f-purpose').value.trim();
     const followedBy = document.getElementById('f-followed-by')?.textContent || lead.assignedTo || lead.owner || 'Unassigned';
     const needsSchedule = !['closed', 'admission_form'].includes(stageKey);
-    if (!stageKey || !purpose || (needsSchedule && !followupDate)) return;
+    if (!stageKey || !purpose || (needsSchedule && !followupDate) || (stageKey === 'counselling' && !assignedMentor)) return;
+    const validStatusKeys = this.getFollowupStageStatusDefinitions(stageKey).map((status) => status.key);
+    if (stageStatus && !validStatusKeys.includes(stageStatus)) return;
 
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
+    const mentorText = stageKey === 'counselling' ? `. Mentor: ${assignedMentor}` : '';
 
     const newComm = {
       type: 'followup',
       day: now.getDate().toString(),
       month: months[now.getMonth()],
       title: 'Follow-up Management',
-      desc: `${this.formatStageLabel(stageKey)}${stageStatus ? ` - ${this.formatStageStatusLabel(stageKey, stageStatus)}` : ''}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`,
+      desc: `${this.formatStageLabel(stageKey)}${stageStatus ? ` - ${this.formatStageStatusLabel(stageKey, stageStatus)}` : ''}${mentorText}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`,
       time: followupTime || now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       by: followedBy,
-      followupData: { stageKey, stageStatus, refNo, followupDate: needsSchedule ? followupDate : '', followupTime: needsSchedule ? followupTime : '', purpose, followedBy }
+      followupData: { stageKey, stageStatus, refNo, followupDate: needsSchedule ? followupDate : '', followupTime: needsSchedule ? followupTime : '', purpose, followedBy, assignedMentor }
     };
 
     lead.communications.unshift(newComm);
@@ -2717,6 +2821,7 @@ const LeadsModule = {
     lead.followupTime = needsSchedule ? followupTime : '';
     lead.followupPurpose = purpose;
     lead.followupManagement = newComm.followupData;
+    if (stageKey === 'counselling') lead.assignedMentor = assignedMentor;
     this.normalizeLeadStageData(lead);
     this.stampLeadModified(lead);
     if (stageKey === 'counselling') {
@@ -3042,14 +3147,6 @@ const LeadsModule = {
         </div>
         <div class="panel-body">
           ${typeof DrawerModule !== 'undefined' ? DrawerModule.buildJourneyHtml(lead) : ''}
-          <div class="lead-detail-grid" style="grid-template-columns:1fr;margin-bottom:14px">
-            <div class="lead-detail-col" style="border-right:0">
-              <div class="detail-row"><span class="detail-label">Handled By</span><span class="detail-value">${lead.assignedTo || lead.owner || 'Unassigned'}</span></div>
-              <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email || '-'}</span></div>
-              <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${lead.phone || '-'}</span></div>
-              <div class="detail-row"><span class="detail-label">WhatsApp</span><span class="detail-value">${lead.whatsapp || lead.phone || '-'}</span></div>
-            </div>
-          </div>
           <div class="timeline">${timelineHTML}</div>
         </div>
       </div>

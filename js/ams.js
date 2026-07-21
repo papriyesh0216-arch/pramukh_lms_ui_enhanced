@@ -13,10 +13,33 @@ const AMSModule = {
   },
 
   get students() {
-    return window.APP_DATA?.AMS_STUDENTS || [];
+    const shortlistedStudents = window.APP_DATA?.AMS_STUDENTS || [];
+    const otrStudents = window.AMSOTR?.getStudentRows?.() || [];
+    return otrStudents.reduce((rows, otrStudent) => {
+      const existingIndex = rows.findIndex(student =>
+        (student.otrNo && otrStudent.otrNo && student.otrNo === otrStudent.otrNo) ||
+        student.email?.toLowerCase() === otrStudent.email?.toLowerCase() ||
+        student.phone === otrStudent.phone
+      );
+      if (existingIndex < 0) return [...rows, otrStudent];
+      const existing = rows[existingIndex];
+      rows[existingIndex] = {
+        ...existing,
+        ...otrStudent,
+        otrNo: existing.otrNo || otrStudent.otrNo,
+        sourceLeadNo: existing.sourceLeadNo,
+        leadStatus: existing.leadStatus,
+        course: existing.course,
+        batch: existing.batch,
+        owner: existing.owner,
+        documents: existing.documents === '0/6 verified' ? '1/6 uploaded' : existing.documents
+      };
+      return rows;
+    }, [...shortlistedStudents]);
   },
 
   renderDashboard() {
+    if (window.AMSDashboard?.initialized) return window.AMSDashboard.render();
     this.renderStatusTabs();
     this.renderKPIs();
     this.renderPipeline();
@@ -56,7 +79,17 @@ const AMSModule = {
   renderPipeline() {
     const container = document.getElementById('ams-pipeline-list');
     if (!container) return;
-    const pipeline = window.APP_DATA?.AMS_PIPELINE || [];
+    const students = this.students;
+    const pipeline = (window.APP_DATA?.AMS_STATUS_FLOW || [])
+      .filter(stage => stage.key !== 'rejected')
+      .map(stage => {
+        const count = students.filter(student => student.statusKey === stage.key).length;
+        return {
+          ...stage,
+          count,
+          pct: students.length ? Math.max(8, Math.round((count / students.length) * 100)) : 0
+        };
+      });
     container.innerHTML = pipeline.map(stage => `
       <div class="ams-pipeline-row">
         <div class="ams-pipeline-icon"><i class="fas ${stage.icon}"></i></div>
@@ -178,33 +211,37 @@ const AMSModule = {
     const status = this.activeStatus || document.getElementById('ams-status-filter')?.value || 'all';
     const course = document.getElementById('ams-course-filter')?.value || 'all';
     const rows = this.students.filter(student => {
-      const haystack = `${student.admissionNo} ${student.name} ${student.phone} ${student.course} ${student.batch}`.toLowerCase();
+      const haystack = `${student.otrNo} ${student.name} ${student.phone} ${student.course} ${student.batch}`.toLowerCase();
       return (!query || haystack.includes(query))
         && (status === 'all' || student.statusKey === status)
         && (course === 'all' || student.course === course);
     });
 
     tbody.innerHTML = rows.length ? rows.map(student => {
-      const feePct = Math.round((student.paid / student.total) * 100);
+      const feePct = student.total ? Math.round((student.paid / student.total) * 100) : 0;
+      const source = student.sourceLeadNo || 'AMS Direct';
+      const profileAction = student.otrId
+        ? `<button class="otr-view-button" type="button" onclick="AMSOTR.openProfile('${this.escape(student.otrId)}')"><i class="fas fa-eye"></i> View OTR</button>`
+        : '';
       return `
         <tr>
-          <td><strong>${student.admissionNo}</strong><br><span class="ams-muted">LMS: ${student.sourceLeadNo}</span></td>
+          <td><strong>${this.escape(student.otrNo)}</strong><br><span class="ams-muted">Source: ${this.escape(source)}</span></td>
           <td>
             <div class="ams-student-cell">
               <div class="ams-avatar">${this.initials(student.name)}</div>
-              <div><strong>${student.name}</strong><span>${student.phone}</span></div>
+              <div><strong>${this.escape(student.name)}</strong><span>${this.escape(student.phone)}</span></div>
             </div>
           </td>
-          <td><strong>${student.course}</strong><br><span class="ams-muted">${student.batch}</span></td>
-          <td><span class="badge badge-primary">${student.status}</span><br><span class="ams-muted">${student.application}</span></td>
-          <td>${student.documents}<br><span class="ams-muted">${student.scholarship}</span></td>
+          <td><strong>${this.escape(student.course)}</strong><br><span class="ams-muted">${this.escape(student.batch)}</span></td>
+          <td><span class="badge badge-primary">${this.escape(student.status)}</span><br><span class="ams-muted">${this.escape(student.application)}</span></td>
+          <td>${this.escape(student.documents)}<br><span class="ams-muted">${this.escape(student.scholarship)}</span></td>
           <td>
-            <strong>${student.feeStatus}</strong>
+            <strong>${this.escape(student.feeStatus)}</strong>
             <div class="ams-table-progress"><span style="width:${feePct}%"></span></div>
             <span class="ams-muted">${this.money(student.paid)} / ${this.money(student.total)}</span>
           </td>
-          <td>${student.owner}<br><span class="ams-muted">Lead: ${student.leadStatus}</span></td>
-          <td><strong>${student.nextStep}</strong></td>
+          <td>${this.escape(student.owner)}<br><span class="ams-muted">Lead: ${this.escape(student.leadStatus)}</span></td>
+          <td><strong>${this.escape(student.nextStep)}</strong>${profileAction}</td>
         </tr>
       `;
     }).join('') : `
@@ -214,6 +251,16 @@ const AMSModule = {
 
   initials(name) {
     return name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase();
+  },
+
+  escape(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    })[character]);
   },
 
   money(value) {

@@ -11,6 +11,29 @@
   letter-spacing: 0;
 }
 
+body.sidebar-collapsed .nav-group-title {
+  width: 100%;
+  height: 1px;
+  min-height: 1px;
+  margin: 13px 0 10px;
+  padding: 0;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+}
+
+body.sidebar-collapsed .nav-group-title::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: var(--sidebar-border);
+  opacity: 0.9;
+}
+
 .nav-sub-subitem-muted {
   opacity: 0.72;
   cursor: default;

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Time Registration - Pramukh Academy</title>
+  <meta name="description" content="Student One Time Registration form for Pramukh Academy admissions">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/otr-form.css">
+  <link rel="stylesheet" href="css/otr-standalone.css">
+</head>
+<body class="otr-public-page">
+  <div class="otr-public-shell">
+    <header class="otr-public-topbar">
+      <div class="otr-public-brand">
+        <span class="otr-public-logo"><img src="assets/Logo-04.png" alt="Pramukh Academy"></span>
+        <div><strong>Pramukh Academy</strong><span>Admission Management System</span></div>
+      </div>
+      <button class="otr-theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">
+        <i class="fas fa-sun" id="theme-icon"></i>
+      </button>
+    </header>
+
+    <main class="otr-public-stage">
+      <section class="otr-public-intro" aria-labelledby="otr-page-title">
+        <div>
+          <span class="otr-public-eyebrow">Student Registration</span>
+          <h1 id="otr-page-title">One Time Registration Form</h1>
+          <p>Complete the form below using accurate student information. Required fields are marked with an asterisk.</p>
+        </div>
+        <div class="otr-public-meta">
+          <span><i class="fas fa-shield-halved"></i> Secure admission form</span>
+          <span><i class="fas fa-file-circle-check"></i> Single-page registration</span>
+        </div>
+      </section>
+
+      <div class="otr-shell">
+        <main class="otr-form-card">
+          <form id="otr-form" novalidate>
+            <div id="otr-form-alert" class="otr-alert" role="alert" aria-live="polite" hidden></div>
+            <div id="otr-sections"></div>
+            <div class="otr-form-actions">
+              <div>
+                <strong>Complete all required fields before submitting.</strong>
+                <span>Your registration will be sent to the Admission Management System.</span>
+              </div>
+              <button class="btn btn-success" id="otr-submit" type="submit">
+                <i class="fas fa-circle-check"></i> Submit OTR
+              </button>
+            </div>
+          </form>
+        </main>
+      </div>
+    </main>
+
+    <footer class="otr-public-footer">
+      <span><i class="fas fa-lock"></i> Your information is used only for the admission process.</span>
+      <span>Pramukh Academy</span>
+    </footer>
+  </div>
+
+  <script src="js/ams-data.js"></script>
+  <script src="js/otr-form.js"></script>
+</body>
+</html>

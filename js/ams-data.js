@@ -12,6 +12,170 @@ const AMS_STATUS_FLOW = [
   { key: 'rejected', label: 'Rejected', icon: 'fa-circle-xmark' }
 ];
 
+const AMS_OTR_SAMPLE_RECORDS = [
+  {
+    id: 'OTR-SAMPLE-001',
+    otrNo: 'AMS-OTR-2026-0001',
+    createdAt: '2026-07-12T05:30:00.000Z',
+    updatedAt: '2026-07-12T05:30:00.000Z',
+    statusKey: 'form_submitted',
+    status: 'Form Submitted',
+    personal: {
+      fullName: 'Aarav Patel',
+      dateOfBirth: '2002-08-14',
+      gender: 'Male',
+      religion: 'Hindu',
+      phone: '9000000001',
+      differentWhatsapp: 'No',
+      whatsapp: '',
+      email: 'aarav.patel@example.com'
+    },
+    address: {
+      pincode: '380015',
+      state: 'Gujarat',
+      district: 'Ahmedabad',
+      addressLine1: 'B-204, Shyam Residency',
+      addressLine2: 'Satellite, Ahmedabad'
+    },
+    education: {
+      ssc: { board: 'GSEB', medium: 'Gujarati', passingYear: '2018', result: '82.40%' },
+      hsc: { board: 'GSEB', stream: 'Arts', medium: 'Gujarati', passingYear: '2020', result: '78.20%' },
+      diploma: { university: '', stream: '', medium: '', passingYear: '', result: '' },
+      bachelor: { university: 'Gujarat University', stream: 'Arts', medium: 'English', passingYear: '2023', result: '7.8 CGPA' },
+      master: { university: '', stream: '', medium: '', passingYear: '', result: '' }
+    },
+    achievements: [
+      { title: 'District Debate Winner', year: '2022', details: 'First position in the district-level youth debate competition.' },
+      { title: 'NSS Volunteer', year: '2023', details: 'Completed 120 hours of community service.' }
+    ],
+    satsang: {
+      bapsConnected: 'Yes',
+      weeklySabha: 'Yes',
+      satsangRemark: 'Attends weekly Yuvak Sabha regularly.',
+      mandal: 'Satellite Yuvak Mandal',
+      shetra: 'Ahmedabad West',
+      karyakarName: 'Mehul Shah',
+      karyakarNumber: '9000000101',
+      mandir: 'BAPS Swaminarayan Mandir, Shahibaug'
+    },
+    governmentExam: {
+      examName: 'GPSC Class 1-2',
+      examYear: '2025',
+      examPost: 'Section Officer',
+      examStatus: 'Appeared In Prelims'
+    },
+    documents: {
+      passportPhoto: { name: 'aarav-patel-photo.jpg', type: 'image/jpeg', size: 184320, dataUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==' }
+    }
+  },
+  {
+    id: 'OTR-SAMPLE-002',
+    otrNo: 'AMS-OTR-2026-0002',
+    createdAt: '2026-07-13T06:15:00.000Z',
+    updatedAt: '2026-07-13T06:15:00.000Z',
+    statusKey: 'form_submitted',
+    status: 'Form Submitted',
+    personal: {
+      fullName: 'Diya Shah',
+      dateOfBirth: '2001-11-23',
+      gender: 'Female',
+      religion: 'Jain',
+      phone: '9000000002',
+      differentWhatsapp: 'Yes',
+      whatsapp: '9000000202',
+      email: 'diya.shah@example.com'
+    },
+    address: {
+      pincode: '390007',
+      state: 'Gujarat',
+      district: 'Vadodara',
+      addressLine1: '18, Akota Avenue',
+      addressLine2: 'Akota, Vadodara'
+    },
+    education: {
+      ssc: { board: 'CBSE', medium: 'English', passingYear: '2017', result: '91.20%' },
+      hsc: { board: 'CBSE', stream: 'Commerce', medium: 'English', passingYear: '2019', result: '88.60%' },
+      diploma: { university: '', stream: '', medium: '', passingYear: '', result: '' },
+      bachelor: { university: 'The Maharaja Sayajirao University of Baroda', stream: 'Commerce', medium: 'English', passingYear: '2022', result: '8.4 CGPA' },
+      master: { university: 'The Maharaja Sayajirao University of Baroda', stream: 'Management', medium: 'English', passingYear: '2024', result: '8.7 CGPA' }
+    },
+    achievements: [
+      { title: 'University Merit List', year: '2022', details: 'Ranked among the top ten students in the commerce faculty.' }
+    ],
+    satsang: {
+      bapsConnected: 'No',
+      weeklySabha: '',
+      satsangRemark: '',
+      mandal: '',
+      shetra: '',
+      karyakarName: '',
+      karyakarNumber: '',
+      mandir: ''
+    },
+    governmentExam: {
+      examName: 'UPSC Civil Services',
+      examYear: '2025',
+      examPost: 'Civil Services',
+      examStatus: 'Appeared In Mains'
+    },
+    documents: {
+      passportPhoto: { name: 'diya-shah-photo.jpeg', type: 'image/jpeg', size: 212992, dataUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==' }
+    }
+  },
+  {
+    id: 'OTR-SAMPLE-003',
+    otrNo: 'AMS-OTR-2026-0003',
+    createdAt: '2026-07-14T08:45:00.000Z',
+    updatedAt: '2026-07-14T08:45:00.000Z',
+    statusKey: 'form_submitted',
+    status: 'Form Submitted',
+    personal: {
+      fullName: 'Krish Mehta',
+      dateOfBirth: '2000-03-09',
+      gender: 'Male',
+      religion: 'Hindu',
+      phone: '9000000003',
+      differentWhatsapp: 'No',
+      whatsapp: '',
+      email: 'krish.mehta@example.com'
+    },
+    address: {
+      pincode: '395007',
+      state: 'Gujarat',
+      district: 'Surat',
+      addressLine1: '42, Green Park Society',
+      addressLine2: 'Vesu, Surat'
+    },
+    education: {
+      ssc: { board: 'GSEB', medium: 'English', passingYear: '2016', result: '86.00%' },
+      hsc: { board: 'GSEB', stream: 'Science', medium: 'English', passingYear: '2018', result: '81.50%' },
+      diploma: { university: 'Gujarat Technological University', stream: 'Engineering', medium: 'English', passingYear: '2021', result: '8.1 CGPA' },
+      bachelor: { university: 'Gujarat Technological University', stream: 'Engineering', medium: 'English', passingYear: '2024', result: '8.3 CGPA' },
+      master: { university: '', stream: '', medium: '', passingYear: '', result: '' }
+    },
+    achievements: [],
+    satsang: {
+      bapsConnected: 'Yes',
+      weeklySabha: 'No',
+      satsangRemark: 'Connected through family satsang activities.',
+      mandal: 'Vesu Yuvak Mandal',
+      shetra: 'Surat South',
+      karyakarName: 'Jignesh Patel',
+      karyakarNumber: '9000000103',
+      mandir: 'BAPS Swaminarayan Mandir, Surat'
+    },
+    governmentExam: {
+      examName: 'SSC CGL',
+      examYear: '2024',
+      examPost: 'Assistant Section Officer',
+      examStatus: 'Appeared In Interview'
+    },
+    documents: {
+      passportPhoto: { name: 'krish-mehta-photo.pdf', type: 'application/pdf', size: 245760, dataUrl: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrCg==' }
+    }
+  }
+];
+
 const AMS_SHORTLISTED_LEAD_CONFIG = {
   1: {
     statusKey: 'form_pending',
@@ -121,7 +285,7 @@ function buildAdmissionRowsFromLeads(leads = []) {
         leadId: lead.id,
         sourceLeadNo: lead.enqNo,
         leadStatus: lead.statusLabel,
-        admissionNo: `ADM-2026-${String(148 + index).padStart(4, '0')}`,
+        otrNo: `AMS-OTR-2026-${String(148 + index).padStart(4, '0')}`,
         name: lead.name,
         phone: lead.phone,
         email: lead.email,
@@ -170,5 +334,6 @@ window.APP_DATA = {
   ...(window.APP_DATA || {}),
   AMS_STATUS_FLOW,
   AMS_STUDENTS,
-  AMS_PIPELINE
+  AMS_PIPELINE,
+  AMS_OTR_SAMPLE_RECORDS
 };
