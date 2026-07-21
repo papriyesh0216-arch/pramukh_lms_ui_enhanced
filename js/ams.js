@@ -39,6 +39,7 @@ const AMSModule = {
   },
 
   renderDashboard() {
+    if (window.AMSDashboard?.initialized) return window.AMSDashboard.render();
     this.renderStatusTabs();
     this.renderKPIs();
     this.renderPipeline();

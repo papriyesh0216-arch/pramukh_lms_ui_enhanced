@@ -641,6 +641,7 @@ const AMSOTR = {
     }
     window.AMSModule?.renderDashboard?.();
     window.AMSModule?.renderStudents?.();
+    window.dispatchEvent(new CustomEvent('ams:data-change', { detail: { source: 'otr' } }));
     this.reset();
     if (typeof AMSApp !== 'undefined') AMSApp.showScreen('ams-students');
     this.showToast(`${record.otrNo} created for ${record.personal.fullName}.`);

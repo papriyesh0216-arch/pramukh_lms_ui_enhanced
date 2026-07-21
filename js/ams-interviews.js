@@ -133,10 +133,12 @@ const AMSInterviews = {
 
   saveInterviews() {
     try { localStorage.setItem(this.interviewStorageKey, JSON.stringify(this.interviews)); } catch (error) {}
+    window.dispatchEvent(new CustomEvent('ams:data-change', { detail: { source: 'interviews' } }));
   },
 
   saveStructures() {
     try { localStorage.setItem(this.structureStorageKey, JSON.stringify(this.structures)); } catch (error) {}
+    window.dispatchEvent(new CustomEvent('ams:data-change', { detail: { source: 'structures' } }));
   },
 
   render() {
@@ -411,6 +413,8 @@ const AMSInterviews = {
       const kpiMatch = this.state.activeKpi === 'all'
         || (this.state.activeKpi === 'today' && date === today)
         || (this.state.activeKpi === 'upcoming' && date > today && date <= upcomingEnd && !['Completed', 'Cancelled'].includes(item.status))
+        || (this.state.activeKpi === 'overdue' && new Date(item.datetime) < new Date() && ['Scheduled', 'Awaiting Assignment', 'In Progress', 'Rescheduled'].includes(item.status))
+        || (this.state.activeKpi === 'evaluation' && ['In Progress', 'Completed'].includes(item.status) && !item.score && !(item.evaluation && Object.keys(item.evaluation).length))
         || (this.state.activeKpi === 'awaiting' && item.status === 'Awaiting Assignment')
         || (this.state.activeKpi === 'completed' && item.status === 'Completed' && date.startsWith(month));
       return kpiMatch
@@ -583,7 +587,7 @@ const AMSInterviews = {
     const interviewerName = this.interviewerById(interviewerId)?.name || 'Not Assigned';
     this.currentAssignedGroupKey = groupKey;
     this.openWideModal(`Assigned Interviews · ${interviewerName}`, `<div class="im-assigned-list">
-      <div class="im-assigned-summary"><div><strong>${this.escape(interviewerName)}</strong><span>${this.formatDate(`${date}T00:00`)} · ${rows.length} assigned student interview${rows.length === 1 ? '' : 's'}</span></div><button type="button" class="btn btn-outline" data-im-close><i class="fas fa-xmark"></i> Close</button></div>
+      <div class="im-assigned-summary"><div><strong>${this.escape(interviewerName)}</strong><span>${this.formatDate(`${date}T00:00`)} · ${rows.length} assigned student interview${rows.length === 1 ? '' : 's'}</span></div></div>
       <div class="im-table-wrap"><table class="im-table im-assigned-table"><thead><tr><th>#</th><th>Interviewer</th><th>Slot Time</th><th>Interview Structure</th><th>Student Name</th><th>Inquiry / Admission Ref.</th><th>Interview Date</th><th>Application Date</th><th>Course / Class</th><th>Gender</th><th>Submitted On</th><th>Points / Status</th><th>Actions</th></tr></thead><tbody>
         ${rows.length ? rows.map((item, index) => this.renderAssignedInterviewRow(item, index, groupKey)).join('') : '<tr><td colspan="13" class="im-empty">No mapped student interviews found for this interviewer and date.</td></tr>'}
       </tbody></table></div>
@@ -770,7 +774,13 @@ const AMSInterviews = {
   },
 
   confirmAction(title, text, callback) {
-    this.openModal(title, `<div class="im-confirm"><span><i class="fas fa-triangle-exclamation"></i></span><p>${this.escape(text)}</p><div class="im-form-actions"><button type="button" class="btn btn-outline" data-im-close>Keep</button><button type="button" class="btn btn-danger" id="im-confirm-action">Confirm</button></div></div>`, 'sm', { nested: true, kind: 'confirmation' });
+    const normalizedTitle = String(title).toLowerCase();
+    const actionLabel = normalizedTitle.startsWith('delete') ? 'Delete'
+      : normalizedTitle.startsWith('cancel') ? 'Cancel Interview'
+        : normalizedTitle.startsWith('deactivate') ? 'Deactivate'
+          : normalizedTitle.startsWith('activate') ? 'Activate'
+            : 'Confirm';
+    this.openModal(title, `<div class="im-confirm" role="alertdialog" aria-describedby="im-confirm-message"><span><i class="fas fa-triangle-exclamation"></i></span><p id="im-confirm-message">${this.escape(text)}</p><div class="im-form-actions"><button type="button" class="btn btn-outline" data-im-close>Go Back</button><button type="button" class="btn btn-danger" id="im-confirm-action">${actionLabel}</button></div></div>`, 'sm', { nested: true, kind: 'confirmation' });
     document.getElementById('im-confirm-action')?.addEventListener('click', () => { this.closeModal(); callback(); });
   },
 
@@ -910,7 +920,7 @@ const AMSInterviews = {
     const bodyNode = document.getElementById('im-modal-body');
     if (!modal || !titleNode || !bodyNode) return;
     if (options.nested && modal.getAttribute('aria-hidden') === 'false') {
-      this.modalStack.push({ title: titleNode.textContent, content: bodyNode.innerHTML, size: this.modalSize(modal), focus: document.activeElement });
+      this.modalStack.push({ title: titleNode.textContent, content: bodyNode.innerHTML, size: this.modalSize(modal), kind: modal.dataset.modalKind || 'form', scrollTop: bodyNode.scrollTop, focus: document.activeElement });
     } else if (!options.preserveStack) this.modalStack = [];
     if (modal.getAttribute('aria-hidden') === 'true') this.modalTrigger = document.activeElement;
     this.applyModalSize(size);
@@ -938,8 +948,12 @@ const AMSInterviews = {
     const modal = document.getElementById('ams-interview-modal');
     const previous = this.modalStack.pop();
     if (previous) {
-      this.openModal(previous.title, previous.content, previous.size, { preserveStack: true });
-      requestAnimationFrame(() => previous.focus?.focus?.({ preventScroll: true }));
+      this.openModal(previous.title, previous.content, previous.size, { preserveStack: true, kind: previous.kind });
+      requestAnimationFrame(() => {
+        const bodyNode = document.getElementById('im-modal-body');
+        if (bodyNode) bodyNode.scrollTop = previous.scrollTop || 0;
+        previous.focus?.focus?.({ preventScroll: true });
+      });
       return;
     }
     modal?.setAttribute('aria-hidden', 'true');

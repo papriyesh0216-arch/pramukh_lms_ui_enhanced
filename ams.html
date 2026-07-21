@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="css/sidebar.css" />
     <link rel="stylesheet" href="css/dashboard.css" />
     <link rel="stylesheet" href="css/ams.css" />
+    <link rel="stylesheet" href="css/ams-dashboard.css" />
     <link rel="stylesheet" href="css/ams-student-list.css" />
     <link rel="stylesheet" href="css/otr-form.css" />
     <link rel="stylesheet" href="css/ams-interviews.css" />
@@ -173,72 +174,7 @@
         </aside>
 
         <div class="screen active" id="screen-ams-dashboard">
-          <div class="content-area ams-content">
-            <div class="ams-header" id="ams-overview">
-              <div>
-                <div class="section-eyebrow">Admission Management System</div>
-                <h1>Admission Dashboard</h1>
-                <p>
-                  Track confirmed admissions from application start through fee
-                  collection, document verification, batch allocation, and
-                  onboarding.
-                </p>
-              </div>
-              <div class="ams-header-actions">
-                <button class="btn btn-outline btn-sm" onclick="window.location.href='index.html'">
-                  <i class="fas fa-chart-line"></i> LMS
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="AMSApp.showScreen('ams-students')">
-                  <i class="fas fa-users-viewfinder"></i> Student List
-                </button>
-              </div>
-            </div>
-
-            <div class="ams-kpi-grid" id="ams-kpi-grid"></div>
-
-            <div class="ams-dashboard-grid">
-              <section class="ams-panel" id="ams-pipeline">
-                <div class="ams-panel-head">
-                  <div>
-                    <h2>Admission Pipeline</h2>
-                    <span>Stage-wise movement from offer to active student</span>
-                  </div>
-                  <span class="badge badge-primary">Live Queue</span>
-                </div>
-                <div class="ams-pipeline-list" id="ams-pipeline-list"></div>
-              </section>
-
-              <section class="ams-panel">
-                <div class="ams-panel-head">
-                  <div>
-                    <h2>Operations Needed</h2>
-                    <span>Core AMS areas to complete before student creation</span>
-                  </div>
-                </div>
-                <div class="ams-ops-grid" id="ams-ops-grid"></div>
-              </section>
-
-              <section class="ams-panel">
-                <div class="ams-panel-head">
-                  <div>
-                    <h2>Upcoming Admission Work</h2>
-                    <span>Interviews, payments, document checks, and onboarding</span>
-                  </div>
-                </div>
-                <div class="ams-task-list" id="ams-task-list"></div>
-              </section>
-
-              <section class="ams-panel">
-                <div class="ams-panel-head">
-                  <div>
-                    <h2>Risk &amp; Exceptions</h2>
-                    <span>Items that need staff attention</span>
-                  </div>
-                </div>
-                <div class="ams-risk-list" id="ams-risk-list"></div>
-              </section>
-            </div>
-          </div>
+          <div class="content-area ams-content amsd-page" id="ams-dashboard-root"></div>
         </div>
 
         <div class="screen" id="screen-ams-students">
@@ -303,9 +239,9 @@
                 <span id="im-modal-context">Interview Scheduling &amp; Management</span>
                 <h2 id="im-modal-title">Interview</h2>
               </div>
-              <button type="button" data-im-close aria-label="Close dialog"><i class="fas fa-times"></i></button>
+              <button type="button" data-im-close aria-label="Close dialog" title="Close"><i class="fas fa-times"></i></button>
             </div>
-            <div class="im-modal-body" id="im-modal-body"></div>
+            <div class="im-modal-body" id="im-modal-body" aria-live="polite"></div>
           </div>
         </div>
 
@@ -340,6 +276,7 @@
     <script src="js/ams-student-list.js"></script>
     <script src="js/ams-interviews.js"></script>
     <script src="js/ams-interview-structures.js"></script>
+    <script src="js/ams-dashboard.js"></script>
     <script>
       const AMSAccountSettings = {
         notifications: [
@@ -469,9 +406,10 @@
           this.restoreSidebarState();
           this.setupResponsiveShell();
           this.showScreen("ams-dashboard");
-          window.AMSModule?.init?.();
           window.AMSStudentList?.init?.();
           window.AMSInterviews?.init?.();
+          window.AMSModule?.init?.();
+          window.AMSDashboard?.init?.();
         },
 
         showScreen(name) {
@@ -487,6 +425,7 @@
             item.classList.toggle("active", item.dataset.screen === name);
           });
           this.currentScreen = name;
+          if (name === "ams-dashboard") window.AMSDashboard?.render?.();
           const title = document.getElementById("page-section-title");
           if (title) title.textContent = this.titles[name] || "";
           this.renderMobileBottomNav();
