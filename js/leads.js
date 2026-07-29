@@ -210,7 +210,7 @@ const LeadsModule = {
       { key: 'hot_lead', label: 'Hot Lead' },
       { key: 'cold_lead', label: 'Cold Lead' },
       { key: 'counselling', label: 'Counselling' },
-      { key: 'admission_form', label: 'Admission Form' },
+      { key: 'admission_form', label: 'OTR Form' },
       { key: 'closed', label: 'Closed' }
     ];
   },
@@ -227,10 +227,6 @@ const LeadsModule = {
         { key: 'reschedules', label: 'Reschedules' },
         { key: 'conducted', label: 'Conducted' },
         { key: 'schedule', label: 'Schedule' }
-      ],
-      admission_form: [
-        { key: 'form_submitted', label: 'Form Submitted' },
-        { key: 'form_submission', label: 'Form Submission' }
       ]
     };
     return statuses[stageKey] || [];
@@ -267,7 +263,7 @@ const LeadsModule = {
     const stageStatus = this.getLeadSubStatusKey(lead);
     lead.stageKey = stageKey;
     lead.stageStatus = stageStatus;
-    lead.status = lead.status || stageKey;
+    lead.status = stageKey === 'admission_form' ? stageKey : (lead.status || stageKey);
     lead.statusLabel = this.formatStageLabel(stageKey);
     lead.stageLabel = this.formatStageLabel(stageKey);
     lead.stageStatusLabel = this.formatStageStatusLabel(stageKey, stageStatus);
@@ -345,7 +341,7 @@ const LeadsModule = {
     if (['closed', 'lost', 'notinterested', 'converted', 'admissionconfirmed', 'admissionrejected'].includes(status) || stageLabel === 'closed') {
       return 'closed';
     }
-    if (['admissionprocess', 'admissionform', 'exam', 'interview', 'formsubmission', 'formsubmitted'].includes(status) || stageLabel === 'admission') {
+    if (['admissionprocess', 'admissionform', 'otrform', 'exam', 'interview', 'formsubmission', 'formsubmitted'].includes(status) || ['admission', 'otrform'].includes(stageLabel)) {
       return 'admission_form';
     }
     if (['counselling', 'reschedules', 'reschedule', 'conducted'].includes(status) || stageLabel === 'counselling') {
@@ -364,8 +360,9 @@ const LeadsModule = {
   },
 
   getLeadSubStatusKey(lead) {
-    if (lead.stageStatus) return lead.stageStatus;
     const stageKey = this.getLeadStatusKey(lead);
+    if (stageKey === 'admission_form') return '';
+    if (lead.stageStatus) return lead.stageStatus;
     const status = String(lead.status || '').toLowerCase().replace(/[\s_-]/g, '');
     const statusLabel = String(lead.statusLabel || '').toLowerCase().replace(/[\s_-]/g, '');
 
@@ -379,10 +376,6 @@ const LeadsModule = {
       if (['conducted'].includes(status) || statusLabel === 'conducted') return 'conducted';
       if (['reschedule', 'reschedules', 'rescheduled'].includes(status) || statusLabel.startsWith('reschedule')) return 'reschedules';
       return 'schedule';
-    }
-    if (stageKey === 'admission_form') {
-      if (['formsubmitted', 'converted'].includes(status) || statusLabel === 'formsubmitted') return 'form_submitted';
-      return 'form_submission';
     }
     return '';
   },
@@ -437,9 +430,7 @@ const LeadsModule = {
       not_connected: 0,
       switched_off: 0,
       reschedules: 0,
-      conducted: 0,
-      form_submitted: 0,
-      form_submission: 0
+      conducted: 0
     };
     
     this.applyRoleScope(this.leads).forEach(l => {
@@ -1148,9 +1139,11 @@ const LeadsModule = {
   getBulkStageModalOptions() {
     return this.getStageDefinitions().filter((stage) => stage.key !== 'all').map((stage) => ({
       ...stage,
-      statuses: this.getStageStatusDefinitions(stage.key).length
-        ? this.getStageStatusDefinitions(stage.key)
-        : [{ key: stage.key, label: stage.label }]
+      statuses: stage.key === 'admission_form'
+        ? []
+        : (this.getStageStatusDefinitions(stage.key).length
+          ? this.getStageStatusDefinitions(stage.key)
+          : [{ key: stage.key, label: stage.label }])
     }));
   },
 
@@ -1165,13 +1158,21 @@ const LeadsModule = {
 
   syncBulkStageVisibility() {
     const stageKey = document.getElementById('bulk-stage')?.value || '';
+    const statusWrap = document.getElementById('bulk-stage-status-wrap');
+    const statusSelect = document.getElementById('bulk-stage-status');
     const dateWrap = document.getElementById('bulk-stage-date-wrap');
     const timeWrap = document.getElementById('bulk-stage-time-wrap');
     const dateInput = document.getElementById('bulk-stage-date');
     const timeInput = document.getElementById('bulk-stage-time');
     const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
+    const stageStatuses = this.getBulkStageModalOptions().find((stage) => stage.key === stageKey)?.statuses || [];
 
     this.renderBulkStageStatusOptions(stageKey);
+    if (statusWrap) statusWrap.hidden = stageStatuses.length === 0;
+    if (statusSelect) {
+      statusSelect.disabled = stageStatuses.length === 0;
+      if (!stageStatuses.length) statusSelect.value = '';
+    }
     if (dateWrap) dateWrap.hidden = shouldHideSchedule;
     if (timeWrap) timeWrap.hidden = shouldHideSchedule;
     if (dateInput) dateInput.required = !shouldHideSchedule;
@@ -1239,7 +1240,7 @@ const LeadsModule = {
                   ${this.getBulkStageModalOptions().map((stage) => `<option value="${stage.key}">${stage.label}</option>`).join('')}
                 </select>
               </div>
-              <div class="form-field">
+              <div class="form-field" id="bulk-stage-status-wrap">
                 <label>Follow-up Stage Status</label>
                 <select id="bulk-stage-status">
                   <option value="">Select Stage Status</option>
@@ -1322,9 +1323,9 @@ const LeadsModule = {
       if (stageKey === 'admission_form') {
         this.recordEmailNotification(
           lead,
-          'Admission form link - Pramukh Academy',
-          `Dear ${lead.name}, your inquiry has moved to admission. Please complete the admission form: ams.html`,
-          'Automatic admission stage email.'
+          'OTR form link - Pramukh Academy',
+          `Dear ${lead.name}, your inquiry has moved to OTR Form. Please complete the OTR form: ams.html`,
+          'Automatic OTR Form stage email.'
         );
       }
       this.recordTimelineAction(lead, 'Bulk Stage Updated', `${this.formatStageLabel(stageKey)}${lead.stageStatusLabel ? ` - ${lead.stageStatusLabel}` : ''}. Purpose: ${purpose}${refNo ? `. Ref No: ${refNo}` : ''}`);
@@ -2610,7 +2611,7 @@ const LeadsModule = {
                   <option>Schedule Follow-up</option>
                   <option>Send Brochure</option>
                   <option>Campus Visit</option>
-                  <option>Admission Form</option>
+                  <option>OTR Form</option>
                   <option>Fee Discussion</option>
                   <option>Parent Meeting</option>
                   <option>Close Inquiry</option>
@@ -2835,9 +2836,9 @@ const LeadsModule = {
     if (stageKey === 'admission_form') {
       this.recordEmailNotification(
         lead,
-        'Admission form link - Pramukh Academy',
-        `Dear ${lead.name}, your inquiry has moved to admission. Please complete the admission form: ams.html`,
-        'Automatic admission follow-up email.'
+        'OTR form link - Pramukh Academy',
+        `Dear ${lead.name}, your inquiry has moved to OTR Form. Please complete the OTR form: ams.html`,
+        'Automatic OTR Form follow-up email.'
       );
     }
     this.syncAppDataLeads();
@@ -2852,21 +2853,21 @@ const LeadsModule = {
     
     if (confirm(`Are you sure you want to convert the inquiry "${lead.name}" to admission?`)) {
       lead.stageKey = 'admission_form';
-      lead.stageStatus = 'form_submission';
-      lead.status = 'form_submission';
+      lead.stageStatus = '';
+      lead.status = 'admission_form';
       this.normalizeLeadStageData(lead);
       this.stampLeadModified(lead);
       this.recordEmailNotification(
         lead,
-        'Admission form link - Pramukh Academy',
-        `Dear ${lead.name}, your inquiry has moved to admission. Please complete the admission form: ams.html`,
-        'Automatic admission form link email.'
+        'OTR form link - Pramukh Academy',
+        `Dear ${lead.name}, your inquiry has moved to OTR Form. Please complete the OTR form: ams.html`,
+        'Automatic OTR Form link email.'
       );
-      this.recordTimelineAction(lead, 'Shortlisted for Admission', 'Admission form workflow started.');
+      this.recordTimelineAction(lead, 'Shortlisted for Admission', 'OTR Form workflow started.');
       
       this.applyFilters();
       this.updateStatusBarCounts();
-      this.showToast(`Inquiry ${lead.name} shortlisted for admission form.`, 'success');
+      this.showToast(`Inquiry ${lead.name} moved to OTR Form.`, 'success');
     }
   },
 
@@ -2896,7 +2897,7 @@ const LeadsModule = {
               <option value="hot_lead" ${currentStage === 'hot_lead' ? 'selected' : ''}>Hot Lead</option>
               <option value="cold_lead" ${currentStage === 'cold_lead' ? 'selected' : ''}>Cold Lead</option>
               <option value="counselling" ${currentStage === 'counselling' ? 'selected' : ''}>Counselling</option>
-              <option value="admission_form" ${currentStage === 'admission_form' ? 'selected' : ''}>Admission Form</option>
+              <option value="admission_form" ${currentStage === 'admission_form' ? 'selected' : ''}>OTR Form</option>
               <option value="closed" ${currentStage === 'closed' ? 'selected' : ''}>Closed</option>
             </select>
           </div>
@@ -2919,7 +2920,7 @@ const LeadsModule = {
     lead.stageStatus =
       newStatus === 'voicecall' ? 'schedule' :
       newStatus === 'counselling' ? 'schedule' :
-      newStatus === 'admission_form' ? 'form_submission' :
+      newStatus === 'admission_form' ? '' :
       '';
     lead.status = lead.stageStatus || newStatus;
     this.normalizeLeadStageData(lead);

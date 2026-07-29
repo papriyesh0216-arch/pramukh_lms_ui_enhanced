@@ -643,6 +643,179 @@ const AMSInterviews = {
     });
   },
 
+  interviewsForStudent(row) {
+    if (!row) return [];
+    const email = String(row.email || '').trim().toLowerCase();
+    const phone = String(row.phone || '').replace(/\D/g, '').slice(-10);
+    return this.interviews
+      .filter(item =>
+        (item.admissionKey && item.admissionKey === row.key)
+        || (row.admissionNo && [item.admissionNo, item.inquiryId, item.studentId].includes(row.admissionNo))
+        || (email && String(item.email || '').trim().toLowerCase() === email)
+        || (phone && String(item.phone || '').replace(/\D/g, '').slice(-10) === phone)
+      )
+      .sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
+  },
+
+  studentCandidate(row) {
+    return {
+      admissionKey: row.key,
+      admissionNo: row.admissionNo,
+      studentId: row.admissionNo || row.key,
+      inquiryId: row.source || row.admissionNo || row.key,
+      name: row.name,
+      email: row.email,
+      phone: row.phone,
+      course: row.course,
+      batch: row.batch,
+      learningMode: row.mode,
+      applicationDate: row.admissionDate,
+      submittedDate: row.admissionDateTime,
+      otr: row.otrRecord || null
+    };
+  },
+
+  openStudentSchedule(row, view = '', editId = '') {
+    if (!row) return;
+    const interviews = this.interviewsForStudent(row);
+    const mode = view || (interviews.length ? 'list' : 'form');
+    const existing = editId ? this.interviews.find(item => item.id === editId) : null;
+    const reportAvailable = interviews.some(item => item.status === 'Completed' || Object.keys(item.evaluation || {}).length);
+    const toolbar = `
+      <div class="ams-student-interview-context">
+        <div><i class="fas fa-bars"></i><span>Search Result</span><strong>${this.escape(row.name)} (${this.escape(row.admissionNo || row.key)}) - ${this.escape(row.course || row.batch || 'Course not assigned')}</strong></div>
+        <div>
+          <button type="button" class="btn ams-interview-new" id="ams-student-schedule-new"><i class="fas fa-hourglass-half"></i>Schedule New</button>
+          <button type="button" class="btn ams-interview-report" id="ams-student-overall-report" ${reportAvailable ? '' : 'disabled'}><i class="fas fa-hourglass-half"></i>Overall Report</button>
+        </div>
+      </div>`;
+    const content = mode === 'form'
+      ? `${toolbar}${this.studentScheduleForm(row, existing)}`
+      : `${toolbar}${this.studentInterviewList(row, interviews)}`;
+    this.openWideModal('Schedule Interview', content);
+    document.getElementById('ams-student-schedule-new')?.addEventListener('click', () => this.openStudentSchedule(row, 'form'));
+    document.getElementById('ams-student-overall-report')?.addEventListener('click', () => this.openStudentOverallReport(row));
+    document.getElementById('ams-student-schedule-cancel')?.addEventListener('click', () => interviews.length ? this.openStudentSchedule(row, 'list') : this.closeModal());
+    document.querySelectorAll('[data-ams-student-interview-edit]').forEach(button =>
+      button.addEventListener('click', () => this.openStudentSchedule(row, 'form', button.dataset.amsStudentInterviewEdit))
+    );
+    document.querySelectorAll('[data-ams-student-interview-result]').forEach(button =>
+      button.addEventListener('click', () => this.openInterviewDetail(button.dataset.amsStudentInterviewResult))
+    );
+    document.querySelectorAll('[data-ams-student-interview-start]').forEach(button =>
+      button.addEventListener('click', () => {
+        const item = this.interviews.find(interview => interview.id === button.dataset.amsStudentInterviewStart);
+        if (!item) return;
+        item.status = 'In Progress';
+        this.saveInterviews();
+        this.openInterviewDetail(item.id);
+      })
+    );
+    document.getElementById('ams-student-schedule-form')?.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      const candidate = this.studentCandidate(row);
+      if (existing) {
+        Object.assign(existing, {
+          ...candidate,
+          structureId: data.structureId,
+          datetime: `${data.date}T${data.startTime}`,
+          endTime: data.endTime,
+          interviewerId: data.interviewerId,
+          mode: row.mode || existing.mode || 'In-Person',
+          status: existing.status === 'Completed' ? 'Completed' : 'Rescheduled'
+        });
+      } else {
+        this.interviews.push({
+          ...candidate,
+          id: `IV-${String(Date.now()).slice(-8)}`,
+          interviewNumber: `IV-${String(Date.now()).slice(-8)}`,
+          structureId: data.structureId,
+          datetime: `${data.date}T${data.startTime}`,
+          endTime: data.endTime,
+          interviewerId: data.interviewerId,
+          mode: row.mode || 'In-Person',
+          status: data.interviewerId ? 'Scheduled' : 'Awaiting Assignment',
+          score: '',
+          evaluation: {},
+          remarks: ''
+        });
+      }
+      this.state.selectedDate = data.date;
+      this.state.calendarDate = data.date;
+      this.saveInterviews();
+      if (!['confirmed', 'rejected'].includes(row.stageKey)) {
+        window.AMSAdmissionOps?.update?.(row.key, { statusKey: 'fee_pending' }, {
+          type: 'interview',
+          title: existing ? 'Interview Rescheduled' : 'Interview Scheduled',
+          description: `${this.structureById(data.structureId)?.name || 'Interview'} scheduled for ${data.date} ${data.startTime}.`,
+          by: row.owner
+        });
+      }
+      this.render();
+      this.openStudentSchedule(window.AMSAdmissionOps?.row?.(row.key) || row, 'list');
+    });
+  },
+
+  studentScheduleForm(row, existing) {
+    const date = existing?.datetime?.slice(0, 10) || this.state.selectedDate || this.dateKey(new Date());
+    const startTime = existing?.datetime?.slice(11, 16) || '10:00';
+    const endTime = existing?.endTime || '11:00';
+    return `<section class="ams-student-schedule-panel">
+      <header><i class="fas fa-hourglass-half"></i><strong>${existing ? 'Edit Scheduled Interview' : 'Schedule Interview'}</strong></header>
+      <form id="ams-student-schedule-form">
+        <label><span>Interview Date<b>*</b></span><input type="date" name="date" value="${date}" required></label>
+        <label><span>Start Time<b>*</b></span><input type="time" name="startTime" value="${startTime}" required></label>
+        <label><span>End Time<b>*</b></span><input type="time" name="endTime" value="${endTime}" required></label>
+        <label><span>Interview Structure<b>*</b></span><select name="structureId" required><option value="">Select</option>${this.structures.filter(item => item.active || item.id === existing?.structureId).map(item => `<option value="${item.id}" ${item.id === existing?.structureId ? 'selected' : ''}>${this.escape(item.name)}</option>`).join('')}</select></label>
+        <label><span>Interviewer Name<b>*</b></span><select name="interviewerId" required><option value="">Select Interviewer</option>${this.interviewers.map(item => `<option value="${item.id}" ${item.id === existing?.interviewerId ? 'selected' : ''}>${this.escape(item.name)}</option>`).join('')}</select></label>
+        <div class="ams-student-schedule-actions"><button type="submit" class="btn btn-primary">Save &amp; Next</button><button type="button" class="btn btn-danger" id="ams-student-schedule-cancel">Cancel</button></div>
+      </form>
+    </section>`;
+  },
+
+  studentInterviewList(row, interviews) {
+    return `<section class="ams-student-interview-list">
+      <table><thead><tr><th>#</th><th>Interview Date</th><th>Slot Time</th><th>Interview Structure</th><th>Interviewer</th><th>Action</th></tr></thead>
+      <tbody>${interviews.length ? interviews.map((item, index) => {
+        const canEvaluate = ['Scheduled', 'Rescheduled', 'Awaiting Assignment'].includes(item.status);
+        const canEdit = ['Scheduled', 'Rescheduled', 'Awaiting Assignment'].includes(item.status);
+        const canView = item.status === 'Completed' || Object.keys(item.evaluation || {}).length;
+        return `<tr><td>${index + 1}</td><td>${this.formatDate(item.datetime)}</td><td>${this.formatTime(item.datetime)} - ${this.escape(item.endTime || '—')}</td><td>${this.escape(this.structureById(item.structureId)?.name || 'Not mapped')}</td><td>${this.escape(this.interviewerById(item.interviewerId)?.name || 'Not Assigned')}</td><td><div class="ams-student-interview-actions"><button type="button" class="edit" data-ams-student-interview-edit="${item.id}" ${canEdit ? '' : 'disabled'}><i class="fas fa-pen"></i>Edit</button>${canEvaluate ? `<button type="button" class="start" data-ams-student-interview-start="${item.id}"><i class="fas fa-play"></i>Start Interview</button>` : ''}<button type="button" class="result" data-ams-student-interview-result="${item.id}" ${canView ? '' : 'disabled'}><i class="fas fa-eye"></i>View Result</button></div><small>${this.escape(item.status)}</small></td></tr>`;
+      }).join('') : '<tr><td colspan="6" class="im-empty">No interviews scheduled for this student.</td></tr>'}</tbody></table>
+    </section>`;
+  },
+
+  openStudentOverallReport(row) {
+    const interviews = this.interviewsForStudent(row)
+      .filter(item => item.status === 'Completed' || Object.keys(item.evaluation || {}).length);
+    if (!interviews.length) return;
+    const sections = interviews.map(item => {
+      const structure = this.structureById(item.structureId);
+      const interviewer = this.interviewerById(item.interviewerId);
+      const attributes = (structure?.groups || []).flatMap(group => group.attributes || []);
+      return `<section class="ams-overall-report-section">
+        <header><div><i class="far fa-hand-point-right"></i><strong>${this.escape(structure?.name || 'Interview Result')}</strong></div></header>
+        <div class="ams-report-meta"><span><i class="fas fa-user"></i><b>Interviewer:</b> ${this.escape(interviewer?.name || 'Not Assigned')}</span><span><i class="fas fa-user"></i><b>Interview Date:</b> ${this.formatDate(item.datetime)}</span></div>
+        <dl>${attributes.map(attribute => `<div><dt>${this.escape(attribute.name)}</dt><dd>${this.escape(item.evaluation?.[attribute.id] || '—')}</dd></div>`).join('')}
+          <div><dt>Total</dt><dd>${this.escape(item.score || '0')}</dd></div>
+          <div class="wide"><dt>Remarks</dt><dd>${this.escape(item.remarks || '—')}</dd></div>
+        </dl>
+      </section>`;
+    }).join('');
+    this.openWideModal(`Overall Interview Report · ${row.name}`, `<div class="ams-overall-report">${sections}</div>`);
+  },
+
+  syncStudentClass(row, batch) {
+    let changed = false;
+    this.interviewsForStudent(row).forEach(item => {
+      item.batch = batch;
+      changed = true;
+    });
+    if (changed) this.saveInterviews();
+  },
+
   openScheduleForm(id = '', markRescheduled = false, nested = false) {
     const existing = this.interviews.find(item => item.id === id);
     const candidates = this.uniqueCandidates();
@@ -820,6 +993,7 @@ const AMSInterviews = {
     const profile = this.studentProfile(item);
     const attributes = (structure?.groups || []).flatMap(group => (group.attributes || []).map(attribute => ({ ...attribute, groupName: group.name })));
     const statusActions = this.detailActions(item);
+    const editable = item.status === 'In Progress';
     this.openWideModal(`Student Interview · ${item.interviewNumber}`, `<form class="im-interview-detail" id="im-interview-detail-form" data-id="${item.id}">
       <div class="im-detail-hero"><div class="im-detail-person">${profile.photo ? `<img src="${this.escape(profile.photo)}" alt="${this.escape(profile.name)}" />` : `<span>${this.initials(profile.name)}</span>`}<div><strong>${this.escape(profile.name)}</strong><small>${this.escape(profile.studentId)} · ${this.escape(profile.otrNo)}</small><em class="im-status ${this.statusClass(item.status)}">${this.escape(item.status)}</em></div></div><div class="im-detail-number"><span>Interview Number</span><strong>${this.escape(item.interviewNumber)}</strong></div></div>
       <div class="im-detail-grid">
@@ -831,9 +1005,12 @@ const AMSInterviews = {
         ${this.detailSection('Interview Information', 'fa-calendar-check', [['Interview Number', item.interviewNumber], ['Interview Date', this.formatDate(item.datetime)], ['Interview Time', this.formatTime(item.datetime)], ['Assigned Interviewer', interviewer?.name || 'Not Assigned'], ['Interview Mode', item.mode], ['Interview Structure', structure?.name || 'Not mapped'], ['Current Status', item.status]])}
       </div>
       <section class="im-evaluation"><header><div><i class="fas fa-clipboard-check"></i><div><strong>Interview Evaluation</strong><span>${structure ? `${this.escape(structure.name)} attributes only` : 'No interview structure is mapped'}</span></div></div><b>${attributes.length} field${attributes.length === 1 ? '' : 's'}</b></header>
-        <div class="im-evaluation-fields">${attributes.length ? attributes.map(attribute => this.evaluationField(attribute, item.evaluation?.[attribute.id])).join('') : '<div class="im-empty">No evaluation attributes are assigned to this interview structure.</div>'}</div>
+        <div class="im-evaluation-fields">${attributes.length ? attributes.map(attribute => this.evaluationField(attribute, item.evaluation?.[attribute.id], !editable)).join('') : '<div class="im-empty">No evaluation attributes are assigned to this interview structure.</div>'}
+          <label><span>Total</span><input value="${this.escape(item.score || '0')}" readonly></label>
+          <label class="span-2"><span>Remarks</span><textarea name="remarks" rows="3" ${editable ? '' : 'readonly'}>${this.escape(item.remarks || '')}</textarea></label>
+        </div>
       </section>
-      <div class="im-detail-actions"><div><button type="button" class="btn btn-outline" data-im-close>Close</button>${statusActions}</div><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i>${Object.keys(item.evaluation || {}).length ? 'Update Evaluation' : 'Save Evaluation'}</button></div>
+      <div class="im-detail-actions"><div><button type="button" class="btn btn-outline" data-im-close>Close</button>${statusActions}</div>${editable ? `<button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i>${Object.keys(item.evaluation || {}).length ? 'Update Evaluation' : 'Save Evaluation'}</button>` : '<span class="im-readonly-note"><i class="fas fa-lock"></i> Read-only result</span>'}</div>
     </form>`, options);
     this.bindDetailForm();
     if (completeRequested) document.querySelector('[data-im-detail-action="complete"]')?.focus({ preventScroll: true });
@@ -843,10 +1020,10 @@ const AMSInterviews = {
     return `<section class="im-detail-section"><header><i class="fas ${icon}"></i><strong>${title}</strong></header><dl>${fields.map(([label, value]) => `<div><dt>${this.escape(label)}</dt><dd>${this.escape(value)}</dd></div>`).join('')}</dl></section>`;
   },
 
-  evaluationField(attribute, value = '') {
+  evaluationField(attribute, value = '', readonly = false) {
     const name = `evaluation-${attribute.id}`;
     const label = `<span>${this.escape(attribute.name)}${attribute.required ? ' <b>*</b>' : ''}<small>${this.escape(attribute.groupName)}</small></span>`;
-    const common = `name="${this.escape(name)}" ${attribute.required ? 'required' : ''}`;
+    const common = `name="${this.escape(name)}" ${attribute.required && !readonly ? 'required' : ''} ${readonly ? 'disabled' : ''}`;
     if (attribute.type === 'Long Text') return `<label class="span-2">${label}<textarea ${common} rows="3">${this.escape(value)}</textarea></label>`;
     if (attribute.type === 'Select' || attribute.type === 'Yes / No') {
       const options = attribute.type === 'Yes / No' ? ['Yes', 'No'] : String(attribute.options || '').split(',').map(option => option.trim()).filter(Boolean);
@@ -860,7 +1037,7 @@ const AMSInterviews = {
   detailActions(item) {
     const buttons = [];
     if (['Scheduled', 'Rescheduled', 'Awaiting Assignment'].includes(item.status)) buttons.push(`<button type="button" class="btn btn-primary" data-im-detail-action="start" data-id="${item.id}"><i class="fas fa-play"></i> Start Interview</button>`);
-    if (item.status !== 'Completed' && item.status !== 'Cancelled') buttons.push(`<button type="button" class="btn btn-success" data-im-detail-action="complete" data-id="${item.id}"><i class="fas fa-circle-check"></i> Complete Interview</button>`);
+    if (item.status === 'In Progress') buttons.push(`<button type="button" class="btn btn-success" data-im-detail-action="complete" data-id="${item.id}"><i class="fas fa-circle-check"></i> Complete Interview</button>`);
     if (!['Completed', 'Cancelled'].includes(item.status)) buttons.push(`<button type="button" class="btn btn-outline" data-im-detail-action="reschedule" data-id="${item.id}"><i class="fas fa-calendar-plus"></i> Reschedule</button><button type="button" class="btn btn-danger" data-im-detail-action="cancel" data-id="${item.id}"><i class="fas fa-ban"></i> Cancel</button>`);
     return buttons.join('');
   },
@@ -880,6 +1057,7 @@ const AMSInterviews = {
     const structure = this.structureById(item.structureId);
     const attributes = (structure?.groups || []).flatMap(group => group.attributes || []);
     item.evaluation = Object.fromEntries(attributes.map(attribute => [attribute.id, data.get(`evaluation-${attribute.id}`) || '']));
+    item.remarks = String(data.get('remarks') || '');
     if (complete) {
       item.status = 'Completed';
       const scored = attributes.filter(attribute => Number(attribute.maxPoints) > 0);

@@ -170,7 +170,7 @@ const AMSOTR = {
           ${this.field('Full Name', 'fullName', { placeholder: 'Full Name', required: true, span: 'span-2', extra: 'autocomplete="name"' })}
           ${this.field('Date of Birth', 'dateOfBirth', { type: 'date', required: true })}
           ${this.select('Gender', 'gender', ['Male', 'Female', 'Other'], { placeholder: 'Select Gender', required: true })}
-          ${this.select('Religion', 'religion', ['Hindu', 'Muslim', 'Sikh', 'Christian', 'Jain', 'Other'], { placeholder: 'Select Religion', required: true })}
+          ${this.select('Religion', 'religion', ['Hindu', 'Jain', 'Sikh', 'Buddhist', 'Christian','Muslim', 'Other'], { placeholder: 'Select Religion', required: true })}
           ${this.field('Phone No.', 'phone', { type: 'tel', placeholder: 'XXXXXXXXXX', required: true, extra: 'inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel"' })}
           ${this.radio('Is your WhatsApp number the same as your primary phone number? ', 'differentWhatsapp', true)}
           <div class="otr-conditional" id="otr-whatsapp-wrap" hidden>
@@ -198,7 +198,12 @@ const AMSOTR = {
   educationSection() {
     const boards = ['GSEB', 'CBSE', 'ICSE', 'NIOS', 'Other'];
     const mediums = ['Gujarati', 'English', 'Hindi', 'Marathi', 'Other'];
-    const streams = ['Arts', 'Commerce', 'Science', 'Engineering', 'Management', 'Law', 'Other'];
+    const streamOptions = {
+      hsc: ['Science', 'Commerce', 'Arts / Humanities', 'Vocational', 'Other'],
+      diploma: ['Engineering', 'Pharmacy', 'Agriculture', 'Management', 'Computer / IT', 'Other'],
+      bachelor: ['Arts / Humanities', 'Commerce', 'Science', 'Engineering & Technology', 'Management', 'Law', 'Medical & Health Sciences', 'Agriculture', 'Education', 'Computer Applications / IT', 'Other'],
+      master: ['Arts / Humanities', 'Commerce', 'Science', 'Engineering & Technology', 'Management', 'Law', 'Medical & Health Sciences', 'Agriculture', 'Education', 'Computer Applications / IT', 'Other']
+    };
     const years = Array.from({ length: 45 }, (_, index) => String(new Date().getFullYear() - index));
     const qualification = (key, title, config = {}) => `
       <div class="otr-qualification ${config.required ? 'required-block open' : ''}" data-education-card="${key}">
@@ -209,7 +214,7 @@ const AMSOTR = {
         <div class="otr-education-content" id="otr-education-${key}" ${config.required ? '' : 'hidden'}>
           <div class="otr-grid otr-education-grid">
             ${config.university ? this.field('University Name', `${key}University`, { placeholder: 'Name of University', required: config.required }) : this.select('Board', `${key}Board`, boards, { placeholder: 'Select Board', required: config.required })}
-            ${config.stream ? this.select('Stream', `${key}Stream`, streams, { placeholder: 'Select your Stream', required: config.required }) : ''}
+            ${config.stream ? this.select('Stream', `${key}Stream`, streamOptions[key] || [], { placeholder: 'Select your Stream', required: config.required }) : ''}
             ${this.select('Medium', `${key}Medium`, mediums, { placeholder: 'Select Medium', required: config.required })}
             ${this.select('Passing Year', `${key}PassingYear`, years, { placeholder: 'Select Year', required: config.required })}
             ${this.field('Result', `${key}Result`, { placeholder: config.degree ? 'Percentage / Percentile / CGPA' : 'Percentage / Percentile / Grade', required: config.required })}
@@ -247,16 +252,16 @@ const AMSOTR = {
         ${this.sectionHead('fa-hands-praying', 'Satsang')}
         <div class="otr-grid">
           ${this.radio('Are you connected with the BAPS Organization?', 'bapsConnected', true)}
-        </div>
-        <div class="otr-conditional-panel" id="otr-satsang-fields" hidden>
+          </div>
+          <div class="otr-conditional-panel" id="otr-satsang-fields" hidden>
+          ${this.field('Specific Remark', 'satsangRemark', { placeholder: 'Add Details', span: 'span-2' })}
           <div class="otr-grid">
             ${this.radio('Do you attend Weekly Sabha?', 'weeklySabha')}
-            ${this.field('Specific Remark', 'satsangRemark', { placeholder: 'Add Details' })}
             ${this.field('Mandal', 'mandal', { placeholder: 'Mandal Name' })}
             ${this.field('Shetra', 'shetra', { placeholder: 'Shetra Name' })}
             ${this.field('Karyakar Name', 'karyakarName', { placeholder: 'Karyakar Name' })}
             ${this.field('Karyakar Number', 'karyakarNumber', { type: 'tel', placeholder: 'Karyakar Number', extra: 'inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"' })}
-            ${this.field('Mandir', 'mandir', { placeholder: 'Nearest Mandir', span: 'span-2' })}
+            ${this.field('Mandir', 'mandir', { placeholder: 'Nearest Mandir', })}
           </div>
         </div>
       </section>

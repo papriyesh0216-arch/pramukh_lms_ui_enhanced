@@ -314,7 +314,9 @@ function mergeLeadSources(baseLeads = [], storedLeads = []) {
   return Array.from(byId.values());
 }
 
-const AMS_SOURCE_LEADS = mergeLeadSources(window.APP_DATA?.LEAD_DATA || [], getStoredAdmissionShortlist());
+// The shortlist is a persisted AMS intake handoff. Never fall back to the
+// live LMS Inquiry dataset from this standalone AMS entry point.
+const AMS_SOURCE_LEADS = mergeLeadSources([], getStoredAdmissionShortlist());
 const AMS_STUDENTS = buildAdmissionRowsFromLeads(AMS_SOURCE_LEADS);
 
 const AMS_PIPELINE = AMS_STATUS_FLOW
