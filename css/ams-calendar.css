@@ -1,0 +1,181 @@
+/* AMS-only data presentation inside the reused LMS Calendar components. */
+
+#screen-calendar .calendar-title-block p::after {
+  content: '';
+}
+
+.ams-calendar-popup-card {
+  width: min(980px, calc(100vw - 48px));
+}
+
+.ams-calendar-popup-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ams-calendar-admission-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+
+.ams-calendar-admission-card > header {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.ams-calendar-admission-card > header > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ams-calendar-admission-card > header strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ams-calendar-admission-card > header small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.ams-calendar-stage {
+  padding: 5px 9px;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.ams-calendar-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ams-calendar-detail-grid > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 13px;
+  border-right: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider);
+}
+
+.ams-calendar-detail-grid > div:nth-child(3n) { border-right: 0; }
+.ams-calendar-detail-grid > div:nth-last-child(-n + 3) { border-bottom: 0; }
+.ams-calendar-detail-grid span {
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.ams-calendar-detail-grid strong {
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.ams-calendar-admission-card > footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 11px 13px;
+  border-top: 1px solid var(--divider);
+  background: var(--bg-subtle);
+}
+
+.ams-calendar-admission-card > footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ams-calendar-admission-card > footer button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.ams-calendar-row-list {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.ams-calendar-row-event {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) 150px 20px;
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ams-calendar-row-event.event-overdue { border-left-color: var(--danger); }
+.ams-calendar-row-event.event-pending { border-left-color: var(--warning); }
+.ams-calendar-row-event.event-followup { border-left-color: var(--success); }
+.ams-calendar-row-event time { color: var(--text-muted); font-size: 9px; font-weight: 650; }
+.ams-calendar-row-event > span { display: grid; gap: 3px; min-width: 0; }
+.ams-calendar-row-event strong { color: var(--text-primary); font-size: 11px; }
+.ams-calendar-row-event small { overflow: hidden; color: var(--text-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.ams-calendar-row-event em { overflow: hidden; color: var(--text-secondary); font-size: 9px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.ams-calendar-row-event > i { color: var(--primary); }
+
+@media (max-width: 900px) {
+  .ams-calendar-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ams-calendar-detail-grid > div,
+  .ams-calendar-detail-grid > div:nth-child(3n),
+  .ams-calendar-detail-grid > div:nth-last-child(-n + 3) {
+    border-right: 1px solid var(--divider);
+    border-bottom: 1px solid var(--divider);
+  }
+  .ams-calendar-detail-grid > div:nth-child(2n) { border-right: 0; }
+  .ams-calendar-detail-grid > div:nth-last-child(-n + 2) { border-bottom: 0; }
+  .ams-calendar-row-event { grid-template-columns: 150px minmax(0, 1fr) 20px; }
+  .ams-calendar-row-event em { display: none; }
+}
+
+@media (max-width: 600px) {
+  .ams-calendar-popup-card { width: 100%; }
+  .ams-calendar-admission-card > header { grid-template-columns: 38px minmax(0, 1fr); }
+  .ams-calendar-stage { grid-column: 1 / -1; justify-self: start; }
+  .ams-calendar-detail-grid { grid-template-columns: 1fr; }
+  .ams-calendar-detail-grid > div,
+  .ams-calendar-detail-grid > div:nth-child(2n),
+  .ams-calendar-detail-grid > div:nth-last-child(-n + 2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .ams-calendar-detail-grid > div:last-child { border-bottom: 0; }
+  .ams-calendar-row-event { grid-template-columns: 1fr 20px; }
+  .ams-calendar-row-event time { grid-column: 1; }
+  .ams-calendar-row-event > span { grid-column: 1; }
+  .ams-calendar-row-event > i { grid-column: 2; grid-row: 1 / span 2; }
+}

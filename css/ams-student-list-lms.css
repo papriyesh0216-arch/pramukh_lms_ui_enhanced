@@ -1706,15 +1706,18 @@ body.dark .amsl-form-grid input,body.dark .amsl-form-grid select,body.dark .amsl
   .amsl-ops-dialog > header,.amsl-ops-body,.amsl-ops-dialog > footer { padding: 12px; }
 }
 
-/* Bridges only: the expanded row and 360 view use the existing LMS component classes. */
-.amsl-card.is-expanded > .amsl-card-header { display: grid; }
-.amsl-reused-expanded { border-top: 0; background: var(--bg-card); }
-.amsl-reused-expanded > .lead-detail-grid,
-.amsl-reused-expanded > .lead-assignment-row { display: none; }
-.amsl-reused-expanded .ams-admission-extended--row { margin: 0; border: 0; box-shadow: none; }
-.amsl-reused-expanded .lead-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 body.ams-admission-drawer-open { overflow: hidden; }
 #ams-ops-dialog.custom-modal-overlay { z-index: 2000010; }
+.amsl-card.is-expanded > .amsl-card-header { display: grid; }
+.amsl-reused-expanded {
+  border-top: 0;
+  background: var(--bg-card);
+}
+.amsl-reused-expanded .ams-admission-extended--row {
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
 .ams-admission-drawer .drawer-edit-link {
   border: 0;
   background: transparent;
@@ -1755,7 +1758,78 @@ body.ams-admission-drawer-open { overflow: hidden; }
 }
 .ams-drawer-empty i { font-size: 24px; opacity: .3; }
 
-/* AMS-native collapsible content below an unchanged primary student row. */
+.ams-drawer-record-stack { display: grid; gap: 14px; }
+.ams-360-section {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+.ams-360-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.ams-360-section > header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.ams-360-section > header h3 i { color: var(--primary); }
+.ams-360-section > header > span { color: var(--text-muted); font-size: 10px; font-weight: 700; }
+.ams-360-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ams-360-field-grid > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 16px;
+  border-right: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider);
+}
+.ams-360-field-grid > div:nth-child(2n) { border-right: 0; }
+.ams-360-field-grid > div:nth-last-child(-n + 2) { border-bottom: 0; }
+.ams-360-field-grid span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.ams-360-field-grid strong { overflow-wrap: anywhere; color: var(--text-primary); font-size: 11.5px; font-weight: 650; }
+.ams-360-empty { padding: 16px; color: var(--text-muted); font-size: 11px; }
+.ams-360-document-list { display: grid; gap: 8px; padding: 12px; }
+.ams-360-document-list article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 32px;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+}
+.ams-360-document-list article > i { color: var(--primary); font-size: 17px; text-align: center; }
+.ams-360-document-list article > div { display: grid; gap: 2px; min-width: 0; }
+.ams-360-document-list strong { overflow-wrap: anywhere; color: var(--text-primary); font-size: 11px; }
+.ams-360-document-list span { color: var(--text-muted); font-size: 9px; }
+.ams-360-document-list a {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+  background: var(--bg-card);
+}
+
 .amsl-inline-drawer-shell {
   max-height: 0;
   overflow: hidden;
@@ -1764,7 +1838,6 @@ body.ams-admission-drawer-open { overflow: hidden; }
   transform: translateY(-5px);
   transition: max-height 260ms ease, opacity 180ms ease, transform 220ms ease, border-color 220ms ease;
 }
-
 .amsl-inline-drawer-shell.is-open {
   max-height: 1800px;
   overflow: visible;
@@ -1772,7 +1845,6 @@ body.ams-admission-drawer-open { overflow: hidden; }
   opacity: 1;
   transform: translateY(0);
 }
-
 .amsl-inline-drawer {
   margin: 0;
   overflow: visible;
@@ -1781,14 +1853,18 @@ body.ams-admission-drawer-open { overflow: hidden; }
   background: var(--bg-card);
   box-shadow: none;
 }
-
-.amsl-inline-drawer .ams-admission-summary {
-  border-bottom: 1px solid var(--border);
-}
+.amsl-inline-drawer .ams-admission-summary { border-bottom: 1px solid var(--border); }
 
 @media (max-width: 720px) {
-  .amsl-reused-expanded .lead-detail-grid { grid-template-columns: 1fr; }
   .ams-followup-shared-grid { grid-template-columns: 1fr !important; overflow-y: auto; }
+  .ams-360-field-grid { grid-template-columns: 1fr; }
+  .ams-360-field-grid > div,
+  .ams-360-field-grid > div:nth-child(2n),
+  .ams-360-field-grid > div:nth-last-child(-n + 2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .ams-360-field-grid > div:last-child { border-bottom: 0; }
 }
 
 @media (max-width: 520px) {

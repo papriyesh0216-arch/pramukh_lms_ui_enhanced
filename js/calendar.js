@@ -3,9 +3,9 @@
 // ============================================================
 
 const CalendarModule = {
-  currentDate: new Date(2026, 5, 1),
-  today: new Date(2026, 5, 26),
-  selectedDate: new Date(2026, 5, 26),
+  currentDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  today: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
+  selectedDate: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
   viewMode: 'week',
   displayMode: 'calendar',
   calendarFilter: 'all',
@@ -362,11 +362,13 @@ const CalendarModule = {
   },
 
   renderMetricCard(type) {
-    const metricItems = this.getPeriodItems(false);
+    const groups = this.getLeadGroups();
+    const metricItems = type === 'all'
+      ? [...groups.overdue, ...groups.followup, ...groups.pending]
+      : (groups[type] || []);
     const uniqueCount = (filterType) => {
       const ids = metricItems
-        .filter((item) => filterType === 'all' || this.getCalendarItemCategory(item) === filterType)
-        .map((item) => item.lead?.id)
+        .map((item) => item.lead?.admissionKey || item.lead?.id)
         .filter(Boolean);
       return new Set(ids).size;
     };
@@ -670,48 +672,35 @@ const CalendarModule = {
     }));
 
     return {
-      overdue: asItems(overdueLeads.length ? overdueLeads : followupLeads.slice(0, 3), (index) => ['10:00 AM','11:00 AM','2:00 PM'][index % 3]),
-      followup: asItems(followupLeads.length ? followupLeads : leads.slice(0, 5), (index) => ['11:00 AM','12:00 PM','1:00 PM','2:00 PM','4:00 PM'][index % 5]),
-      pending: asItems(pendingLeads.length ? pendingLeads : leads.slice(0, 4), (index) => ['10:30 AM','11:15 AM','1:45 PM','3:00 PM'][index % 4])
+      overdue: asItems(overdueLeads, () => ''),
+      followup: asItems(followupLeads.filter((lead) => {
+        const key = this.getLeadFollowupDateKey(lead);
+        return key === this.dateKey(this.today);
+      }), () => ''),
+      pending: asItems(pendingLeads, () => '')
     };
   },
 
   getBaseWeekItems(anchorDate = this.selectedDate) {
     const leads = this.getScopedLeads();
     const weekStart = this.startOfWeek(anchorDate);
-    const definitions = [
-      [0, '9:00 AM', 'counselling', 'Counselling', 0],
-      [0, '11:00 AM', 'followup', 'Follow-up', 3],
-      [0, '2:00 PM', 'pending', 'Follow-up', 4],
-      [1, '10:00 AM', 'pending', 'Follow-up', 6],
-      [1, '12:00 PM', 'followup', 'Counselling', 8],
-      [1, '4:00 PM', 'overdue', 'Overdue Follow-up', 10],
-      [2, '9:00 AM', 'followup', 'Counselling', 11],
-      [2, '11:00 AM', 'pending', 'Follow-up', 1],
-      [2, '1:00 PM', 'followup', 'Follow-up', 3],
-      [2, '3:00 PM', 'counselling', 'Follow-up', 2],
-      [3, '10:00 AM', 'counselling', 'Counselling', 0],
-      [3, '4:00 PM', 'pending', 'Follow-up', 8],
-      [4, '9:00 AM', 'pending', 'Follow-up', 4],
-      [4, '11:00 AM', 'followup', 'Counselling', 6],
-      [4, '2:00 PM', 'counselling', 'Follow-up', 10],
-      [4, '5:00 PM', 'overdue', 'Overdue Follow-up', 2],
-      [5, '10:00 AM', 'followup', 'Follow-up', 0],
-      [5, '12:00 PM', 'pending', 'Counselling', 5],
-      [6, '11:00 AM', 'followup', 'Follow-up', 11],
-      [6, '3:00 PM', 'pending', 'Counselling', 0]
-    ];
-
-    return definitions.map(([dayOffset, time, type, title, leadIndex]) => {
-      const lead = leads[leadIndex % leads.length] || leads[0];
+    const weekEndKey = this.dateKey(this.addDays(weekStart, 6));
+    const weekStartKey = this.dateKey(weekStart);
+    return leads.map((lead) => {
+      const followupKey = this.getLeadFollowupDateKey(lead);
+      const pending = this.isPendingLead(lead);
+      const dateKey = followupKey || (pending ? this.dateKey(this.today) : '');
+      if (!dateKey || dateKey < weekStartKey || dateKey > weekEndKey) return null;
+      const overdue = Boolean(followupKey && followupKey < this.dateKey(this.today));
+      const counselling = /counselling/i.test(String(lead.stageLabel || lead.statusLabel || ''));
       return {
-        dateKey: this.dateKey(this.addDays(weekStart, dayOffset)),
-        time,
-        type,
-        title,
+        dateKey,
+        time: this.normalizeTime(lead.followupTime) || '9:00 AM',
+        type: overdue ? 'overdue' : pending ? 'pending' : counselling ? 'counselling' : 'followup',
+        title: overdue ? 'Overdue Follow-up' : pending ? 'Pending Action' : counselling ? 'Counselling' : 'Follow-up',
         lead
       };
-    }).filter((item) => item.lead);
+    }).filter(Boolean);
   },
 
   filterCalendarItems(items, filter = this.calendarFilter) {
@@ -758,8 +747,33 @@ const CalendarModule = {
   },
 
   getCalendarCounts(dateKey) {
-    const data = window.APP_DATA?.FOLLOWUP_CALENDAR_DATA || {};
-    return data[dateKey] || { pending: 0, overdue: 0, followup: 0, completed: 0 };
+    return this.getItemsForDateKey(dateKey).reduce((counts, item) => {
+      const category = this.getCalendarItemCategory(item);
+      if (category === 'pending') counts.pending += 1;
+      else if (category === 'overdue') counts.overdue += 1;
+      else counts.followup += 1;
+      return counts;
+    }, { pending: 0, overdue: 0, followup: 0, completed: 0 });
+  },
+
+  getItemsForDateKey(dateKey) {
+    const parts = String(dateKey || '').split('-').map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return [];
+    return this.getBaseWeekItems(new Date(parts[0], parts[1] - 1, parts[2]))
+      .filter((item) => item.dateKey === dateKey);
+  },
+
+  getLeadFollowupDateKey(lead) {
+    return (typeof LeadsModule !== 'undefined' && LeadsModule.dateKey)
+      ? LeadsModule.dateKey(lead?.followupDate)
+      : this.parseDateKey(lead?.followupDate);
+  },
+
+  normalizeTime(value = '') {
+    const raw = String(value || '').trim();
+    const match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return raw;
+    return `${Number(match[1])}:${match[2]} ${match[3].toUpperCase()}`;
   },
 
   getScopedLeads() {
@@ -780,9 +794,7 @@ const CalendarModule = {
   },
 
   isOverdueLead(lead) {
-    const key = (typeof LeadsModule !== 'undefined' && LeadsModule.dateKey)
-      ? LeadsModule.dateKey(lead.followupDate)
-      : this.parseDateKey(lead.followupDate);
+    const key = this.getLeadFollowupDateKey(lead);
     return Boolean(key && key < this.dateKey(this.today));
   },
 

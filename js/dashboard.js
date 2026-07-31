@@ -8,6 +8,10 @@ const DashboardModule = {
   dashboardActivityView: 'calendar',
   dashboardActivityTimer: null,
   dashboardActivityOrder: ['calendar', 'today', 'recent'],
+  dashboardDateFrom: '',
+  dashboardDateTo: '',
+  dashboardSelectedDate: '',
+  miniCalendarDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
 
   cssVar(name) {
     return getComputedStyle(document.body).getPropertyValue(name).trim();
@@ -96,8 +100,48 @@ const DashboardModule = {
   },
 
   getScopedLeads() {
-    const leads = window.APP_DATA?.LEAD_DATA || [];
+    const leads = (typeof LeadsModule !== 'undefined' && LeadsModule.leads?.length)
+      ? LeadsModule.leads
+      : (window.APP_DATA?.LEAD_DATA || []);
     return window.AuthModule ? AuthModule.applyScope(leads).filter(l => !l.archived) : leads.filter(l => !l.archived);
+  },
+
+  dateKey(value) {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    }
+    if (typeof CalendarModule !== 'undefined' && CalendarModule.parseDateKey) {
+      return CalendarModule.parseDateKey(value);
+    }
+    const match = String(value).trim().match(/(\d{1,2})[-/\s]([A-Za-z]{3,}|\d{1,2})[-/\s](\d{4})/);
+    if (!match) return /^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? String(value) : '';
+    const months = { jan:1, january:1, feb:2, february:2, mar:3, march:3, apr:4, april:4, may:5, jun:6, june:6, jul:7, july:7, aug:8, august:8, sep:9, september:9, oct:10, october:10, nov:11, november:11, dec:12, december:12 };
+    const month = Number(match[2]) || months[match[2].toLowerCase()];
+    return month ? `${match[3]}-${String(month).padStart(2, '0')}-${String(match[1]).padStart(2, '0')}` : '';
+  },
+
+  getDashboardLeads() {
+    return this.getScopedLeads().filter((lead) => {
+      const key = this.dateKey(lead.inquiryDate || lead.createdAt || lead.assignedDate);
+      if (this.dashboardSelectedDate && key !== this.dashboardSelectedDate) return false;
+      if (this.dashboardDateFrom && (!key || key < this.dashboardDateFrom)) return false;
+      if (this.dashboardDateTo && (!key || key > this.dashboardDateTo)) return false;
+      return true;
+    });
+  },
+
+  refreshDataDrivenViews() {
+    this.renderKPIs();
+    this.renderMetrics();
+    this.renderCounselorTable();
+    this.renderSegmentationChart();
+    this.renderStatusChart();
+    this.renderFunnelChart();
+    this.renderMiniCalendar();
+    this.renderTasks();
+    this.renderRecentActivities();
+    this.applyDashboardGoalLayout();
   },
 
   getKpiGridColumns() {
@@ -137,20 +181,21 @@ const DashboardModule = {
   },
 
   renderKPIs() {
-    const scopedLeads = this.getScopedLeads();
+    const scopedLeads = this.getDashboardLeads();
     const total = scopedLeads.length;
     const pending = scopedLeads.filter(l => ['new', 'pending'].includes(l.status)).length;
-    const followups = scopedLeads.filter(l => l.followupDate).length;
+    const todayKey = this.dateKey(new Date());
+    const followups = scopedLeads.filter(l => this.dateKey(l.followupDate) === todayKey).length;
     const counselling = scopedLeads.filter(l => /counselling/i.test(l.stageLabel || l.statusLabel || '')).length;
     const converted = scopedLeads.filter(l => ['admission_confirmed', 'converted'].includes(l.status)).length;
     const closed = scopedLeads.filter(l => ['lost', 'closed', 'admission_rejected'].includes(l.status)).length;
     this.renderKpiCards([
-      { cls: 'kpi-leads', icon: 'fa-users', label: 'Total Leads', value: total.toLocaleString(), date: window.AuthModule?.profile?.scopeLine || 'This Month', growth: '+18%', up: true },
-      { cls: 'kpi-calls', icon: 'fa-user-plus', label: 'Pending Leads', value: pending.toLocaleString(), date: 'New Inquiry', growth: '+11%', up: true },
-      { cls: 'kpi-followup', icon: 'fa-calendar-day', label: 'Follow-ups Due', value: followups.toLocaleString(), date: 'Today', growth: '+6%', up: false },
-      { cls: 'kpi-counselling', icon: 'fa-comments', label: 'Counselling Scheduled', value: counselling.toLocaleString(), date: 'Today', growth: '+9%', up: true },
-      { cls: 'kpi-converted', icon: 'fa-graduation-cap', label: 'Total Admission Form', value: converted.toLocaleString(), date: 'This Month', growth: '+20%', up: true },
-      { cls: 'kpi-lost', icon: 'fa-user-times', label: 'Close Leads', value: closed.toLocaleString(), date: 'This Month', growth: '-2%', up: true },
+      { cls: 'kpi-leads', icon: 'fa-users', label: 'Total Leads', value: total.toLocaleString(), date: window.AuthModule?.profile?.scopeLine || 'Current Scope', growth: 'Live', up: true },
+      { cls: 'kpi-calls', icon: 'fa-user-plus', label: 'Pending Leads', value: pending.toLocaleString(), date: 'New Inquiry', growth: 'Live', up: true },
+      { cls: 'kpi-followup', icon: 'fa-calendar-day', label: 'Follow-ups Due', value: followups.toLocaleString(), date: 'Today', growth: 'Live', up: followups === 0 },
+      { cls: 'kpi-counselling', icon: 'fa-comments', label: 'Counselling Scheduled', value: counselling.toLocaleString(), date: 'Current Scope', growth: 'Live', up: true },
+      { cls: 'kpi-converted', icon: 'fa-graduation-cap', label: 'Total Admission Form', value: converted.toLocaleString(), date: 'Current Scope', growth: 'Live', up: true },
+      { cls: 'kpi-lost', icon: 'fa-user-times', label: 'Close Leads', value: closed.toLocaleString(), date: 'Current Scope', growth: 'Live', up: closed === 0 },
     ]);
   },
 
@@ -249,10 +294,12 @@ const DashboardModule = {
   },
 
   renderMetrics() {
+    const leads = this.getDashboardLeads();
+    const todayKey = this.dateKey(new Date());
     const metrics = [
-      { cls: 'metric-untouch', icon: 'fa-eye-slash', name: 'Untouched Leads', count: 47, desc: 'Never Contacted' },
-      { cls: 'metric-overdue', icon: 'fa-clock', name: 'Overdue Follow-ups', count: 23, desc: 'Past Due Date' },
-      { cls: 'metric-hot', icon: 'fa-fire', name: 'Hot Leads', count: 15, desc: 'High Priority' },
+      { cls: 'metric-untouch', icon: 'fa-eye-slash', name: 'Untouched Leads', count: leads.filter((lead) => !(lead.communications || []).length).length, desc: 'Never Contacted' },
+      { cls: 'metric-overdue', icon: 'fa-clock', name: 'Overdue Follow-ups', count: leads.filter((lead) => { const key = this.dateKey(lead.followupDate); return key && key < todayKey; }).length, desc: 'Past Due Date' },
+      { cls: 'metric-hot', icon: 'fa-fire', name: 'Hot Leads', count: leads.filter((lead) => lead.isHot || String(lead.priority).toLowerCase() === 'high').length, desc: 'High Priority' },
     ];
     const container = document.getElementById('kpi-metrics-row');
     if (!container) return;
@@ -275,10 +322,17 @@ const DashboardModule = {
     const container = document.getElementById('counselor-table-body');
     if (!container) return;
     const auth = window.DEMO_AUTH || {};
+    const leads = this.getDashboardLeads();
     const rows = (window.APP_DATA.COUNSELOR_DATA || []).filter(c => {
       if (auth.role === 'counselor') return c.name === auth.user;
       if (auth.role === 'hod') return ['Bharat Sir', 'Hary Sir'].includes(c.name);
       return true;
+    }).map((c) => {
+      const assignedLeads = leads.filter((lead) => (lead.owner || lead.assignedTo) === c.name);
+      const contacted = assignedLeads.filter((lead) => (lead.communications || []).length || !['new', 'pending'].includes(String(lead.status).toLowerCase())).length;
+      const interested = assignedLeads.filter((lead) => lead.isHot || ['interested', 'counselling', 'followup'].includes(String(lead.status).toLowerCase())).length;
+      const admissions = assignedLeads.filter((lead) => ['admission_confirmed', 'converted'].includes(String(lead.status).toLowerCase())).length;
+      return { ...c, assigned: assignedLeads.length, contacted, interested, admissions, rate: assignedLeads.length ? Number(((admissions / assignedLeads.length) * 100).toFixed(1)) : 0 };
     });
     container.innerHTML = rows.map(c => `
       <tr>
@@ -291,7 +345,18 @@ const DashboardModule = {
   renderSegmentationChart() {
     const canvas = document.getElementById('chart-segmentation');
     if (!canvas || typeof Chart === 'undefined') return;
-    const data = window.APP_DATA.SEGMENTATION_DATA;
+    const leads = this.getDashboardLeads();
+    const colors = ['#4F6EF7','#10B981','#F59E0B','#8B5CF6','#94A3B8','#0EA5E9'];
+    const grouped = leads.reduce((result, lead) => {
+      const course = String(lead.course || 'Others').replace(/-Class.*$/i, '').trim() || 'Others';
+      result[course] = (result[course] || 0) + 1;
+      return result;
+    }, {});
+    const data = Object.entries(grouped).map(([label, count], index) => ({
+      label,
+      value: leads.length ? Number(((count / leads.length) * 100).toFixed(1)) : 0,
+      color: colors[index % colors.length]
+    }));
     const chartStroke = this.cssVar('--chart-stroke') || 'transparent';
     if (this.charts.seg) this.charts.seg.destroy();
     this.charts.seg = new Chart(canvas, {
@@ -306,7 +371,31 @@ const DashboardModule = {
   renderStatusChart() {
     const canvas = document.getElementById('chart-status');
     if (!canvas || typeof Chart === 'undefined') return;
-    const data = window.APP_DATA.STATUS_DISTRIBUTION;
+    const leads = this.getDashboardLeads();
+    const definitions = [
+      { label: 'New', color: '#4F6EF7' },
+      { label: 'Contacted', color: '#06B6D4' },
+      { label: 'Interested', color: '#10B981' },
+      { label: 'Counselling', color: '#8B5CF6' },
+      { label: 'OTR Form', color: '#0EA5E9' },
+      { label: 'Admission', color: '#F59E0B' },
+      { label: 'Closed', color: '#EF4444' }
+    ];
+    const categoryFor = (lead) => {
+      const status = String(lead.status || '').toLowerCase();
+      const stageText = String(lead.stageLabel || lead.statusLabel || lead.status || '');
+      if (['lost', 'closed', 'admission_rejected'].includes(status)) return 'Closed';
+      if (['admission_confirmed', 'converted'].includes(status)) return 'Admission';
+      if (/otr|form sent|admission form/i.test(stageText)) return 'OTR Form';
+      if (/counselling/i.test(stageText)) return 'Counselling';
+      if (status === 'interested') return 'Interested';
+      if (['contacted', 'followup'].includes(status)) return 'Contacted';
+      return 'New';
+    };
+    const data = definitions.map((entry) => {
+      const count = leads.filter((lead) => categoryFor(lead) === entry.label).length;
+      return { ...entry, count, pct: leads.length ? Number(((count / leads.length) * 100).toFixed(1)) : 0 };
+    });
     const chartStroke = this.cssVar('--chart-stroke') || 'transparent';
     if (this.charts.status) this.charts.status.destroy();
     this.charts.status = new Chart(canvas, {
@@ -321,60 +410,88 @@ const DashboardModule = {
   renderFunnelChart() {
     const container = document.getElementById('funnel-container');
     if (!container) return;
-    const data = window.APP_DATA.FUNNEL_DATA;
+    const leads = this.getDashboardLeads();
+    const total = leads.length;
+    const stages = [
+      { label: 'Total Leads', minStage: 0, color: '#4F6EF7' },
+      { label: 'Contacted', minStage: 1, color: '#06B6D4' },
+      { label: 'Interested', minStage: 2, color: '#10B981' },
+      { label: 'Counselled', minStage: 3, color: '#F59E0B' },
+      { label: 'Admission', minStage: 4, color: '#EF4444' }
+    ];
+    let previous = total;
+    const data = stages.map((stage, index) => {
+      const count = index === 0 ? total : Math.min(previous, leads.filter((lead) => Number(lead.stage || 0) >= stage.minStage || ['admission_confirmed', 'converted'].includes(String(lead.status).toLowerCase())).length);
+      previous = count;
+      return { ...stage, count, pct: total ? Number(((count / total) * 100).toFixed(1)) : 0 };
+    });
     container.innerHTML = data.map(d => `
       <div class="funnel-stage"><span class="funnel-label">${d.label}</span><div class="funnel-bar-outer"><div class="funnel-bar-fill" style="width:${d.pct}%; background:${d.color}">${d.pct > 15 ? d.pct + '%' : ''}</div></div><span class="funnel-count">${d.count.toLocaleString()}</span></div>`).join('');
   },
 
   renderMiniCalendar() {
-    const now = new Date(2026, 5, 26);
+    const now = this.miniCalendarDate;
     const year = now.getFullYear();
     const month = now.getMonth();
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const today = now.getDate();
+    const todayKey = this.dateKey(new Date());
     const label = document.getElementById('mini-cal-month-label');
     if (label) label.textContent = `${monthNames[month]} ${year}`;
-    const calData = window.APP_DATA.FOLLOWUP_CALENDAR_DATA;
+    const leads = this.getDashboardLeads();
     let days = '';
     const startDay = firstDay === 0 ? 6 : firstDay - 1;
     const prevDays = new Date(year, month, 0).getDate();
     for (let i = startDay - 1; i >= 0; i--) days += `<div class="mini-cal-day other-month">${prevDays - i}</div>`;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const ev = calData[dateKey];
-      let cls = d === today ? ' today' : '';
-      if (ev && ev.overdue > 0) cls += ' has-overdue has-events';
-      else if (ev && (ev.pending > 0 || ev.followup > 0)) cls += ' has-events';
-      days += `<div class="mini-cal-day${cls}" title="${d} Jun" onclick="DashboardModule.selectMiniCalDay(${d}, this)">${d}</div>`;
+      const datedLeads = leads.filter((lead) => [this.dateKey(lead.followupDate), this.dateKey(lead.inquiryDate)].includes(dateKey));
+      const hasOverdue = datedLeads.some((lead) => this.dateKey(lead.followupDate) === dateKey && dateKey < todayKey);
+      let cls = dateKey === todayKey ? ' today' : '';
+      if (hasOverdue) cls += ' has-overdue has-events';
+      else if (datedLeads.length) cls += ' has-events';
+      days += `<div class="mini-cal-day${cls}" title="${d} ${monthNames[month]}" onclick="DashboardModule.selectMiniCalDay(${d}, this)">${d}</div>`;
     }
     const gridEl = document.getElementById('mini-cal-days');
     if (gridEl) gridEl.innerHTML = days;
   },
 
   renderTasks() {
-    const tasks = [
-      { type: 'task-call', icon: 'fa-user-plus', name: 'New inquiry review - Rahul Patel', course: 'UPSC Foundation', time: '09:45 AM' },
-      { type: 'task-chat', icon: 'fa-comments', name: 'Counselling with Neha Joshi', course: 'GPSC Class 1-2', time: '12:00 PM' },
-      { type: 'task-follow', icon: 'fa-redo', name: 'Follow-up with Hardik Patel', course: 'UPSC Foundation', time: '02:30 PM' },
-      { type: 'task-email', icon: 'fa-list-check', name: 'Pending task: send brochure to Sneha', course: 'Sankalp Programme', time: '04:00 PM' },
-    ];
+    const todayKey = this.dateKey(new Date());
+    const tasks = this.getDashboardLeads()
+      .filter((lead) => this.dateKey(lead.followupDate) === todayKey || (!lead.followupDate && ['new', 'pending'].includes(String(lead.status).toLowerCase())))
+      .slice(0, 6)
+      .map((lead) => ({
+        type: lead.followupDate ? 'task-follow' : 'task-call',
+        icon: lead.followupDate ? 'fa-redo' : 'fa-user-plus',
+        name: `${lead.followupDate ? 'Follow-up with' : 'New inquiry review -'} ${lead.name}`,
+        course: lead.course || 'Course not selected',
+        time: lead.followupTime || 'Pending'
+      }));
     const container = document.getElementById('tasks-list');
-    if (container) container.innerHTML = tasks.map(t => `<div class="task-item"><div class="task-icon ${t.type}"><i class="fas ${t.icon}"></i></div><div class="task-body"><div class="task-name">${t.name}</div><div class="task-course">${t.course}</div></div><div class="task-time">${t.time}</div></div>`).join('');
+    if (container) container.innerHTML = tasks.length
+      ? tasks.map(t => `<div class="task-item"><div class="task-icon ${t.type}"><i class="fas ${t.icon}"></i></div><div class="task-body"><div class="task-name">${t.name}</div><div class="task-course">${t.course}</div></div><div class="task-time">${t.time}</div></div>`).join('')
+      : '<div class="task-item"><div class="task-body"><div class="task-name">No activities due today</div><div class="task-course">Your current scope is clear.</div></div></div>';
   },
 
   renderRecentActivities() {
     const container = document.getElementById('recent-activities-list');
     if (!container) return;
-    const items = [
-      { type: 'task-call', icon: 'fa-user-plus', name: 'Inquiry created - Rahul Patel', course: 'Website Inquiry Form', time: '09:30 AM' },
-      { type: 'task-follow', icon: 'fa-user-check', name: 'Assigned to Bharat Sir', course: 'Manual assignment', time: '09:24 AM' },
-      { type: 'task-chat', icon: 'fa-calendar-check', name: 'Follow-up completed', course: 'Outcome: Interested', time: '09:18 AM' },
-      { type: 'task-email', icon: 'fa-comments', name: 'Counselling scheduled', course: 'Parent meeting requested', time: '09:05 AM' },
-      { type: 'task-call', icon: 'fa-graduation-cap', name: 'Converted to admission', course: 'Admission Form Started', time: '08:57 AM' }
-    ];
-    container.innerHTML = items.map(item => `<div class="task-item"><div class="task-icon ${item.type}"><i class="fas ${item.icon}"></i></div><div class="task-body"><div class="task-name">${item.name}</div><div class="task-course">${item.course}</div></div><div class="task-time">${item.time}</div></div>`).join('');
+    const items = this.getDashboardLeads().flatMap((lead) => {
+      const communicationItems = (lead.communications || []).map((item) => ({
+        type: item.type === 'email' ? 'task-email' : item.type === 'call' ? 'task-call' : 'task-chat',
+        icon: item.type === 'email' ? 'fa-envelope' : item.type === 'call' ? 'fa-phone' : 'fa-comments',
+        name: `${item.title || 'Activity'} - ${lead.name}`,
+        course: item.desc || lead.course || '',
+        time: item.time || ''
+      }));
+      if (communicationItems.length) return communicationItems;
+      return [{ type: 'task-call', icon: 'fa-user-plus', name: `Inquiry created - ${lead.name}`, course: lead.source || 'LMS inquiry', time: lead.timeAgo || '' }];
+    }).slice(0, 6);
+    container.innerHTML = items.length
+      ? items.map(item => `<div class="task-item"><div class="task-icon ${item.type}"><i class="fas ${item.icon}"></i></div><div class="task-body"><div class="task-name">${item.name}</div><div class="task-course">${item.course}</div></div><div class="task-time">${item.time}</div></div>`).join('')
+      : '<div class="task-item"><div class="task-body"><div class="task-name">No recent activity</div></div></div>';
   },
 
   setupDateFilter() {
@@ -386,7 +503,10 @@ const DashboardModule = {
       const modal = document.createElement('div');
       modal.id = 'date-picker-modal';
       modal.className = 'date-picker-modal';
-      modal.innerHTML = `<div class="date-picker-panel"><h3><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:8px"></i>Custom Date Range</h3><div class="date-range-row"><div class="date-input-group"><label>From Date</label><input type="date" id="date-from" value="2026-06-01"></div><div class="date-input-group"><label>To Date</label><input type="date" id="date-to" value="2026-06-26"></div></div><div class="quick-ranges"><button class="quick-range-btn active" onclick="DashboardModule.setRange('month',this)">This Month</button><button class="quick-range-btn" onclick="DashboardModule.setRange('week',this)">This Week</button><button class="quick-range-btn" onclick="DashboardModule.setRange('today',this)">Today</button><button class="quick-range-btn" onclick="DashboardModule.setRange('quarter',this)">Quarter</button></div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline btn-sm" onclick="document.getElementById('date-picker-modal').remove()">Cancel</button><button class="btn btn-primary btn-sm" onclick="DashboardModule.applyDateFilter()"><i class="fas fa-check"></i> Apply Filter</button></div></div>`;
+      const today = new Date();
+      const monthStart = this.dateKey(new Date(today.getFullYear(), today.getMonth(), 1));
+      const todayValue = this.dateKey(today);
+      modal.innerHTML = `<div class="date-picker-panel"><h3><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:8px"></i>Custom Date Range</h3><div class="date-range-row"><div class="date-input-group"><label>From Date</label><input type="date" id="date-from" value="${this.dashboardDateFrom || monthStart}"></div><div class="date-input-group"><label>To Date</label><input type="date" id="date-to" value="${this.dashboardDateTo || todayValue}"></div></div><div class="quick-ranges"><button class="quick-range-btn active" onclick="DashboardModule.setRange('month',this)">This Month</button><button class="quick-range-btn" onclick="DashboardModule.setRange('week',this)">This Week</button><button class="quick-range-btn" onclick="DashboardModule.setRange('today',this)">Today</button><button class="quick-range-btn" onclick="DashboardModule.setRange('quarter',this)">Quarter</button></div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline btn-sm" onclick="document.getElementById('date-picker-modal').remove()">Cancel</button><button class="btn btn-primary btn-sm" onclick="DashboardModule.applyDateFilter()"><i class="fas fa-check"></i> Apply Filter</button></div></div>`;
       document.body.appendChild(modal);
       modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     });
@@ -395,6 +515,16 @@ const DashboardModule = {
   setRange(range, btn) {
     btn.closest('.quick-ranges').querySelectorAll('.quick-range-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    const today = new Date();
+    const to = this.dateKey(today);
+    let from = to;
+    if (range === 'month') from = this.dateKey(new Date(today.getFullYear(), today.getMonth(), 1));
+    if (range === 'week') from = this.dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6));
+    if (range === 'quarter') from = this.dateKey(new Date(today.getFullYear(), today.getMonth() - 2, 1));
+    const fromInput = document.getElementById('date-from');
+    const toInput = document.getElementById('date-to');
+    if (fromInput) fromInput.value = from;
+    if (toInput) toInput.value = to;
   },
 
   applyDateFilter() {
@@ -406,22 +536,24 @@ const DashboardModule = {
       btn.style.borderColor = 'var(--primary)';
       btn.style.color = 'var(--primary)';
     }
+    this.dashboardDateFrom = from || '';
+    this.dashboardDateTo = to || '';
+    this.dashboardSelectedDate = '';
     document.getElementById('date-picker-modal')?.remove();
-    this.randomizeDashboardData();
+    this.refreshDataDrivenViews();
   },
 
   setupMiniCalNav() {
     const prev = document.getElementById('mini-prev');
     const next = document.getElementById('mini-next');
-    let calMonth = 5;
-    let calYear = 2026;
-    const render = () => {
-      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      const label = document.getElementById('mini-cal-month-label');
-      if (label) label.textContent = `${monthNames[calMonth]} ${calYear}`;
-    };
-    prev?.addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } render(); });
-    next?.addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } render(); });
+    prev?.addEventListener('click', () => {
+      this.miniCalendarDate = new Date(this.miniCalendarDate.getFullYear(), this.miniCalendarDate.getMonth() - 1, 1);
+      this.renderMiniCalendar();
+    });
+    next?.addEventListener('click', () => {
+      this.miniCalendarDate = new Date(this.miniCalendarDate.getFullYear(), this.miniCalendarDate.getMonth() + 1, 1);
+      this.renderMiniCalendar();
+    });
   },
 
   clearFilter(e) {
@@ -432,6 +564,10 @@ const DashboardModule = {
       btn.style.borderColor = '';
       btn.style.color = '';
     }
+    this.dashboardDateFrom = '';
+    this.dashboardDateTo = '';
+    this.dashboardSelectedDate = '';
+    this.refreshDataDrivenViews();
   },
 
   setupMiniCalRedirect() {
@@ -447,39 +583,11 @@ const DashboardModule = {
   selectMiniCalDay(day, element) {
     document.querySelectorAll('.mini-cal-day').forEach(d => d.classList.remove('selected-day'));
     element.classList.add('selected-day');
+    this.dashboardSelectedDate = this.dateKey(new Date(this.miniCalendarDate.getFullYear(), this.miniCalendarDate.getMonth(), day));
+    this.dashboardDateFrom = '';
+    this.dashboardDateTo = '';
     const welcome = document.querySelector('.dashboard-welcome');
-    if (welcome) welcome.textContent = `June ${day}, 2026 — Showing data for Selected Date`;
-    this.randomizeDashboardData();
-  },
-
-  randomizeDashboardData() {
-    const generated = Math.floor(Math.random() * 200) + 50;
-    const pending = Math.floor(generated * 0.2);
-    const followups = Math.floor(generated * 0.12);
-    const counselling = Math.floor(generated * 0.08);
-    const admissions = Math.floor(generated * 0.05) + 1;
-    const closed = Math.floor(generated * 0.04);
-    this.renderKpiCards([
-      { cls: 'kpi-leads', icon: 'fa-users', label: 'Total Leads', value: generated.toLocaleString(), date: 'Selected Day', growth: '+5%', up: true },
-      { cls: 'kpi-calls', icon: 'fa-user-plus', label: 'Pending Leads', value: pending.toLocaleString(), date: 'Selected Day', growth: '+2%', up: true },
-      { cls: 'kpi-followup', icon: 'fa-calendar-day', label: 'Follow-ups Due', value: followups.toLocaleString(), date: 'Selected Day', growth: '+6%', up: false },
-      { cls: 'kpi-counselling', icon: 'fa-comments', label: 'Counselling Scheduled', value: counselling.toLocaleString(), date: 'Selected Day', growth: '+9%', up: true },
-      { cls: 'kpi-converted', icon: 'fa-graduation-cap', label: 'Total Admission Form', value: admissions.toLocaleString(), date: 'Selected Day', growth: '+8%', up: true },
-      { cls: 'kpi-lost', icon: 'fa-user-times', label: 'Close Leads', value: closed.toLocaleString(), date: 'Selected Day', growth: '-2%', up: true },
-    ]);
-    window.APP_DATA.COUNSELOR_DATA.forEach(c => {
-      c.assigned = Math.floor(Math.random() * 30) + 5;
-      c.contacted = Math.floor(c.assigned * 0.8);
-      c.interested = Math.floor(c.contacted * 0.5);
-      c.admissions = Math.floor(c.interested * 0.3);
-      c.rate = c.assigned > 0 ? parseFloat(((c.admissions / c.assigned) * 100).toFixed(1)) : 0;
-    });
-    this.renderCounselorTable();
-    this.renderSegmentationChart();
-    this.renderStatusChart();
-    this.renderFunnelChart();
-    this.renderTasks();
-    this.renderRecentActivities();
-    this.applyDashboardGoalLayout();
+    if (welcome) welcome.textContent = `${this.dashboardSelectedDate} — Showing data for selected date`;
+    this.refreshDataDrivenViews();
   }
 };

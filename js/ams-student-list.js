@@ -170,7 +170,7 @@ const AMSStudentList = {
     const selection = event.target.closest('[data-amsl-select-card]')?.dataset.amslSelectCard;
     if (selection) return this.toggleSelection(selection);
     const preview = event.target.closest('[data-amsl-preview]')?.dataset.amslPreview;
-    if (preview) return this.openDocuments(preview);
+    if (preview) return window.AMSAdmissionDrawer?.open?.(preview, 'ams-360-documents');
     const rowAction = event.target.closest('[data-amsl-row-action]');
     if (rowAction) return this.handleRowAction(rowAction.dataset.amslRowAction, rowAction.dataset.key);
     const page = event.target.closest('[data-amsl-page]')?.dataset.amslPage;
@@ -314,7 +314,7 @@ const AMSStudentList = {
           </div>
 
           <div class="amsl-row-actions">
-            <button type="button" data-amsl-row-action="view" data-key="${this.escape(row.key)}" data-tooltip="View student" title="View student"><i class="fas fa-eye"></i></button>
+            <button type="button" data-amsl-row-action="view" data-key="${this.escape(row.key)}" data-tooltip="Open 360° details" title="Open 360° details"><i class="fas fa-eye"></i></button>
             <button type="button" data-amsl-row-action="funnel" data-key="${this.escape(row.key)}" data-tooltip="Admission journey" title="Admission journey"><i class="fas fa-route"></i></button>
             <button type="button" class="call" data-amsl-row-action="call" data-key="${this.escape(row.key)}" data-tooltip="Call student" title="Call student"><i class="fas fa-phone"></i></button>
             <button type="button" class="whatsapp" data-amsl-row-action="whatsapp" data-key="${this.escape(row.key)}" data-tooltip="WhatsApp student" title="WhatsApp student"><i class="fab fa-whatsapp"></i></button>
@@ -323,11 +323,10 @@ const AMSStudentList = {
               <button type="button" data-amsl-row-action="more" data-key="${this.escape(row.key)}" data-tooltip="More admission actions" title="More admission actions" aria-expanded="${this.state.openMenuKey === row.key ? 'true' : 'false'}"><i class="fas fa-ellipsis-vertical"></i></button>
               ${this.state.openMenuKey === row.key ? `<div class="amsl-more-menu">
                 <button type="button" data-amsl-row-action="view360" data-key="${this.escape(row.key)}"><i class="fas fa-arrows-to-eye"></i><span>360° admission details</span></button>
-                <button type="button" data-amsl-row-action="profile" data-key="${this.escape(row.key)}"><i class="fas fa-file-lines"></i><span>Open OTR profile</span></button>
                 <button type="button" data-amsl-row-action="followup" data-key="${this.escape(row.key)}"><i class="fas fa-redo"></i><span>Manage follow-up</span></button>
                 <button type="button" data-amsl-row-action="assign" data-key="${this.escape(row.key)}"><i class="fas fa-user-check"></i><span>Assign owner</span></button>
                 <button type="button" data-amsl-row-action="stage" data-key="${this.escape(row.key)}"><i class="fas fa-tags"></i><span>Update stage</span></button>
-                <button type="button" data-amsl-row-action="documents" data-key="${this.escape(row.key)}" ${row.hasDocuments ? '' : 'disabled'}><i class="fas fa-folder-open"></i><span>Preview documents</span></button>
+                <button type="button" data-amsl-row-action="documents" data-key="${this.escape(row.key)}" ${row.hasDocuments ? '' : 'disabled'}><i class="fas fa-folder-open"></i><span>View documents in 360° details</span></button>
                 <button type="button" data-amsl-row-action="duplicate" data-key="${this.escape(row.key)}"><i class="fas fa-clone"></i><span>Duplicate scan</span></button>
                 <button type="button" data-amsl-row-action="print" data-key="${this.escape(row.key)}"><i class="fas fa-print"></i><span>Print admission</span></button>
                 <button type="button" data-amsl-row-action="copy" data-key="${this.escape(row.key)}"><i class="fas fa-copy"></i><span>Copy admission no.</span></button>
@@ -336,38 +335,12 @@ const AMSStudentList = {
                 <button type="button" class="danger" data-amsl-row-action="delete" data-key="${this.escape(row.key)}"><i class="fas fa-trash"></i><span>Delete</span></button>
               </div>` : ''}
             </div>
-            <button type="button" data-amsl-row-action="expand" data-key="${this.escape(row.key)}" data-tooltip="${expanded ? 'Collapse' : 'Expand'} admission row" title="${expanded ? 'Collapse' : 'Expand'} admission row"><i class="fas fa-chevron-${expanded ? 'up' : 'down'}"></i></button>
+            <button type="button" data-amsl-row-action="expand" data-key="${this.escape(row.key)}" data-tooltip="${expanded ? 'Collapse' : 'Expand'} quick-access drawer" title="${expanded ? 'Collapse' : 'Expand'} quick-access drawer"><i class="fas fa-chevron-${expanded ? 'up' : 'down'}"></i></button>
           </div>
         </div>
 
         <div class="lead-expanded-body amsl-reused-expanded amsl-inline-drawer-shell ${expanded ? 'is-open' : ''}" id="amsl-lead-body-${this.escape(row.key)}" style="display:${expanded ? 'block' : 'none'}" aria-hidden="${!expanded}">
-          ${this.renderExtendedRow(row, sequence, selected)}
-          <div class="lead-detail-grid">
-            <div class="lead-detail-col">
-              ${this.expandedDetail('Admission Reference No.', row.admissionNo)}
-              ${this.expandedDetail('Full Name', row.name)}
-              ${this.expandedDetail('Mobile Number', row.phone)}
-              ${this.expandedDetail('State', row.state)}
-              ${this.expandedDetail('District', row.district)}
-            </div>
-            <div class="lead-detail-col">
-              ${this.expandedDetail('Email ID', row.email, true)}
-              ${this.expandedDetail('Academic Status', row.academicStatus)}
-              ${this.expandedDetail('Selected Course', row.course)}
-              ${this.expandedDetail('Batch Selection', row.batch)}
-              ${this.expandedDetail('Relevant Query / Remark', row.query)}
-            </div>
-            <div class="lead-detail-col">
-              ${this.expandedDetail('Mode Of Learning', row.mode)}
-              ${this.expandedDetail('Current Admission Stage', row.stage)}
-              ${this.expandedDetail('Current Stage Status', row.stageStatus)}
-              ${this.expandedDetail('Admission Date/Time', this.formatDateTime(row.admissionDateTime || row.admissionDate))}
-            </div>
-          </div>
-          <div class="lead-assignment-row">
-            <span><i class="fas fa-user-check"></i> Admission Assigned to <strong>${this.escape(row.owner || '—')}</strong>${row.assignedDate ? ` on ${this.escape(this.formatDateTime(row.assignedDate))}` : ''}</span>
-            <button class="edit-assign-btn" type="button" data-amsl-row-action="assign" data-key="${this.escape(row.key)}" title="Assign Admission Owner" aria-label="Assign Admission Owner"><i class="fas fa-user-edit"></i></button>
-          </div>
+          ${this.renderExtendedRow(row)}
         </div>
       </article>
     `;
@@ -500,7 +473,6 @@ const AMSStudentList = {
     if (action === 'followup') return window.AMSAdmissionOps?.showFollowup?.(key);
     if (action === 'edit') return window.AMSAdmissionOps?.showEditAdmission?.(key);
     if (action === 'print-inquiry') {
-      if (row.otrId && window.AMSOTR?.openProfile) return window.AMSOTR.openProfile(row.otrId);
       return window.AMSAdmissionOps?.printAdmission?.(key);
     }
     if (action === 'print-admission') return window.AMSAdmissionOps?.printAdmission?.(key);
@@ -536,8 +508,7 @@ const AMSStudentList = {
     if (window.AMSAdmissionOps?.handleRowAction?.(action, row)) return;
     if (action === 'view') {
       this.closeModal();
-      if (row.otrId && window.AMSOTR?.openProfile) return window.AMSOTR.openProfile(row.otrId);
-      return this.openStudent(row);
+      return window.AMSAdmissionDrawer?.open?.(row.key);
     }
     if (action === 'call') return window.location.href = `tel:${this.phone(row.phone)}`;
     if (action === 'whatsapp') return window.open(`https://wa.me/91${this.phone(row.phone)}`, '_blank', 'noopener');
@@ -546,7 +517,7 @@ const AMSStudentList = {
       this.state.openMenuKey = this.state.openMenuKey === key ? '' : key;
       return this.renderTable();
     }
-    if (action === 'documents') return this.openDocuments(key);
+    if (action === 'documents') return window.AMSAdmissionDrawer?.open?.(key, 'ams-360-documents');
     if (action === 'copy') {
       navigator.clipboard?.writeText(row.admissionNo);
       this.state.openMenuKey = '';
@@ -554,9 +525,7 @@ const AMSStudentList = {
       this.closeModal();
       return;
     }
-    if (action === 'expand') {
-      return this.toggleExpanded(key);
-    }
+    if (action === 'expand') return this.toggleExpanded(key);
   },
 
   handleTool(action) {
@@ -708,8 +677,8 @@ const AMSStudentList = {
     const icon = toggle?.querySelector('i');
     card.classList.toggle('is-expanded', open);
     if (toggle) {
-      toggle.title = `${open ? 'Collapse' : 'Expand'} admission row`;
-      toggle.dataset.tooltip = `${open ? 'Collapse' : 'Expand'} admission row`;
+      toggle.title = `${open ? 'Collapse' : 'Expand'} quick-access drawer`;
+      toggle.dataset.tooltip = `${open ? 'Collapse' : 'Expand'} quick-access drawer`;
     }
     if (icon) icon.className = `fas fa-chevron-${open ? 'up' : 'down'}`;
     if (!drawer) return;
@@ -770,23 +739,17 @@ const AMSStudentList = {
   },
 
   openStudent(row) {
-    this.openModal(row.name, `<div class="amsl-profile-banner"><span>${this.initials(row.name)}</span><div><strong>${this.escape(row.admissionNo)}</strong><small>${this.escape(row.stage)} · ${this.escape(row.stageStatus)}</small></div></div><div class="amsl-detail-grid">${this.detail('Mobile', row.phone)}${this.detail('Email', row.email || 'Not available')}${this.detail('Course', row.course)}${this.detail('Batch', row.batch)}${this.detail('Owner', row.owner)}${this.detail('Source', row.source)}</div>`);
+    window.AMSAdmissionDrawer?.open?.(row.key);
   },
 
   openDocuments(key) {
     const row = this.rows.find(item => item.key === key);
     if (!row || !row.hasDocuments) return;
-    const record = row.otrId ? window.AMSOTR?.getRecords?.().find(item => item.id === row.otrId) : null;
-    const actualDocuments = Object.entries(record?.documents || {}).filter(([, file]) => file?.name);
-    const genericNames = ['Identity Proof', 'SSC Marksheet', 'HSC Marksheet', 'Graduation Certificate', 'Category Certificate', 'Passport Photo'];
-    const documents = actualDocuments.length
-      ? actualDocuments.map(([type, file]) => ({ name: file.name, type: this.titleCase(type), dataUrl: file.dataUrl }))
-      : genericNames.slice(0, row.verifiedDocuments).map(name => ({ name, type: 'Verified document', dataUrl: '' }));
-    this.openModal('Document Preview', `<div class="amsl-document-summary"><strong>${this.escape(row.name)}</strong><span>${this.escape(row.documents)}</span></div><div class="amsl-document-list">${documents.map(document => `<article><i class="fas fa-file-lines"></i><div><strong>${this.escape(document.name)}</strong><span>${this.escape(document.type)}</span></div>${document.dataUrl ? `<a href="${document.dataUrl}" target="_blank" rel="noopener" title="Open document"><i class="fas fa-arrow-up-right-from-square"></i></a>` : `<span class="amsl-verified"><i class="fas fa-circle-check"></i> Verified</span>`}</article>`).join('')}</div>`);
+    window.AMSAdmissionDrawer?.open?.(key, 'ams-360-documents');
   },
 
   openMoreActions(row) {
-    this.openModal('Admission Actions', `<div class="amsl-more-actions"><button type="button" data-amsl-modal-action="view" data-key="${this.escape(row.key)}"><i class="fas fa-user"></i><span><strong>View admission record</strong><small>Open the AMS student details.</small></span></button><button type="button" data-amsl-modal-action="documents" data-key="${this.escape(row.key)}" ${row.hasDocuments ? '' : 'disabled'}><i class="fas fa-folder-open"></i><span><strong>Preview documents</strong><small>Review available admission documents.</small></span></button><button type="button" data-amsl-modal-action="copy" data-key="${this.escape(row.key)}"><i class="fas fa-copy"></i><span><strong>Copy admission number</strong><small>${this.escape(row.admissionNo)}</small></span></button></div>`);
+    window.AMSAdmissionDrawer?.open?.(row.key);
   },
 
   openFilterSummary() {

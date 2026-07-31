@@ -221,7 +221,7 @@ const AMSModule = {
       const feePct = student.total ? Math.round((student.paid / student.total) * 100) : 0;
       const source = student.sourceLeadNo || 'AMS Direct';
       const profileAction = student.otrId
-        ? `<button class="otr-view-button" type="button" onclick="AMSOTR.openProfile('${this.escape(student.otrId)}')"><i class="fas fa-eye"></i> View OTR</button>`
+        ? `<button class="otr-view-button" type="button" onclick="AMSOTR.openProfile('${this.escape(student.otrId)}')"><i class="fas fa-eye"></i> 360° Details</button>`
         : '';
       return `
         <tr>

@@ -361,37 +361,6 @@
 .otr-alert { display: flex; gap: 10px; align-items: center; margin: 20px clamp(20px, 4vw, 42px) 0; padding: 12px 14px; border: 1px solid rgba(220, 38, 38, 0.25); border-radius: 10px; background: rgba(220, 38, 38, 0.07); color: var(--danger); font-size: 11px; font-weight: 700; }
 .otr-alert[hidden] { display: none !important; }
 
-.otr-profile-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: grid;
-  justify-items: end;
-  background: rgba(4, 16, 29, 0.58);
-  opacity: 1;
-  transition: opacity 180ms ease;
-}
-
-.otr-profile-modal[aria-hidden="true"] { visibility: hidden; opacity: 0; pointer-events: none; }
-.otr-profile-dialog { width: min(760px, 94vw); height: 100%; overflow: auto; background: var(--bg-card); box-shadow: -20px 0 60px rgba(0, 0, 0, 0.2); transform: translateX(0); transition: transform 220ms ease; }
-.otr-profile-modal[aria-hidden="true"] .otr-profile-dialog { transform: translateX(100%); }
-.otr-profile-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; border-bottom: 1px solid var(--border); background: var(--bg-card); }
-.otr-profile-head h2 { margin: 3px 0 0; color: var(--text-primary); font-size: 21px; }
-.otr-profile-close { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-subtle); color: var(--text-secondary); cursor: pointer; }
-.otr-profile-body { display: grid; gap: 14px; padding: 22px 26px 40px; }
-.otr-profile-banner { display: grid; grid-template-columns: 50px 1fr auto; gap: 13px; align-items: center; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, var(--primary-light), rgba(22, 163, 74, 0.08)); }
-.otr-profile-avatar { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; background: var(--primary); color: #fff; font-weight: 850; }
-.otr-profile-banner > div:nth-child(2) { display: grid; gap: 3px; }
-.otr-profile-banner strong { color: var(--text-primary); font-size: 13px; }
-.otr-profile-banner span { color: var(--text-muted); font-size: 10px; }
-.otr-profile-section { padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-subtle); }
-.otr-profile-section h3 { display: flex; gap: 8px; align-items: center; margin: 0 0 14px; color: var(--text-primary); font-size: 13px; }
-.otr-profile-section h3 i { color: var(--primary); }
-.otr-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
-.otr-profile-grid > div { display: grid; gap: 3px; min-width: 0; }
-.otr-profile-grid span { color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
-.otr-profile-grid strong { overflow-wrap: anywhere; color: var(--text-primary); font-size: 11px; font-weight: 650; }
-
 .otr-view-button { margin-top: 7px; padding: 5px 8px; border: 1px solid var(--primary); border-radius: 7px; background: var(--primary-light); color: var(--primary); font-size: 9px; font-weight: 800; cursor: pointer; }
 
 .otr-toast { position: fixed; right: 22px; bottom: 22px; z-index: 1500; display: flex; gap: 12px; align-items: center; width: min(390px, calc(100vw - 32px)); padding: 15px 17px; border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 14px; background: var(--bg-card); box-shadow: var(--shadow-xl); color: var(--success); opacity: 0; transform: translateY(14px); transition: 200ms ease; }
@@ -400,8 +369,6 @@
 .otr-toast div { display: grid; gap: 2px; }
 .otr-toast strong { color: var(--text-primary); font-size: 12px; }
 .otr-toast span { color: var(--text-muted); font-size: 10px; }
-
-body.otr-profile-open { overflow: hidden; }
 
 @media (max-width: 900px) {
   .otr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -438,10 +405,5 @@ body.otr-profile-open { overflow: hidden; }
   .otr-subsection-title { align-items: flex-start; }
   .otr-form-actions { align-items: stretch; flex-direction: column; padding: 13px 16px; }
   .otr-form-actions .btn { min-width: 0; padding-inline: 12px !important; }
-  .otr-profile-dialog { width: 100%; }
-  .otr-profile-head, .otr-profile-body { padding-left: 17px; padding-right: 17px; }
-  .otr-profile-grid { grid-template-columns: 1fr; }
-  .otr-profile-banner { grid-template-columns: 46px 1fr; }
-  .otr-profile-banner > .badge { grid-column: 1 / -1; justify-self: start; }
   .otr-toast { right: 16px; bottom: 82px; }
 }

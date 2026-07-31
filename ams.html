@@ -23,12 +23,14 @@
     <link rel="stylesheet" href="css/dashboard.css" />
     <link rel="stylesheet" href="css/leads.css" />
     <link rel="stylesheet" href="css/drawer.css" />
+    <link rel="stylesheet" href="css/calendar.css" />
     <link rel="stylesheet" href="css/ams.css" />
     <link rel="stylesheet" href="css/ams-dashboard.css" />
     <link rel="stylesheet" href="css/ams-student-list.css" />
     <link rel="stylesheet" href="css/otr-form.css" />
     <link rel="stylesheet" href="css/ams-interviews.css" />
     <link rel="stylesheet" href="css/ams-interview-structures.css" />
+    <link rel="stylesheet" href="css/ams-calendar.css" />
     <link rel="stylesheet" href="css/responsive.css" />
     <link rel="stylesheet" href="css/ams-student-list-lms.css" />
   </head>
@@ -90,6 +92,15 @@
             >
               <i class="fas fa-calendar-check" style="width: 12px; color: inherit"></i>
               Interview Scheduling
+            </div>
+
+            <div
+              class="nav-subitem"
+              data-screen="calendar"
+              onclick="AMSApp.showScreen('calendar')"
+            >
+              <i class="fas fa-calendar-days" style="width: 12px; color: inherit"></i>
+              Admission Calendar
             </div>
 
             <div class="nav-group-title">Admission Operations</div>
@@ -219,7 +230,7 @@
                 <button class="amsl-search-clear" type="button" data-amsl-action="clear-search" data-tooltip="Clear search" title="Clear search"><i class="fas fa-times"></i></button>
                 <button type="button" data-amsl-action="filter-summary" data-tooltip="Saved filter views" title="Saved filter views"><i class="fas fa-bookmark"></i></button>
                 <button type="button" data-amsl-action="filter-toggle" data-tooltip="Show or hide filters" title="Show or hide filters"><i class="fas fa-sliders"></i></button>
-                <button type="button" data-amsl-action="expand-all" data-tooltip="Expand or collapse all records" title="Expand or collapse all records"><i class="fas fa-expand-alt"></i></button>
+                <button type="button" data-amsl-action="expand-all" data-tooltip="Expand or collapse quick-access drawers" title="Expand or collapse quick-access drawers"><i class="fas fa-expand-alt"></i></button>
               </div>
             </section>
 
@@ -280,7 +291,7 @@
           <div class="drawer-resize-handle" id="ams-drawer-resize-handle" aria-hidden="true"></div>
           <div class="drawer-topbar">
             <div class="drawer-breadcrumb">
-              Admission Details <span class="sep">&rsaquo;</span>
+              360&deg; Admission Details <span class="sep">&rsaquo;</span>
               <strong id="ams-drawer-reference"></strong>
               <span class="drawer-status-pill badge" id="ams-drawer-status"></span>
             </div>
@@ -308,13 +319,12 @@
                     <button type="button" class="drawer-edit-link" id="ams-drawer-edit"><i class="fas fa-edit"></i> Edit</button>
                   </div>
                   <div class="info-list" id="ams-drawer-info-list"></div>
-                  <div class="ams-drawer-more-wrap"><button type="button" class="drawer-edit-link" id="ams-drawer-view-more">View More Details &rarr;</button></div>
                 </div>
+                <div class="ams-drawer-record-stack" id="ams-drawer-complete-record"></div>
                 <div class="drawer-origin-card" id="ams-drawer-origin"></div>
                 <div class="drawer-info-card">
                   <div class="drawer-card-header">
                     <div class="drawer-card-title"><i class="fas fa-history"></i> Communication Timeline</div>
-                    <button type="button" class="drawer-edit-link" id="ams-drawer-view-history">View All</button>
                   </div>
                   <div class="comm-list" id="ams-drawer-communications"></div>
                   <div class="ams-drawer-activity-wrap">
@@ -345,6 +355,10 @@
           </div>
         </aside>
 
+        <div class="screen" id="screen-calendar">
+          <div class="content-area"></div>
+        </div>
+
         <div class="screen" id="screen-ams-interviews">
           <div class="content-area ams-content ams-interview-page">
             <div id="ams-interview-root"></div>
@@ -364,21 +378,6 @@
           </div>
         </div>
 
-        <div class="otr-profile-modal" id="otr-profile-modal" aria-hidden="true">
-          <div class="otr-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="otr-profile-title">
-            <div class="otr-profile-head">
-              <div>
-                <span class="section-eyebrow">AMS Student Record</span>
-                <h2 id="otr-profile-title">OTR Profile</h2>
-              </div>
-              <button class="otr-profile-close" type="button" aria-label="Close student profile" onclick="AMSOTR.closeProfile()">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-            <div class="otr-profile-body" id="otr-profile-body"></div>
-          </div>
-        </div>
-
         <nav
           class="mobile-bottom-nav"
           id="mobile-bottom-nav"
@@ -395,6 +394,8 @@
     <script src="js/ams-student-operations.js"></script>
     <script src="js/ams-admission-drawer.js"></script>
     <script src="js/ams-interviews.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/ams-calendar.js"></script>
     <script src="js/ams-interview-structures.js"></script>
     <script src="js/ams-dashboard.js"></script>
     <script>
@@ -519,6 +520,7 @@
           "ams-students": "Admission Student List",
           "ams-otr": "OTR Form",
           "ams-interviews": "Interview Scheduling & Management",
+          calendar: "Admission Calendar",
         },
 
         init() {
@@ -528,6 +530,7 @@
           this.showScreen("ams-dashboard");
           window.AMSStudentList?.init?.();
           window.AMSInterviews?.init?.();
+          window.AMSCalendar?.init?.();
           window.AMSModule?.init?.();
           window.AMSDashboard?.init?.();
         },
@@ -546,6 +549,7 @@
           });
           this.currentScreen = name;
           if (name === "ams-dashboard") window.AMSDashboard?.render?.();
+          if (name === "calendar") window.AMSCalendar?.renderCalendar?.();
           const title = document.getElementById("page-section-title");
           if (title) title.textContent = this.titles[name] || "";
           this.renderMobileBottomNav();
@@ -588,6 +592,7 @@
             { screen: "ams-students", icon: "fa-users-viewfinder", label: "Students" },
             { screen: "ams-otr", icon: "fa-file-circle-plus", label: "OTR" },
             { screen: "ams-interviews", icon: "fa-calendar-check", label: "Interviews" },
+            { screen: "calendar", icon: "fa-calendar-days", label: "Calendar" },
           ];
           nav.classList.add("mobile-bottom-nav--compact");
           nav.innerHTML = items

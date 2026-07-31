@@ -672,6 +672,10 @@ const SegmentationModule = {
     this.counselorSummaryCount = document.getElementById('summary-counselor-count');
     this.unassignedSummaryCount = document.getElementById('summary-unassigned-count');
     this.workloadSummaryCount = document.getElementById('summary-workload-count');
+    this.inquirySummaryCount = document.getElementById('summary-inquiry-count');
+    this.unassignedSegmentSummaryCount = document.getElementById('summary-unassigned-segment-count');
+    this.topSegmentSummary = document.getElementById('summary-top-segment');
+    this.topSegmentSummaryMeta = document.getElementById('summary-top-segment-meta');
     this.segmentReportGrid = document.getElementById('segment-report-grid');
     this.assignmentSummaryGrid = document.getElementById('assignment-summary-grid');
     this.assignmentUserList = document.getElementById('assignment-user-list');
@@ -713,6 +717,16 @@ const SegmentationModule = {
 
   isReadOnly() {
     return !AuthModule.can('segmentation', 'edit');
+  },
+
+  escapeHtml(value = '') {
+    return String(value).replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
   },
 
   applyRolePermissions() {
@@ -927,13 +941,21 @@ const SegmentationModule = {
   },
 
   renderSummaryCards() {
-    if (this.segmentSummaryCount) this.segmentSummaryCount.textContent = this.segments.length;
+    const active = this.segments.filter((segment) => !segment.archived);
+    if (this.segmentSummaryCount) this.segmentSummaryCount.textContent = active.length;
     if (this.counselorSummaryCount) this.counselorSummaryCount.textContent = this.counselors.length;
-    const leads = window.APP_DATA.LEAD_DATA || [];
+    const leads = (typeof LeadsModule !== 'undefined' && LeadsModule.leads?.length) ? LeadsModule.leads.filter((lead) => !lead.archived) : (window.APP_DATA.LEAD_DATA || []).filter((lead) => !lead.archived);
     const unassigned = leads.filter(lead => !lead.assignedTo || lead.assignedTo === 'Unassigned').length;
     const avg = this.counselors.length ? Math.round(leads.length / this.counselors.length) : 0;
+    const membershipCount = active.reduce((sum, segment) => sum + (segment.leadIds?.length || 0), 0);
+    const unassignedSegments = active.filter((segment) => !segment.assignedUsers?.length).length;
+    const topSegment = [...active].sort((a, b) => (b.leadIds?.length || 0) - (a.leadIds?.length || 0))[0];
     if (this.unassignedSummaryCount) this.unassignedSummaryCount.textContent = unassigned;
     if (this.workloadSummaryCount) this.workloadSummaryCount.textContent = avg;
+    if (this.inquirySummaryCount) this.inquirySummaryCount.textContent = membershipCount;
+    if (this.unassignedSegmentSummaryCount) this.unassignedSegmentSummaryCount.textContent = unassignedSegments;
+    if (this.topSegmentSummary) this.topSegmentSummary.textContent = topSegment?.name || '-';
+    if (this.topSegmentSummaryMeta) this.topSegmentSummaryMeta.textContent = topSegment ? `${topSegment.leadIds?.length || 0} inquiries` : 'No active segment';
   },
 
   renderSegmentReports() {
@@ -1028,12 +1050,7 @@ const SegmentationModule = {
             <div class="segment-card-details">
               <span><strong>${segment.leadIds.length}</strong> leads</span>
             </div>
-            <div class="segment-tag-row">
-              <span class="state-chip">Scholarship</span>
-              <span class="state-chip">High Priority</span>
-              <span class="state-chip">Parent Inquiry</span>
-              <span class="state-chip">Repeat Inquiry</span>
-            </div>
+            <div class="segment-tag-row"><span class="state-chip">${this.escapeHtml?.(segment.criteria || 'No criteria') || segment.criteria || 'No criteria'}</span></div>
             <div class="segment-assigned-list">${assignedPills}</div>
             <div class="segment-card-criteria">${segment.criteria}</div>
             <div class="segment-card-footer">
@@ -1070,12 +1087,7 @@ const SegmentationModule = {
             <div class="segment-card-details">
               <span><strong>${segment.leadIds.length}</strong> leads</span>
             </div>
-            <div class="segment-tag-row">
-              <span class="state-chip">Scholarship</span>
-              <span class="state-chip">High Priority</span>
-              <span class="state-chip">Parent Inquiry</span>
-              <span class="state-chip">Repeat Inquiry</span>
-            </div>
+            <div class="segment-tag-row"><span class="state-chip">${this.escapeHtml?.(segment.criteria || 'No criteria') || segment.criteria || 'No criteria'}</span></div>
             <div class="segment-assigned-list">${assignedPills}</div>
             <div class="segment-card-criteria">${segment.criteria}</div>
             <div class="segment-card-footer">Created ${segment.createdAt}</div>

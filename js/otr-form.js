@@ -41,7 +41,6 @@ const AMSOTR = {
   init() {
     if (!document.body.classList.contains('otr-public-page')) this.seedSampleRecords();
     this.setupStandaloneTheme();
-    this.bindProfileEvents();
     if (!document.getElementById('otr-form')) return;
     this.renderSections();
     this.bindEvents();
@@ -67,15 +66,6 @@ const AMSOTR = {
       isDark = !document.body.classList.contains('dark');
       apply(isDark);
       try { localStorage.setItem('pa-theme', isDark ? 'dark' : 'light'); } catch (error) {}
-    });
-  },
-
-  bindProfileEvents() {
-    document.getElementById('otr-profile-modal')?.addEventListener('click', event => {
-      if (event.target.id === 'otr-profile-modal') this.closeProfile();
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') this.closeProfile();
     });
   },
 
@@ -732,46 +722,12 @@ const AMSOTR = {
   },
 
   openProfile(id) {
-    const record = this.getRecords().find(item => item.id === id);
-    const modal = document.getElementById('otr-profile-modal');
-    const body = document.getElementById('otr-profile-body');
-    if (!record || !modal || !body) return;
-    document.getElementById('otr-profile-title').textContent = record.personal.fullName;
-    const section = (title, icon, rows) => `
-      <section class="otr-profile-section"><h3><i class="fas ${icon}"></i>${title}</h3><div class="otr-profile-grid">
-        ${rows.map(([label, value]) => `<div><span>${this.escape(label)}</span><strong>${this.escape(value || '—')}</strong></div>`).join('')}
-      </div></section>
-    `;
-    const educationRows = Object.entries(record.education || {}).flatMap(([level, fields]) => {
-      const populated = Object.values(fields || {}).some(Boolean);
-      return populated ? Object.entries(fields).map(([key, value]) => [`${this.titleCase(level)} · ${this.titleCase(key)}`, value]) : [];
-    });
-    const achievementRows = record.achievements?.length
-      ? record.achievements.map((item, index) => [`Achievement ${index + 1}`, [item.title, item.year, item.details].filter(Boolean).join(' · ')])
-      : [['Achievements', 'Not provided']];
-    const governmentExams = Array.isArray(record.governmentExam)
-      ? record.governmentExam
-      : (record.governmentExam ? [record.governmentExam] : []);
-    const governmentExamRows = governmentExams.flatMap((exam, index) => Object.entries(exam || {})
-      .filter(([, value]) => value)
-      .map(([key, value]) => [`Exam ${index + 1} · ${this.titleCase(key)}`, value]));
-    body.innerHTML = `
-      <div class="otr-profile-banner"><div class="otr-profile-avatar">${this.initials(record.personal.fullName)}</div><div><strong>${this.escape(record.otrNo)}</strong><span>Submitted ${new Date(record.updatedAt).toLocaleString('en-IN')}</span></div><span class="badge badge-primary">${this.escape(record.status)}</span></div>
-      ${section('Personal Details', 'fa-user', Object.entries(record.personal).map(([key, value]) => [this.titleCase(key), value]))}
-      ${section('Correspondence Address', 'fa-location-dot', Object.entries(record.address).map(([key, value]) => [this.titleCase(key), value]))}
-      ${section('Education', 'fa-graduation-cap', educationRows.length ? educationRows : [['Education', 'Not provided']])}
-      ${section('Achievements', 'fa-trophy', achievementRows)}
-      ${section('Satsang', 'fa-hands-praying', Object.entries(record.satsang).map(([key, value]) => [this.titleCase(key), value]))}
-      ${section('Government Exam', 'fa-landmark', governmentExamRows.length ? governmentExamRows : [['Government Exam', 'Not provided']])}
-      ${section('Documents', 'fa-file-arrow-up', [['Passport-size Photo', record.documents.passportPhoto?.name], ['File Type', record.documents.passportPhoto?.type], ['File Size', this.formatBytes(record.documents.passportPhoto?.size || 0)]])}
-    `;
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('otr-profile-open');
+    const admissionRow = window.AMSStudentList?.rows?.find(row => row.otrId === id || row.key === id);
+    if (admissionRow) window.AMSAdmissionDrawer?.open?.(admissionRow.key);
   },
 
   closeProfile() {
-    document.getElementById('otr-profile-modal')?.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('otr-profile-open');
+    window.AMSAdmissionDrawer?.close?.();
   },
 
   showAlert(message) {

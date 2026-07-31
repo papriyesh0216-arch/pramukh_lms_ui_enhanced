@@ -16,8 +16,6 @@ const AMSAdmissionDrawer = {
     document.getElementById('ams-admission-drawer-overlay')?.addEventListener('click', () => this.close());
     document.getElementById('ams-drawer-add-followup')?.addEventListener('click', () => this.followup());
     document.getElementById('ams-drawer-edit')?.addEventListener('click', () => this.showEdit());
-    document.getElementById('ams-drawer-view-more')?.addEventListener('click', () => this.viewMore());
-    document.getElementById('ams-drawer-view-history')?.addEventListener('click', () => this.viewHistory());
     document.getElementById('ams-drawer-close-admission')?.addEventListener('click', () => this.closeAdmission());
     drawer.querySelectorAll('[data-ams-drawer-activity]').forEach(button =>
       button.addEventListener('click', () => this.addActivity(button.dataset.amsDrawerActivity))
@@ -38,7 +36,7 @@ const AMSAdmissionDrawer = {
     return window.AMSAdmissionOps?.row?.(this.currentKey) || null;
   },
 
-  open(key) {
+  open(key, focusSection = '') {
     const row = window.AMSAdmissionOps?.row?.(key);
     if (!row) return;
     this.currentKey = key;
@@ -49,6 +47,9 @@ const AMSAdmissionDrawer = {
     drawer?.classList.add('open');
     drawer?.setAttribute('aria-hidden', 'false');
     document.body.classList.add('ams-admission-drawer-open');
+    if (focusSection) {
+      requestAnimationFrame(() => document.getElementById(focusSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
   },
 
   close() {
@@ -115,8 +116,131 @@ const AMSAdmissionDrawer = {
         <div class="info-value">${this.escape(value || '—')}</div>
       </div>
     `).join(''));
+    this.renderCompleteRecord(row);
     this.renderOrigin(row);
     this.renderCommunications(row);
+  },
+
+  renderCompleteRecord(row) {
+    const record = row.otrRecord || (row.otrId
+      ? window.AMSOTR?.getRecords?.().find(item => item.id === row.otrId)
+      : null);
+    const empty = '—';
+    const section = (title, icon, fields, options = {}) => {
+      const rows = (fields || []).filter(([, value]) => options.keepEmpty || this.hasValue(value));
+      return `
+        <section class="ams-360-section${options.className ? ` ${options.className}` : ''}"${options.id ? ` id="${options.id}"` : ''}>
+          <header><h3><i class="fas ${icon}"></i>${this.escape(title)}</h3>${options.meta ? `<span>${this.escape(options.meta)}</span>` : ''}</header>
+          ${rows.length
+            ? `<div class="ams-360-field-grid">${rows.map(([label, value]) => `<div><span>${this.escape(label)}</span><strong>${this.escape(this.displayValue(value))}</strong></div>`).join('')}</div>`
+            : '<div class="ams-360-empty">No connected data available.</div>'}
+        </section>
+      `;
+    };
+
+    const workflowFields = [
+      ['Admission Reference', row.admissionNo],
+      ['OTR Reference', record?.otrNo],
+      ['Last Modified', window.AMSStudentList?.formatDateTime?.(row.updatedAt || record?.updatedAt || row.admissionDateTime)],
+      ['Admission Date', window.AMSStudentList?.formatDateTime?.(row.admissionDateTime || row.admissionDate)],
+      ['Next Action Date', row.nextActionDate],
+      ['Admission Stage', row.stage],
+      ['Stage Status', row.stageStatus],
+      ['Submission Status', row.submissionStatus],
+      ['Purpose', row.purpose],
+      ['Remark', row.remark || row.query],
+      ['Owner', row.owner],
+      ['Assigned Date', window.AMSStudentList?.formatDateTime?.(row.assignedDate)]
+    ];
+    const allocationFields = [
+      ['Selected Course', row.course],
+      ['Batch', row.batch],
+      ['Mode of Learning', row.mode],
+      ['Academic Status', row.academicStatus],
+      ['Fee Status', row.feeStatus],
+      ['Total Fee', this.money(row.total)],
+      ['Paid Amount', this.money(row.paid)],
+      ['Scholarship', row.scholarship || row.documentNote]
+    ];
+    const personalFields = record
+      ? Object.entries(record.personal || {}).map(([key, value]) => [this.titleCase(key), value])
+      : [
+          ['Full Name', row.name], ['Mobile', row.phone], ['Email', row.email],
+          ['Date of Birth', row.dateOfBirth], ['Gender', row.gender]
+        ];
+    const addressFields = record
+      ? Object.entries(record.address || {}).map(([key, value]) => [this.titleCase(key), value])
+      : [['State', row.state], ['District', row.district]];
+    const educationFields = Object.entries(record?.education || {}).flatMap(([level, fields]) =>
+      Object.entries(fields || {})
+        .filter(([, value]) => this.hasValue(value))
+        .map(([key, value]) => [`${this.titleCase(level)} · ${this.titleCase(key)}`, value])
+    );
+    const achievementFields = (record?.achievements || []).flatMap((achievement, index) => [
+      [`Achievement ${index + 1} · Title`, achievement.title],
+      [`Achievement ${index + 1} · Year`, achievement.year],
+      [`Achievement ${index + 1} · Details`, achievement.details]
+    ]);
+    const satsangFields = Object.entries(record?.satsang || {}).map(([key, value]) => [this.titleCase(key), value]);
+    const exams = Array.isArray(record?.governmentExam)
+      ? record.governmentExam
+      : (record?.governmentExam ? [record.governmentExam] : []);
+    const examFields = exams.flatMap((exam, index) => Object.entries(exam || {})
+      .map(([key, value]) => [`Exam ${index + 1} · ${this.titleCase(key)}`, value]));
+    const documents = Object.entries(record?.documents || {}).filter(([, file]) => file?.name);
+    const interviewRows = window.AMSInterviews?.interviewsForStudent?.(row) || [];
+    const classHistory = window.AMSAdmissionOps?.store?.classHistory?.[row.key] || [];
+    const classHistoryFields = classHistory.flatMap((item, index) => [
+      [`Class Change ${index + 1} · From`, item.from],
+      [`Class Change ${index + 1} · To`, item.to],
+      [`Class Change ${index + 1} · Changed On`, window.AMSStudentList?.formatDateTime?.(item.at)],
+      [`Class Change ${index + 1} · Changed By`, item.by]
+    ]);
+    const interviewFields = interviewRows.flatMap((interview, index) => {
+      const structure = window.AMSInterviews?.structureById?.(interview.structureId);
+      const interviewer = window.AMSInterviews?.interviewerById?.(interview.interviewerId);
+      const evaluationFields = (structure?.groups || []).flatMap(group => (group.attributes || [])
+        .filter(attribute => this.hasValue(interview.evaluation?.[attribute.id]))
+        .map(attribute => [`Interview ${index + 1} · ${attribute.name}`, interview.evaluation[attribute.id]]));
+      return [
+        [`Interview ${index + 1} · Reference`, interview.interviewNumber || interview.id],
+        [`Interview ${index + 1} · Structure`, structure?.name || interview.structure || interview.structureName],
+        [`Interview ${index + 1} · Date and Time`, window.AMSStudentList?.formatDateTime?.(interview.datetime)],
+        [`Interview ${index + 1} · Interviewer`, interviewer?.name || interview.interviewer || 'Awaiting Assignment'],
+        [`Interview ${index + 1} · Mode`, interview.mode],
+        [`Interview ${index + 1} · Status`, interview.status],
+        [`Interview ${index + 1} · Score`, interview.score],
+        ...evaluationFields,
+        [`Interview ${index + 1} · Remarks`, interview.remarks]
+      ];
+    });
+    const documentMarkup = `
+      <section class="ams-360-section" id="ams-360-documents">
+        <header><h3><i class="fas fa-file-arrow-up"></i>Documents</h3><span>${this.escape(row.documents || `${row.verifiedDocuments || 0}/${row.totalDocuments || 0} verified`)}</span></header>
+        ${documents.length
+          ? `<div class="ams-360-document-list">${documents.map(([key, file]) => `
+              <article>
+                <i class="fas fa-file-lines"></i>
+                <div><strong>${this.escape(file.name)}</strong><span>${this.escape(this.titleCase(key))} · ${this.escape(file.type || 'File')} · ${this.escape(this.formatBytes(file.size))}</span></div>
+                ${file.dataUrl ? `<a href="${file.dataUrl}" target="_blank" rel="noopener" aria-label="Open ${this.escape(file.name)}"><i class="fas fa-arrow-up-right-from-square"></i></a>` : ''}
+              </article>`).join('')}</div>`
+          : `<div class="ams-360-empty">${this.escape(row.documents || empty)}</div>`}
+      </section>
+    `;
+
+    this.html('ams-drawer-complete-record', [
+      section('Admission Process', 'fa-diagram-project', workflowFields, { keepEmpty: true }),
+      section('Course, Batch and Fees', 'fa-graduation-cap', allocationFields, { id: 'ams-360-course' }),
+      section('Personal Details', 'fa-user', personalFields, { keepEmpty: true }),
+      section('Correspondence Address', 'fa-location-dot', addressFields),
+      section('Education', 'fa-school', educationFields),
+      section('Achievements', 'fa-trophy', achievementFields),
+      section('Satsang', 'fa-hands-praying', satsangFields),
+      section('Government Exam', 'fa-landmark', examFields),
+      section('Class Change History', 'fa-people-arrows', classHistoryFields, { meta: `${classHistory.length} change${classHistory.length === 1 ? '' : 's'}` }),
+      section('Interview History', 'fa-user-tie', interviewFields, { meta: `${interviewRows.length} interview${interviewRows.length === 1 ? '' : 's'}` }),
+      documentMarkup
+    ].join(''));
   },
 
   renderExtended(row) {
@@ -145,7 +269,7 @@ const AMSAdmissionDrawer = {
       button.addEventListener('click', () => {
         const action = button.dataset.amsExtendedContact;
         if (action === 'assign') return window.AMSAdmissionOps?.showAssignment?.([row.key]);
-        if (action === 'documents') return row.hasDocuments && window.AMSStudentList?.openDocuments?.(row.key);
+        if (action === 'documents') return row.hasDocuments && this.open(row.key, 'ams-360-documents');
         if (action === 'journey') return window.AMSAdmissionOps?.showJourney?.(row.key);
         this.addActivity(action);
       })
@@ -241,9 +365,7 @@ const AMSAdmissionDrawer = {
     if (action === 'followup') return this.followup();
     if (action === 'edit') return this.showEdit();
     if (action === 'print-inquiry') {
-      if (row.otrId && window.AMSOTR?.openProfile) window.AMSOTR.openProfile(row.otrId);
-      else window.AMSAdmissionOps?.printAdmission?.(row.key);
-      return;
+      return window.AMSAdmissionOps?.printAdmission?.(row.key);
     }
     if (action === 'print-admission') return window.AMSAdmissionOps?.printAdmission?.(row.key);
     if (action === 'copy') {
@@ -403,15 +525,7 @@ const AMSAdmissionDrawer = {
     const row = this.row();
     if (!row) return;
     if (type === 'course') {
-      return window.AMSAdmissionOps.modal('Course Details', `
-        <div class="amsl-detail-grid">
-          ${window.AMSAdmissionOps.detail('Selected Course', row.course)}
-          ${window.AMSAdmissionOps.detail('Batch Selection', row.batch)}
-          ${window.AMSAdmissionOps.detail('Mode Of Learning', row.mode)}
-          ${window.AMSAdmissionOps.detail('Admission Stage', row.stage)}
-        </div>`,
-        '<button type="button" class="amsl-btn primary" data-ams-dialog-close>Close</button>'
-      );
+      return document.getElementById('ams-360-course')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     if (type === 'edit-buttons') return this.showQuickButtonForm();
     window.AMSAdmissionOps.recordActivity(row.key, {
@@ -471,18 +585,6 @@ const AMSAdmissionDrawer = {
       window.AMSAdmissionOps.closeDialog();
       window.AMSAdmissionOps.toast('Admission details updated', 'success');
     });
-  },
-
-  viewMore() {
-    const row = this.row();
-    if (!row) return;
-    if (row.otrId && window.AMSOTR?.openProfile) return window.AMSOTR.openProfile(row.otrId);
-    if (row.hasDocuments) return window.AMSStudentList.openDocuments(row.key);
-    window.AMSAdmissionOps.toast('No additional OTR or document details are available', 'info');
-  },
-
-  viewHistory() {
-    if (this.currentKey) window.AMSAdmissionOps?.showJourney?.(this.currentKey);
   },
 
   closeAdmission() {
@@ -545,6 +647,35 @@ const AMSAdmissionDrawer = {
 
   applyWidth() {
     this.setWidth(this.width());
+  },
+
+  hasValue(value) {
+    return value !== undefined && value !== null && String(value).trim() !== '';
+  },
+
+  displayValue(value) {
+    return this.hasValue(value) ? value : '—';
+  },
+
+  money(value) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0) return '';
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  },
+
+  formatBytes(value) {
+    const size = Number(value);
+    if (!Number.isFinite(size) || size <= 0) return 'Size unavailable';
+    if (size < 1024) return `${size} B`;
+    if (size < 1048576) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / 1048576).toFixed(1)} MB`;
+  },
+
+  titleCase(value) {
+    return String(value || '')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\b\w/g, character => character.toUpperCase());
   },
 
   text(id, value) {
