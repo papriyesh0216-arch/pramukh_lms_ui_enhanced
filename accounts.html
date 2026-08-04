@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pramukh Academy - Accounts Management System</title>
+    <meta name="description" content="Accounts Management System for admission fees, collections, deposits, fines, refunds, and receipts" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/accounts.css" />
+  </head>
+  <body>
+    <div class="app-shell accounts-shell">
+      <aside class="sidebar accounts-sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-mark"><img src="assets/Logo-04.png" alt="Pramukh Academy" /></div>
+          <div class="logo-text">Pramukh Academy<span>Accounts Suite v1.0</span></div>
+        </div>
+
+        <div class="sidebar-search">
+          <i class="fas fa-search"></i>
+          <input id="accounts-sidebar-search" type="search" placeholder="Search accounts" aria-label="Search Accounts navigation" />
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Accounts navigation">
+          <div class="nav-section">
+            <div class="nav-group-title">Accounts Management</div>
+            <div class="nav-subitem active" aria-current="page">
+              <i class="fas fa-receipt"></i><span>Fees Receipt</span>
+            </div>
+
+            <div class="nav-group-title">Switch System</div>
+            <a class="nav-subitem" href="index.html"><i class="fas fa-chart-line"></i><span>Open LMS System</span></a>
+            <a class="nav-subitem" href="ams.html"><i class="fas fa-building-columns"></i><span>Open AMS System</span></a>
+          </div>
+        </nav>
+
+        <div class="sidebar-account accounts-sidebar-account">
+          <div class="user-avatar">AC</div>
+          <div class="user-info"><div class="user-name">Accounts Desk</div><div class="user-role">Finance Operations</div></div>
+        </div>
+      </aside>
+
+      <main class="main-content accounts-main">
+        <header class="top-header accounts-topbar">
+          <button type="button" class="accounts-mobile-menu" id="accounts-mobile-menu" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
+          <div>
+            <span class="accounts-system-label">Accounts Management System</span>
+            <h1 id="accounts-page-title">Fees Receipt</h1>
+          </div>
+          <div class="accounts-top-actions">
+            <span class="accounts-connection"><i class="fas fa-link"></i> AMS Connected</span>
+            <button type="button" class="accounts-icon-button" data-accounts-theme aria-label="Toggle theme"><i class="fas fa-moon"></i></button>
+          </div>
+        </header>
+
+        <div class="accounts-content" id="accounts-root" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <div class="accounts-backdrop" id="accounts-backdrop"></div>
+    <div class="accounts-layer accounts-payment-layer" id="accounts-payment-layer" aria-hidden="true">
+      <section class="accounts-layer-panel" role="dialog" aria-modal="true" aria-labelledby="accounts-payment-title">
+        <header class="accounts-layer-header">
+          <div><span>Accounts Management</span><h2 id="accounts-payment-title">Payment Form</h2></div>
+          <button type="button" data-close-payment aria-label="Close Payment popup"><i class="fas fa-times"></i></button>
+        </header>
+        <div class="accounts-layer-body" id="accounts-payment-body"></div>
+      </section>
+    </div>
+    <div class="accounts-layer accounts-special-layer" id="accounts-special-layer" aria-hidden="true">
+      <section class="accounts-layer-panel accounts-special-panel" role="dialog" aria-modal="true" aria-labelledby="accounts-special-title">
+        <header class="accounts-layer-header">
+          <div><span>Payment Workflow</span><h2 id="accounts-special-title">Special Fees Structure</h2></div>
+          <button type="button" data-close-special aria-label="Close Special Fees popup"><i class="fas fa-times"></i></button>
+        </header>
+        <div class="accounts-layer-body" id="accounts-special-body"></div>
+      </section>
+    </div>
+    <div class="accounts-dialog" id="accounts-dialog" aria-hidden="true">
+      <div class="accounts-dialog-card" role="dialog" aria-modal="true" aria-labelledby="accounts-dialog-title">
+        <header><h2 id="accounts-dialog-title"></h2><button type="button" data-dialog-close aria-label="Close"><i class="fas fa-times"></i></button></header>
+        <div id="accounts-dialog-body"></div>
+      </div>
+    </div>
+    <div class="accounts-toast-region" id="accounts-toast-region" aria-live="polite"></div>
+
+    <script src="js/ams-data.js"></script>
+    <script src="js/accounts-data.js"></script>
+    <script src="js/accounts.js"></script>
+  </body>
+</html>

@@ -318,6 +318,7 @@ const AMSAdmissionDrawer = {
       ['edit', 'fa-pen-to-square', 'Edit Admission Record', true],
       ['print-inquiry', 'fa-print', 'Print Inquiry Form', Boolean(row.source)],
       ['print-admission', 'fa-print', 'Print Admission Form', hasAdmissionForm],
+      ['accounts', 'fa-receipt', 'Open Fees & Receipts', true],
       ['copy', 'fa-copy', 'Copy Admission Record', true],
       ['schedule-interview', 'fa-hourglass-half', 'Schedule Interview', eligibleForInterview],
       ['change-class', 'fa-link', 'Change Class', canChangeClass],
@@ -368,6 +369,7 @@ const AMSAdmissionDrawer = {
       return window.AMSAdmissionOps?.printAdmission?.(row.key);
     }
     if (action === 'print-admission') return window.AMSAdmissionOps?.printAdmission?.(row.key);
+    if (action === 'accounts') return this.openAccounts(row);
     if (action === 'copy') {
       const value = [row.admissionNo, row.name, row.phone, row.email, row.course, row.batch].filter(Boolean).join(' | ');
       navigator.clipboard?.writeText(value);
@@ -524,6 +526,7 @@ const AMSAdmissionDrawer = {
   quickAction(type) {
     const row = this.row();
     if (!row) return;
+    if (type === 'accounts') return this.openAccounts(row);
     if (type === 'course') {
       return document.getElementById('ams-360-course')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -535,6 +538,12 @@ const AMSAdmissionDrawer = {
       by: row.owner
     });
     window.AMSAdmissionOps.toast('Brochure activity recorded', 'success');
+  },
+
+  openAccounts(row) {
+    if (!row?.key) return;
+    localStorage.setItem('paAccountsSelectedStudent', row.key);
+    window.location.href = `accounts.html?student=${encodeURIComponent(row.key)}`;
   },
 
   showQuickButtonForm() {

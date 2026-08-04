@@ -34,11 +34,6 @@ body.sidebar-collapsed .nav-group-title::after {
   opacity: 0.9;
 }
 
-.nav-sub-subitem-muted {
-  opacity: 0.72;
-  cursor: default;
-}
-
 .system-hero,
 .ams-header {
   display: flex;
