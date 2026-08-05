@@ -9,22 +9,57 @@
     specialSelected: new Set(),
     expandedStructures: new Set(),
     lastReceipt: null,
+    primaryScrollTop: 0,
 
     init() {
       this.students = window.AccountsData.students();
       this.student = window.AccountsData.selectedStudent();
       if (this.student) window.AccountsData.selectStudent(this.student.key);
+      this.setupSharedNavigation();
       this.bindEvents();
       this.applyTheme();
       this.show('r1');
+      this.renderMobileNavigation();
+    },
+
+    setupSharedNavigation() {
+      window.SharedNavigation?.mount({
+        module: 'accounts',
+        suiteLabel: 'Accounts Suite v1.0',
+        searchPlaceholder: 'Search Accounts menu...',
+        ariaLabel: 'Accounts navigation',
+        activeScreen: 'fees-receipt',
+        collapseButtonId: 'accounts-sidebar-collapse-btn',
+        collapseStorageKey: 'pa-accounts-sidebar-collapsed',
+        supportLabel: 'Finance Desk',
+        role: 'accounts-admin',
+        permissions: { receipts: true },
+        menuItems: [
+          { type: 'title', label: 'Accounts Management' },
+          { screen: 'fees-receipt', icon: 'fa-receipt', label: 'Fees Receipt', permission: 'receipts' },
+          { type: 'title', label: 'Switch System' },
+          { href: 'index.html', icon: 'fa-chart-line', label: 'Open LMS System' },
+          { href: 'ams.html', icon: 'fa-building-columns', label: 'Open AMS System' }
+        ],
+        onScreen: () => this.show('r1'),
+        onAccountSettings: () => this.openAccountsSettings()
+      });
+    },
+
+    renderMobileNavigation() {
+      window.SharedNavigation?.renderBottomNav({
+        items: [{ id: 'fees-receipt', icon: 'fa-receipt', label: 'Fees Receipt' }],
+        activeId: 'fees-receipt',
+        compact: true,
+        includeMenu: true,
+        onSelect: () => this.show('r1')
+      });
     },
 
     bindEvents() {
       document.addEventListener('click', event => this.handleClick(event));
       document.addEventListener('change', event => this.handleChange(event));
       document.addEventListener('input', event => this.handleInput(event));
-      document.getElementById('accounts-backdrop')?.addEventListener('click', () => this.toggleNavigation(false));
-      document.getElementById('accounts-mobile-menu')?.addEventListener('click', () => this.toggleNavigation());
       document.getElementById('accounts-dialog')?.addEventListener('click', event => {
         if (event.target.id === 'accounts-dialog' || event.target.closest('[data-dialog-close]')) this.closeDialog();
       });
@@ -39,7 +74,7 @@
           if (document.getElementById('accounts-dialog')?.getAttribute('aria-hidden') === 'false') this.closeDialog();
           else if (this.isSpecialOpen()) this.closeSpecialPopup();
           else if (this.isPaymentOpen()) this.closePaymentPopup();
-          this.toggleNavigation(false);
+          window.SharedNavigation?.closeResponsiveMenu();
         }
       });
       window.addEventListener('accounts:data-change', () => {
@@ -51,6 +86,8 @@
       if (event.target.closest('[data-close-payment]')) return this.closePaymentPopup();
       if (event.target.closest('[data-close-special]')) return this.closeSpecialPopup();
       if (event.target.closest('[data-accounts-theme]')) return this.toggleTheme();
+      const landingAction = event.target.closest('[data-landing-action]')?.dataset.landingAction;
+      if (landingAction) return this.openLandingAction(landingAction);
       const action = event.target.closest('[data-accounts-action]')?.dataset.accountsAction;
       if (action) return this.action(action);
       const quick = event.target.closest('[data-r2-action]')?.dataset.r2Action;
@@ -84,7 +121,7 @@
       if (!root) return;
       root.innerHTML = !this.student ? this.emptyState() : this.renderR1();
       if (this.student) this.syncR1();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.querySelector('.accounts-main')?.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
     isPaymentOpen() {
@@ -99,17 +136,26 @@
       const layer = document.getElementById('accounts-payment-layer');
       const body = document.getElementById('accounts-payment-body');
       if (!layer || !body || !this.student) return;
-      if (body.dataset.studentKey !== this.student.key || !body.children.length) {
-        body.innerHTML = this.renderR2();
+      const popupMode = options.mode || 'receipt';
+      if (body.dataset.studentKey !== this.student.key || body.dataset.popupMode !== popupMode || !body.children.length) {
+        if (popupMode === 'operations') {
+          this.r2Action = options.action || 'collection';
+          body.innerHTML = this.renderR2();
+        } else {
+          body.innerHTML = this.renderPaymentReceiptForm();
+          this.syncR1();
+        }
         body.dataset.studentKey = this.student.key;
+        body.dataset.popupMode = popupMode;
       }
+      const main = document.querySelector('.accounts-main');
+      this.primaryScrollTop = main?.scrollTop || 0;
       layer.setAttribute('aria-hidden', 'false');
       const shell = document.querySelector('.accounts-shell');
       if (shell) shell.inert = true;
       document.body.classList.add('accounts-layer-open', 'accounts-payment-open');
       if (options.highlightSpecial) {
-        body.querySelector('[data-r2-action="special"]')?.focus();
-        this.toast('Use Special Fees inside the Payment popup to open its structure.', 'success');
+        this.openSpecialPopup();
       }
     },
 
@@ -121,6 +167,8 @@
       if (shell) shell.inert = false;
       if (paymentPanel) paymentPanel.inert = false;
       document.body.classList.remove('accounts-payment-open', 'accounts-layer-open');
+      const main = document.querySelector('.accounts-main');
+      if (main) main.scrollTop = this.primaryScrollTop;
     },
 
     openSpecialPopup() {
@@ -151,6 +199,49 @@
     },
 
     renderR1() {
+      const s = this.student;
+      const nextReceipt = window.AccountsData.nextReceiptNumber();
+      const course = s.course || 'Not assigned';
+      const mode = s.mode || 'Not assigned';
+      return [
+        '<section class="accounts-view accounts-receipt-landing" data-view="r1">',
+          '<div class="accounts-receipt-title">',
+            '<div class="accounts-receipt-title-icon"><i class="fas fa-file-invoice-dollar"></i></div>',
+            '<div><h2>Fees Receipt</h2><p>Enter the details to generate fees receipt</p></div>',
+          '</div>',
+          '<div class="accounts-landing-layout">',
+            '<div class="accounts-landing-sections">',
+              this.landingSection(1, 'Receipt Information',
+                this.field('Entry No', 'landingEntryNumber', 'AUTO', 'text', 'readonly') +
+                this.field('Receipt No', 'landingReceiptNumber', nextReceipt, 'text', 'readonly')),
+              this.landingSection(2, 'Academic Details',
+                this.landingSelect('Exam', 'landingExam', [course, 'UPSC', 'GPSC', 'Foundation Programme'], course) +
+                this.landingSelect('Course', 'landingCourse', [course, 'UPSC Foundation', 'GPSC Foundation'], course) +
+                this.landingSelect('Learning Mode', 'landingMode', [mode, 'Online', 'Offline', 'Hybrid'], mode)),
+              this.landingSection(3, 'Student Identification',
+                this.field('UID', 'landingUid', s.uid, 'text', 'readonly minlength="3"') +
+                '<label class="accounts-field"><span>Search Student</span><select data-student-select>' + this.studentOptions() + '</select><small>Min 3 characters</small></label>'),
+              this.landingSection(4, 'Trust Company',
+                this.landingSelect('Trust Company', 'landingTrustCompany', ['B.A.P.S. VISION', 'Pramukh Academy Trust', 'Pramukh Education Foundation'], 'B.A.P.S. VISION')),
+            '</div>',
+            '<aside class="accounts-card accounts-landing-actions">',
+              '<div class="accounts-landing-illustration" aria-hidden="true"><i class="fas fa-file-invoice"></i><i class="fas fa-calculator"></i></div>',
+              '<h3>Quick Actions</h3><p>Choose an action to proceed</p>',
+              '<div class="accounts-landing-action-list">',
+                this.landingQuickAction('payment', 'fa-credit-card', 'Payment', 'primary'),
+                this.landingQuickAction('collection', 'fa-list-check', 'Collection Details', 'success'),
+                this.landingQuickAction('refund', 'fa-arrow-rotate-left', 'Fees Refund', 'warning'),
+                this.landingQuickAction('refund-detail', 'fa-notes-medical', 'Fees Refund Detail', 'purple'),
+                this.landingQuickAction('print-last', 'fa-print', 'Print Last Receipt', 'info'),
+                this.landingQuickAction('reset', 'fa-arrow-rotate-right', 'Reset', 'muted'),
+              '</div>',
+            '</aside>',
+          '</div>',
+        '</section>'
+      ].join('');
+    },
+
+    renderPaymentReceiptForm() {
       const student = this.student;
       const account = window.AccountsData.accountFor(student);
       const receipts = window.AccountsData.receiptsFor(student.key);
@@ -301,6 +392,7 @@
         items
       });
       this.toast(this.lastReceipt.receiptNumber + ' saved successfully.', 'success');
+      this.closePaymentPopup();
       this.show('r1');
       if (printAfter) window.setTimeout(() => window.print(), 120);
     },
@@ -402,6 +494,16 @@
       if (action === 'special') return this.openSpecialPopup();
       this.r2Action = action;
       this.refreshPaymentWorkspace();
+    },
+
+    openLandingAction(action) {
+      if (action === 'payment') return this.openPaymentPopup({ mode: 'receipt' });
+      if (action === 'print-last') return this.printLastReceipt();
+      if (action === 'reset') {
+        this.show('r1');
+        return this.toast('Fees Receipt form reset.', 'success');
+      }
+      return this.openPaymentPopup({ mode: 'operations', action });
     },
 
     refreshPaymentWorkspace() {
@@ -659,14 +761,14 @@
 
     capturePrimaryDraft(excludedFeeHeadIds = new Set()) {
       const draft = {
-        scrollY: window.scrollY,
-        receiptNumber: document.querySelector('#accounts-root [name="receiptNumber"]')?.value || '',
-        referenceNumber: document.querySelector('#accounts-root [name="referenceNumber"]')?.value || '',
-        paymentMode: document.querySelector('#accounts-root [name="paymentMode"]')?.value || '',
-        remark: document.getElementById('r1-remark')?.value || '',
+        scrollY: document.querySelector('.accounts-main')?.scrollTop || 0,
+        receiptNumber: document.querySelector('#accounts-payment-body [name="receiptNumber"]')?.value || '',
+        referenceNumber: document.querySelector('#accounts-payment-body [name="referenceNumber"]')?.value || '',
+        paymentMode: document.querySelector('#accounts-payment-body [name="paymentMode"]')?.value || '',
+        remark: document.querySelector('#accounts-payment-body #r1-remark')?.value || '',
         rows: {}
       };
-      document.querySelectorAll('#accounts-root [data-r1-row]').forEach(row => {
+      document.querySelectorAll('#accounts-payment-body [data-r1-row]').forEach(row => {
         if (excludedFeeHeadIds.has(row.dataset.feeHeadId)) return;
         draft.rows[row.dataset.r1Row] = {
           amount: row.querySelector('[data-r1-amount]')?.value || '0',
@@ -683,12 +785,12 @@
         const field = document.querySelector(selector);
         if (field) field.value = value;
       };
-      setValue('#accounts-root [name="receiptNumber"]', draft.receiptNumber);
-      setValue('#accounts-root [name="referenceNumber"]', draft.referenceNumber);
-      setValue('#accounts-root [name="paymentMode"]', draft.paymentMode);
-      setValue('#r1-remark', draft.remark);
+      setValue('#accounts-payment-body [name="receiptNumber"]', draft.receiptNumber);
+      setValue('#accounts-payment-body [name="referenceNumber"]', draft.referenceNumber);
+      setValue('#accounts-payment-body [name="paymentMode"]', draft.paymentMode);
+      setValue('#accounts-payment-body #r1-remark', draft.remark);
       Object.entries(draft.rows || {}).forEach(([id, values]) => {
-        const row = document.querySelector('#accounts-root [data-r1-row="' + CSS.escape(id) + '"]');
+        const row = document.querySelector('#accounts-payment-body [data-r1-row="' + CSS.escape(id) + '"]');
         if (!row) return;
         const amount = row.querySelector('[data-r1-amount]');
         const due = row.querySelector('[data-r1-due]');
@@ -697,24 +799,24 @@
       });
       this.syncR1();
       Object.entries(draft.rows || {}).forEach(([id, values]) => {
-        const select = document.querySelector('#accounts-root [data-r1-row="' + CSS.escape(id) + '"] [data-r1-select]');
+        const select = document.querySelector('#accounts-payment-body [data-r1-row="' + CSS.escape(id) + '"] [data-r1-select]');
         if (select && !select.disabled) select.checked = values.selected;
       });
       this.syncR1();
-      window.scrollTo({ top: draft.scrollY, behavior: 'auto' });
+      document.querySelector('.accounts-main')?.scrollTo({ top: draft.scrollY, behavior: 'auto' });
     },
 
     refreshPrimaryAfterFinancialChange(draft = this.capturePrimaryDraft()) {
-      const root = document.getElementById('accounts-root');
-      if (!root || !this.student) return;
-      root.innerHTML = this.renderR1();
+      const body = document.getElementById('accounts-payment-body');
+      if (!body || !this.student || body.dataset.popupMode !== 'receipt') return;
+      body.innerHTML = this.renderPaymentReceiptForm();
       this.restorePrimaryDraft(draft);
     },
 
     action(action) {
       const routes = {
         'online-payment': () => this.openPaymentPopup(),
-        'special-fees': () => this.openPaymentPopup({ highlightSpecial: true }),
+        'special-fees': () => this.isPaymentOpen() ? this.openSpecialPopup() : this.openPaymentPopup({ highlightSpecial: true }),
         'save-r1': () => this.saveR1(false),
         'save-print-r1': () => this.saveR1(true),
         'cancel-r1': () => this.show('r1'),
@@ -808,9 +910,18 @@
       window.setTimeout(() => toast.remove(), 3600);
     },
 
-    toggleNavigation(force) {
-      const open = typeof force === 'boolean' ? force : !document.body.classList.contains('accounts-nav-open');
-      document.body.classList.toggle('accounts-nav-open', open);
+    openAccountsSettings() {
+      this.openDialog('Account Settings', [
+        '<section class="accounts-card-body accounts-form-grid">',
+          '<div class="accounts-field span-2"><span>Active Module</span><input value="Accounts Management System" readonly></div>',
+          '<div class="accounts-field"><span>Account</span><input value="Accounts Desk" readonly></div>',
+          '<div class="accounts-field"><span>Role</span><input value="Finance Operations" readonly></div>',
+          '<div class="accounts-footer-actions span-all">',
+            '<button class="accounts-btn secondary" type="button" data-accounts-theme><i class="fas fa-circle-half-stroke"></i> Toggle Theme</button>',
+            '<button class="accounts-btn primary" type="button" data-dialog-close>Done</button>',
+          '</div>',
+        '</section>'
+      ].join(''));
     },
 
     applyTheme() {
@@ -827,6 +938,19 @@
 
     studentOptions() {
       return this.students.map(student => '<option value="' + this.escape(student.key) + '" ' + (student.key === this.student?.key ? 'selected' : '') + '>' + this.escape(student.name || 'Unnamed student') + ' · ' + this.escape(student.uid || student.admissionNo || '') + '</option>').join('');
+    },
+
+    landingSection(number, title, content) {
+      return '<section class="accounts-card accounts-landing-section"><div class="accounts-landing-section-head"><span>' + number + '</span><h3>' + title + '</h3></div><div class="accounts-card-body accounts-landing-fields">' + content + '</div></section>';
+    },
+
+    landingSelect(label, name, options, selected) {
+      const unique = [...new Set(options.filter(Boolean))];
+      return '<label class="accounts-field"><span>' + label + '</span><select name="' + name + '">' + unique.map(option => '<option value="' + this.escape(option) + '" ' + (option === selected ? 'selected' : '') + '>' + this.escape(option) + '</option>').join('') + '</select></label>';
+    },
+
+    landingQuickAction(action, icon, label, tone) {
+      return '<button class="accounts-landing-action ' + tone + '" type="button" data-landing-action="' + action + '"><i class="fas ' + icon + '"></i><span>' + label + '</span></button>';
     },
 
     actionTile(action, icon, label, description) {

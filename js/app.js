@@ -325,9 +325,36 @@ const App = {
     ],
   },
 
+  setupSharedNavigation() {
+    window.SharedNavigation?.mount({
+      module: 'lms',
+      suiteLabel: 'ERP Suite v3.0',
+      searchPlaceholder: 'Search menu...',
+      ariaLabel: 'LMS navigation',
+      activeScreen: this.currentScreen,
+      collapseButtonId: 'sidebar-collapse-btn',
+      collapseStorageKey: 'pa-sidebar-collapsed',
+      supportLabel: 'Contact Support',
+      role: window.DEMO_AUTH?.role || 'admin',
+      permissions: window.DEMO_AUTH?.permissions || {},
+      menuItems: [
+        { screen: 'dashboard', icon: 'fa-tachometer-alt', label: 'Student Inquiry Dashboard' },
+        { type: 'submenu', id: 'submenu-inquiry-lead', icon: 'fa-users', label: 'Student Inquiry Lead', items: [
+          { screen: 'leads', label: 'Inquiry List' },
+          { screen: 'segmentation', icon: 'fa-sitemap', label: 'Assignment & Segmentation' },
+          { href: 'inquiry-form.html', newTab: true, icon: 'fa-arrow-up-right-from-square', label: 'Inquiry Form' }
+        ] },
+        { href: 'ams.html', icon: 'fa-building-columns', label: 'Open Admission System' },
+        { href: 'accounts.html', icon: 'fa-coins', label: 'Open Accounts System' }
+      ],
+      onScreen: screen => this.showScreen(screen),
+      onAccountSettings: () => window.AccountSettingsModule?.open?.()
+    });
+  },
+
   init() {
     AuthModule.init();
-    this.setupNavigation();
+    this.setupSharedNavigation();
     this.setupTopbar();
     AccountSettingsModule.init();
     this.setupResponsiveShell();
@@ -535,6 +562,7 @@ const App = {
   },
 
   syncActiveNavigation(name) {
+    window.SharedNavigation?.setActive('lms', name);
     document.querySelectorAll('[data-screen]').forEach(item => {
       item.classList.toggle('active', item.dataset.screen === name);
     });

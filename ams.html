@@ -36,7 +36,7 @@
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar">
+      <aside class="sidebar" id="shared-navigation-sidebar">
         <div class="sidebar-logo">
           <div class="logo-mark">
             <img
@@ -373,6 +373,7 @@
       </div>
     </div>
 
+    <script src="js/shared-navigation.js"></script>
     <script src="js/indian-locations.js"></script>
     <script src="js/ams-data.js"></script>
     <script src="js/ams.js"></script>
@@ -510,9 +511,36 @@
           calendar: "Admission Calendar",
         },
 
+        setupSharedNavigation() {
+          window.SharedNavigation?.mount({
+            module: "ams",
+            suiteLabel: "AMS Suite v1.0",
+            searchPlaceholder: "Search AMS menu...",
+            ariaLabel: "AMS navigation",
+            activeScreen: this.currentScreen,
+            collapseButtonId: "ams-sidebar-collapse-btn",
+            collapseStorageKey: "pa-ams-sidebar-collapsed",
+            supportLabel: "Admission Desk",
+            role: "ams-admin",
+            permissions: {},
+            menuItems: [
+              { screen: "ams-dashboard", icon: "fa-building-columns", label: "Admission Dashboard" },
+              { screen: "ams-students", icon: "fa-users-viewfinder", label: "Admission Student List" },
+              { href: "otr-form.html", newTab: true, icon: "fa-arrow-up-right-from-square", label: "Student OTR Form" },
+              { screen: "ams-interviews", icon: "fa-calendar-check", label: "Interview Scheduling" },
+              { screen: "calendar", icon: "fa-calendar-days", label: "Admission Calendar" },
+              { type: "title", label: "Switch System" },
+              { href: "index.html", icon: "fa-chart-line", label: "Open LMS System" },
+              { href: "accounts.html", icon: "fa-coins", label: "Open Accounts System" }
+            ],
+            onScreen: (screen) => this.showScreen(screen),
+            onAccountSettings: () => AMSAccountSettings.open()
+          });
+        },
+
         init() {
+          this.setupSharedNavigation();
           AMSAccountSettings.init();
-          this.restoreSidebarState();
           this.setupResponsiveShell();
           this.showScreen("ams-dashboard");
           window.AMSStudentList?.init?.();
@@ -534,6 +562,7 @@
           document.querySelectorAll("[data-screen]").forEach((item) => {
             item.classList.toggle("active", item.dataset.screen === name);
           });
+          window.SharedNavigation?.setActive("ams", name);
           this.currentScreen = name;
           if (name === "ams-dashboard") window.AMSDashboard?.render?.();
           if (name === "calendar") window.AMSCalendar?.renderCalendar?.();
@@ -572,26 +601,18 @@
         },
 
         renderMobileBottomNav() {
-          const nav = document.getElementById("mobile-bottom-nav");
-          if (!nav) return;
           const items = [
-            { screen: "ams-dashboard", icon: "fa-building-columns", label: "Dashboard" },
-            { screen: "ams-students", icon: "fa-users-viewfinder", label: "Students" },
-            { screen: "ams-otr", icon: "fa-file-circle-plus", label: "OTR" },
-            { screen: "ams-interviews", icon: "fa-calendar-check", label: "Interviews" },
-            { screen: "calendar", icon: "fa-calendar-days", label: "Calendar" },
+            { id: "ams-dashboard", icon: "fa-building-columns", label: "Dashboard" },
+            { id: "ams-students", icon: "fa-users-viewfinder", label: "Students" },
+            { id: "ams-otr", icon: "fa-file-circle-plus", label: "OTR" },
+            { id: "ams-interviews", icon: "fa-calendar-check", label: "Interviews" },
+            { id: "calendar", icon: "fa-calendar-days", label: "Calendar" },
           ];
-          nav.classList.add("mobile-bottom-nav--compact");
-          nav.innerHTML = items
-            .map((item) => `
-              <button class="mobile-bottom-nav__item ${this.currentScreen === item.screen ? "active" : ""}" type="button" data-mobile-screen="${item.screen}">
-                <i class="fas ${item.icon}"></i>
-                <span>${item.label}</span>
-              </button>
-            `)
-            .join("");
-          nav.querySelectorAll("[data-mobile-screen]").forEach((button) => {
-            button.addEventListener("click", () => this.showScreen(button.dataset.mobileScreen));
+          window.SharedNavigation?.renderBottomNav({
+            items,
+            activeId: this.currentScreen,
+            compact: true,
+            onSelect: (screen) => this.showScreen(screen)
           });
         },
 
