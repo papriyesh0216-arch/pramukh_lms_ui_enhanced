@@ -174,6 +174,7 @@
       if (action === 'calendar') {
         window.AMSStudentList.state.openMenuKey = '';
         if (window.AMSCalendar?.openExistingCalendar) window.AMSCalendar.openExistingCalendar();
+        else if (typeof AMSApp !== 'undefined') AMSApp.showScreen('calendar');
         else window.AMSApp?.showScreen?.('calendar');
         return true;
       }
@@ -240,19 +241,20 @@
     });
 
     // Goal 6: Admission Calendar remains implemented but is no longer a sidebar/mobile-nav entry.
-    if (window.AMSApp) {
-      const originalSetupSharedNavigation = window.AMSApp.setupSharedNavigation?.bind(window.AMSApp);
+    const app = typeof AMSApp !== 'undefined' ? AMSApp : window.AMSApp;
+    if (app) {
+      const originalSetupSharedNavigation = app.setupSharedNavigation?.bind(app);
       if (originalSetupSharedNavigation) {
-        window.AMSApp.setupSharedNavigation = function patchedSetupSharedNavigation() {
+        app.setupSharedNavigation = function patchedSetupSharedNavigation() {
           const result = originalSetupSharedNavigation();
           removeCalendarNavigation();
           return result;
         };
       }
 
-      const originalRenderMobileBottomNav = window.AMSApp.renderMobileBottomNav?.bind(window.AMSApp);
+      const originalRenderMobileBottomNav = app.renderMobileBottomNav?.bind(app);
       if (originalRenderMobileBottomNav) {
-        window.AMSApp.renderMobileBottomNav = function patchedRenderMobileBottomNav() {
+        app.renderMobileBottomNav = function patchedRenderMobileBottomNav() {
           const result = originalRenderMobileBottomNav();
           removeCalendarNavigation();
           return result;
