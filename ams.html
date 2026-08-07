@@ -74,7 +74,7 @@
               onclick="AMSApp.showScreen('ams-students')"
             >
               <i class="fas fa-users-viewfinder" style="width: 12px; color: inherit"></i>
-              Admission Student List
+              Student Pipeline
             </div>
 
             <div
@@ -92,15 +92,6 @@
             >
               <i class="fas fa-calendar-check" style="width: 12px; color: inherit"></i>
               Interview Scheduling
-            </div>
-
-            <div
-              class="nav-subitem"
-              data-screen="calendar"
-              onclick="AMSApp.showScreen('calendar')"
-            >
-              <i class="fas fa-calendar-days" style="width: 12px; color: inherit"></i>
-              Admission Calendar
             </div>
 
             <div class="nav-group-title">Switch System</div>
@@ -504,7 +495,7 @@
         currentScreen: "ams-dashboard",
         titles: {
           "ams-dashboard": "Admission Dashboard",
-          "ams-students": "Admission Student List",
+          "ams-students": "Student Pipeline",
           "ams-otr": "OTR Form",
           "ams-interviews": "Interview Scheduling & Management",
           calendar: "Admission Calendar",
@@ -524,7 +515,7 @@
             permissions: {},
             menuItems: [
               { screen: "ams-dashboard", icon: "fa-building-columns", label: "Admission Dashboard" },
-              { screen: "ams-students", icon: "fa-users-viewfinder", label: "Admission Student List" },
+              { screen: "ams-students", icon: "fa-users-viewfinder", label: "Student Pipeline" },
               { href: "otr-form.html", newTab: true, icon: "fa-arrow-up-right-from-square", label: "Student OTR Form" },
               { screen: "ams-interviews", icon: "fa-calendar-check", label: "Interview Scheduling" },
               { screen: "calendar", icon: "fa-calendar-days", label: "Admission Calendar" },

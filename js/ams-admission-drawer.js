@@ -95,18 +95,18 @@ const AMSAdmissionDrawer = {
     `).join(''));
 
     const infoRows = [
-      ['fa-user', 'Full Name', row.name],
-      ['fa-phone', 'Mobile', row.phone],
+      ['fa-route', 'Admission Stage', row.stage],
+      ['fa-circle-check', 'Stage Status', row.stageStatus],
+      ['fa-phone', 'Phone', row.phone],
       ['fa-envelope', 'Email', row.email],
-      ['fa-map', 'State', row.state],
-      ['fa-map-marker-alt', 'District', row.district],
       ['fa-book', 'Selected Course', row.course],
       ['fa-layer-group', 'Batch Selection', row.batch],
       ['fa-laptop', 'Mode Of Learning', row.mode],
       ['fa-graduation-cap', 'Academic Status', row.academicStatus],
-      ['fa-route', 'Current Admission Stage', row.stage],
-      ['fa-circle-check', 'Current Stage Status', row.stageStatus],
-      ['fa-user-check', 'Current Owner', row.owner],
+      ['fa-calendar-check', 'Follow-up Date', row.followupDate ? window.AMSStudentList.formatShortDate(row.followupDate) : '—'],
+      ['fa-clipboard-list', 'Follow-up Purpose', row.followupPurpose || '—'],
+      ['fa-map', 'State', row.state],
+      ['fa-map-marker-alt', 'District', row.district],
       ['fa-question-circle', 'Relevant Query / Remark', row.query]
     ];
     this.html('ams-drawer-info-list', infoRows.map(([icon, label, value]) => `

@@ -131,8 +131,10 @@ const AMSStudentList = {
     const batch = /^pending allocation$/i.test(String(student.batch || '').trim()) ? '' : (student.batch || '');
     const personal = otrRecord?.personal || {};
     const photo = otrRecord?.documents?.passportPhoto;
+    const email = student.email || personal.email || `${String(student.name || 'student').toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '')}@pramukhacademy.com`;
     return {
       ...student,
+      email,
       key: internalKey,
       otrNo,
       admissionNo: otrNo,
@@ -334,7 +336,7 @@ const AMSStudentList = {
           <div class="amsl-card-student">
             <span class="amsl-card-avatar">${row.photo ? `<img src="${this.escape(row.photo)}" alt="">` : this.escape(this.initials(row.name))}</span>
             <div><button type="button" class="amsl-card-name" data-amsl-row-action="view" data-key="${this.escape(row.key)}">${this.escape(row.name)}</button>
-            <span><i class="fas fa-phone"></i>${this.escape(row.phone)}<button type="button" class="amsl-inline-email" data-amsl-row-action="email" data-key="${this.escape(row.key)}" title="Email ${this.escape(row.name)}"><i class="fas fa-envelope"></i></button></span></div>
+            <span><i class="fas fa-phone"></i>${this.escape(row.phone)}<button type="button" class="amsl-inline-email" data-amsl-row-action="email" data-key="${this.escape(row.key)}" title="Email ${this.escape(row.name)}"><i class="fas fa-envelope"></i><span>${this.escape(row.email)}</span></button></span></div>
           </div>
 
           <div class="amsl-card-stage">
@@ -342,18 +344,8 @@ const AMSStudentList = {
             <span class="amsl-status-badge ${this.slug(row.stageStatus)}">${this.escape(row.stageStatus)}</span>
           </div>
 
-          <div class="amsl-card-meta">
-            <span><i class="fas fa-id-card"></i>${this.escape(row.otrNo)}</span>
-            <button type="button" data-amsl-preview="${this.escape(row.key)}" ${row.hasDocuments ? '' : 'disabled'}><i class="fas fa-folder-open"></i>${this.escape(row.documents || `${row.verifiedDocuments}/${row.totalDocuments} verified`)}</button>
-          </div>
-
-          <div class="amsl-card-owner">
-            <span>${this.timeAgo(row.admissionDate)}</span>
-            <small>${this.escape(row.owner)}</small>
-          </div>
 
           <div class="amsl-row-actions">
-            <button type="button" data-amsl-row-action="view" data-key="${this.escape(row.key)}" data-tooltip="Open 360° details" title="Open 360° details"><i class="fas fa-eye"></i></button>
             <button type="button" data-amsl-row-action="funnel" data-key="${this.escape(row.key)}" data-tooltip="Admission journey" title="Admission journey"><i class="fas fa-route"></i></button>
             <button type="button" class="call" data-amsl-row-action="call" data-key="${this.escape(row.key)}" data-tooltip="Call student" title="Call student"><i class="fas fa-phone"></i></button>
             <button type="button" class="whatsapp" data-amsl-row-action="whatsapp" data-key="${this.escape(row.key)}" data-tooltip="WhatsApp student" title="WhatsApp student"><i class="fab fa-whatsapp"></i></button>
@@ -391,8 +383,12 @@ const AMSStudentList = {
       ? `<img src="${this.escape(row.photo)}" alt="${this.escape(row.name)}">`
       : `<span>${this.escape(this.initials(row.name))}</span>`;
     const details = [
+      ['Admission Stage', row.stage || empty],
+      ['Current Stage Status', row.stageStatus || empty],
       ['Last Modified Date', row.updatedAt || row.admissionDateTime ? this.formatDateTime(row.updatedAt || row.admissionDateTime) : empty],
       ['Next Action Date', row.nextActionDate || empty],
+      ['Follow-up Date', row.followupDate ? this.formatShortDate(row.followupDate) : empty],
+      ['Follow-up Purpose', row.followupPurpose || empty],
       ['Gender', row.gender || empty],
       ['Channel', row.channel || empty],
       ['Source', row.source || empty],

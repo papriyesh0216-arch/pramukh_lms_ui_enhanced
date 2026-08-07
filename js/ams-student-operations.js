@@ -398,10 +398,16 @@ const AMSAdmissionOps = {
     const form = document.getElementById('ams-followup-form');
     const stageSelect = form.elements.stage;
     const statusSelect = form.elements.status;
+    const existingStage = this.getStageByStatus(row.statusKey) || this.getStage(row.stageKey);
+    const initialStageKey = existingStage?.key || row.stageKey || '';
     const syncStatuses = () => {
-      const stage = this.getStage(stageSelect.value);
+      const stage = this.getStage(stageSelect.value || initialStageKey);
       statusSelect.innerHTML = `<option value="">Select Stage Status</option>${(stage?.statuses || []).map(status => `<option value="${status.key}">${status.label}</option>`).join('')}`;
+      const initialStatusKey = row.statusKey || stage?.statuses?.find(item => item.label === row.stageStatus)?.key || '';
+      if (initialStatusKey) statusSelect.value = initialStatusKey;
     };
+    stageSelect.value = initialStageKey;
+    syncStatuses();
     stageSelect.addEventListener('change', syncStatuses);
     form.addEventListener('submit', event => {
       event.preventDefault();
