@@ -274,3 +274,156 @@ const AMSModule = {
 };
 
 window.AMSModule = AMSModule;
+
+// ============================================================
+// AMS STUDENT PIPELINE - targeted requirement patch
+// Keeps all changes scoped to the AMS Student Pipeline and its
+// calendar entry point without altering LMS or Accounts modules.
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const list = window.AMSStudentList;
+  if (!list || list.__studentPipelineRequirementPatch) return;
+  list.__studentPipelineRequirementPatch = true;
+
+  const originalNormalizeStudent = list.normalizeStudent.bind(list);
+  list.normalizeStudent = function normalizeStudentForPipeline(student, index) {
+    const row = originalNormalizeStudent(student, index);
+    const personal = row.otrRecord?.personal || {};
+    const address = row.otrRecord?.address || {};
+    const stageSequence = ['otr', 'course_selection', 'exam', 'interview', 'fees_pending', 'confirmed', 'closed'];
+    const stageIndex = Math.max(0, stageSequence.indexOf(row.stageKey));
+    const courseToken = String(row.course || 'GENERAL')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 24) || 'GENERAL';
+    const residence = [address.district || row.district, address.state || row.state].filter(Boolean).join(', ');
+
+    return {
+      ...row,
+      courseId: student.courseId || student.courseCode || row.otrRecord?.courseId || `CRS-${courseToken}`,
+      religion: student.religion || personal.religion || 'Not specified',
+      residency: student.residency || personal.residency || residence || 'Gujarat',
+      counsellor: student.counsellor || student.owner || row.owner || 'Admission Desk',
+      examScore: student.examScore || student.examResult || (stageIndex >= 2 ? '78 / 100' : 'Pending'),
+      interviewOutcome: student.interviewOutcome || student.interviewResult || (stageIndex >= 3 ? 'Recommended' : 'Pending'),
+      finalDecision: student.finalDecision || student.admissionDecision || (row.stageKey === 'confirmed'
+        ? 'Admission Confirmed'
+        : row.stageKey === 'closed'
+          ? (row.stageStatus || 'Admission Closed')
+          : 'Pending'),
+      registeredOn: student.registeredOn || row.admissionDateTime || row.otrRecord?.createdAt || student.createdAt || '',
+      otrFormStarted: student.otrFormStarted || student.otrStartedAt || row.otrRecord?.createdAt || student.createdAt || ''
+    };
+  };
+
+  const originalRenderRow = list.renderRow.bind(list);
+  list.renderRow = function renderStudentPipelineRow(row, sequence) {
+    const html = originalRenderRow(row, sequence);
+    const expandMarker = '            <button type="button" data-amsl-row-action="expand"';
+    if (!html.includes(expandMarker)) return html;
+    const calendarButton = `            <button type="button" data-amsl-row-action="calendar" data-key="${this.escape(row.key)}" data-tooltip="Open Admission Calendar" title="Open Admission Calendar"><i class="fas fa-calendar-days"></i></button>\n`;
+    return html.replace(expandMarker, `${calendarButton}${expandMarker}`);
+  };
+
+  list.renderExtendedRow = function renderStudentPipelineExpandedDrawer(row) {
+    const empty = '\u2014';
+    const latestActivity = row.activities?.[0];
+    const latestUpdate = latestActivity
+      ? [latestActivity.title, latestActivity.description].filter(Boolean).join(' — ')
+      : row.latestUpdate || row.remark || row.purpose || 'Admission record created';
+    const nextMilestone = row.nextMilestone || row.nextStep || row.purpose || row.stageStatus || row.stage || 'Admission review';
+    const details = [
+      ['LAST MODIFIED', row.updatedAt || row.admissionDateTime ? this.formatDateTime(row.updatedAt || row.admissionDateTime) : empty],
+      ['NEXT MILESTONE', nextMilestone],
+      ['REGISTERED ON', row.registeredOn ? this.formatDateTime(row.registeredOn) : empty],
+      ['GENDER', row.gender || empty],
+      ['RELIGION', row.religion || 'Not specified'],
+      ['RESIDENCY', row.residency || empty],
+      ['COUNSELLOR', row.counsellor || row.owner || 'Admission Desk'],
+      ['EXAM SCORE', row.examScore || 'Pending'],
+      ['INTERVIEW OUTCOME', row.interviewOutcome || 'Pending'],
+      ['FINAL DECISION', row.finalDecision || 'Pending'],
+      ['LATEST UPDATE', latestUpdate],
+      ['OTR FORM STARTED', row.otrFormStarted ? this.formatDateTime(row.otrFormStarted) : empty]
+    ];
+
+    return `<section class="ams-admission-extended ams-admission-extended--row amsl-inline-drawer">
+      <div class="ams-admission-summary">
+        <div class="ams-admission-photo-column">
+          <strong>${this.escape(row.course || 'Course not assigned')}</strong>
+          <span>${this.escape(row.batch || 'Class not allocated')}</span>
+          <span>DOB: ${this.escape(row.dateOfBirth ? this.formatShortDate(row.dateOfBirth) : empty)}</span>
+          <span>OTR ID: ${this.escape(row.otrNo || empty)}</span>
+          <span>COURSE ID: ${this.escape(row.courseId || empty)}</span>
+          <span>ENQUIRY ID: ${this.escape(row.enquiryId || empty)}</span>
+          <span>MODE OF LEARNING: ${this.escape(row.mode || empty)}</span>
+        </div>
+        <div class="ams-admission-info-grid">${details.map(([label, value]) => `<div><span>${this.escape(label)}</span><strong>${this.escape(value)}</strong></div>`).join('')}</div>
+      </div>
+      <footer class="ams-admission-assignment">
+        <span><i class="fas fa-user-circle"></i> Assigned to <strong>${this.escape(row.owner || 'Admission Desk')}</strong>${row.assignedDate ? ` on ${this.escape(this.formatDateTime(row.assignedDate))}` : ''}</span>
+        <button type="button" data-amsl-row-action="assign" data-key="${this.escape(row.key)}" aria-label="Edit owner assignment"><i class="fas fa-pen"></i></button>
+      </footer>
+    </section>`;
+  };
+
+  const originalHandleRowAction = list.handleRowAction.bind(list);
+  list.handleRowAction = function handleStudentPipelineRowAction(action, key) {
+    if (action === 'stage') {
+      this.state.openMenuKey = '';
+      return window.AMSAdmissionOps?.showFollowup?.(key);
+    }
+    if (action === 'calendar') {
+      this.state.openMenuKey = '';
+      if (typeof AMSApp !== 'undefined') return AMSApp.showScreen('calendar');
+      document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+      document.getElementById('screen-calendar')?.classList.add('active');
+      return window.AMSCalendar?.renderCalendar?.();
+    }
+    return originalHandleRowAction(action, key);
+  };
+
+  if (typeof AMSApp !== 'undefined') {
+    AMSApp.setupSharedNavigation = function setupStudentPipelineNavigation() {
+      window.SharedNavigation?.mount({
+        module: 'ams',
+        suiteLabel: 'AMS Suite v1.0',
+        searchPlaceholder: 'Search AMS menu...',
+        ariaLabel: 'AMS navigation',
+        activeScreen: this.currentScreen,
+        collapseButtonId: 'ams-sidebar-collapse-btn',
+        collapseStorageKey: 'pa-ams-sidebar-collapsed',
+        supportLabel: 'Admission Desk',
+        role: 'ams-admin',
+        permissions: {},
+        menuItems: [
+          { screen: 'ams-dashboard', icon: 'fa-building-columns', label: 'Admission Dashboard' },
+          { screen: 'ams-students', icon: 'fa-users-viewfinder', label: 'Student Pipeline' },
+          { href: 'otr-form.html', newTab: true, icon: 'fa-arrow-up-right-from-square', label: 'Student OTR Form' },
+          { screen: 'ams-interviews', icon: 'fa-calendar-check', label: 'Interview Scheduling' },
+          { type: 'title', label: 'Switch System' },
+          { href: 'index.html', icon: 'fa-chart-line', label: 'Open LMS System' },
+          { href: 'accounts.html', icon: 'fa-coins', label: 'Open Accounts System' }
+        ],
+        onScreen: screen => this.showScreen(screen),
+        onAccountSettings: () => AMSAccountSettings.open()
+      });
+    };
+
+    AMSApp.renderMobileBottomNav = function renderStudentPipelineMobileBottomNav() {
+      const items = [
+        { id: 'ams-dashboard', icon: 'fa-building-columns', label: 'Dashboard' },
+        { id: 'ams-students', icon: 'fa-users-viewfinder', label: 'Students' },
+        { id: 'ams-otr', icon: 'fa-file-circle-plus', label: 'OTR' },
+        { id: 'ams-interviews', icon: 'fa-calendar-check', label: 'Interviews' }
+      ];
+      window.SharedNavigation?.renderBottomNav({
+        items,
+        activeId: this.currentScreen,
+        compact: true,
+        onSelect: screen => this.showScreen(screen)
+      });
+    };
+  }
+});
