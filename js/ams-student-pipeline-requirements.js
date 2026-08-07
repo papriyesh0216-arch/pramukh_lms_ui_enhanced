@@ -5,6 +5,12 @@
 
 (() => {
   const INSTALL_FLAG = '__amsStudentPipelineRequirementsInstalled';
+  const VIEW_TOGGLE_ATTR = 'data-amsl-view-toggle';
+  const viewState = {
+    rowScrollY: 0,
+    toolbarPlaceholder: null,
+    calendarToolbarHost: null
+  };
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -128,6 +134,11 @@
     return 'Not Started';
   }
 
+  function getAmsApp() {
+    if (typeof AMSApp !== 'undefined') return AMSApp;
+    return window.AMSApp;
+  }
+
   function removeCalendarNavigation() {
     document.querySelectorAll('[data-screen="calendar"]').forEach(item => item.remove());
     document.querySelectorAll('#mobile-bottom-nav button, #mobile-bottom-nav [data-nav-screen]').forEach(item => {
@@ -135,6 +146,146 @@
       const screen = item.dataset?.screen || item.dataset?.navScreen || item.getAttribute('data-screen');
       if (screen === 'calendar' || text === 'calendar') item.remove();
     });
+  }
+
+  function ensureCalendarNavigationGuard() {
+    removeCalendarNavigation();
+    const sidebar = document.getElementById('shared-navigation-sidebar');
+    const mobile = document.getElementById('mobile-bottom-nav');
+    if (!window.MutationObserver) return;
+    const observer = new MutationObserver(removeCalendarNavigation);
+    if (sidebar) observer.observe(sidebar, { childList: true, subtree: true });
+    if (mobile) observer.observe(mobile, { childList: true, subtree: true });
+  }
+
+  function ensureRowActionAlignment() {
+    if (document.getElementById('ams-student-pipeline-row-action-alignment')) return;
+    const style = document.createElement('style');
+    style.id = 'ams-student-pipeline-row-action-alignment';
+    style.textContent = `
+      @media (min-width: 1241px) {
+        #screen-ams-students .amsl-card-header > .amsl-row-actions {
+          grid-column: 5 / 7;
+          padding-inline: 18px;
+          justify-self: stretch;
+          justify-content: center;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureCalendarToolbarHost() {
+    if (viewState.calendarToolbarHost?.isConnected) return viewState.calendarToolbarHost;
+    const screen = document.getElementById('screen-calendar');
+    const content = screen?.querySelector('.content-area');
+    if (!screen || !content) return null;
+    const host = document.createElement('div');
+    host.className = 'amsl-calendar-toolbar-host';
+    host.setAttribute('aria-label', 'Admission List view controls');
+    screen.insertBefore(host, content);
+    viewState.calendarToolbarHost = host;
+    return host;
+  }
+
+  function syncViewToggle(button, mode) {
+    if (!button) return;
+    const calendarMode = mode === 'calendar';
+    button.dataset.amslViewToggle = calendarMode ? 'row' : 'calendar';
+    button.title = calendarMode ? 'Return to Student Pipeline row view' : 'Open Admission Calendar view';
+    button.dataset.tooltip = button.title;
+    button.setAttribute('aria-label', button.title);
+    button.innerHTML = calendarMode
+      ? '<i class="fas fa-list"></i>'
+      : '<i class="fas fa-calendar-days"></i>';
+  }
+
+  function restoreToolbarToRow(toolbar) {
+    const placeholder = viewState.toolbarPlaceholder;
+    if (!toolbar || !placeholder?.parentNode) return;
+    placeholder.parentNode.insertBefore(toolbar, placeholder.nextSibling);
+  }
+
+  function moveToolbarToCalendar(toolbar) {
+    const host = ensureCalendarToolbarHost();
+    if (!toolbar || !host) return;
+    host.appendChild(toolbar);
+  }
+
+  function openCalendarView(toolbar, button) {
+    viewState.rowScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    syncViewToggle(button, 'calendar');
+    moveToolbarToCalendar(toolbar);
+    if (window.AMSCalendar?.openExistingCalendar) {
+      window.AMSCalendar.openExistingCalendar();
+    } else {
+      getAmsApp()?.showScreen?.('calendar');
+      window.AMSCalendar?.renderCalendar?.();
+    }
+    requestAnimationFrame(() => {
+      moveToolbarToCalendar(toolbar);
+      syncViewToggle(button, 'calendar');
+    });
+  }
+
+  function openRowView(toolbar, button) {
+    restoreToolbarToRow(toolbar);
+    syncViewToggle(button, 'row');
+    if (window.AMSCalendar?.goToInquiryList) {
+      window.AMSCalendar.goToInquiryList();
+    } else {
+      getAmsApp()?.showScreen?.('ams-students');
+    }
+    requestAnimationFrame(() => {
+      restoreToolbarToRow(toolbar);
+      syncViewToggle(button, 'row');
+      window.scrollTo({ top: viewState.rowScrollY, left: 0, behavior: 'auto' });
+    });
+  }
+
+  function ensureToolbarViewToggle(list) {
+    const toolbar = document.querySelector('#screen-ams-students .amsl-tools-card');
+    const quickRow = toolbar?.querySelector('.amsl-quick-row');
+    const expandButton = quickRow?.querySelector('[data-amsl-action="expand-all"]');
+    if (!toolbar || !quickRow || !expandButton) return;
+
+    if (!viewState.toolbarPlaceholder) {
+      viewState.toolbarPlaceholder = document.createComment('AMS Student Pipeline toolbar position');
+      toolbar.parentNode?.insertBefore(viewState.toolbarPlaceholder, toolbar);
+    }
+
+    let toggle = quickRow.querySelector(`[${VIEW_TOGGLE_ATTR}]`);
+    if (!toggle) {
+      toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.setAttribute(VIEW_TOGGLE_ATTR, 'calendar');
+      expandButton.insertAdjacentElement('afterend', toggle);
+      syncViewToggle(toggle, 'row');
+    }
+
+    if (toolbar.dataset.amsViewToggleBound !== 'true') {
+      toolbar.dataset.amsViewToggleBound = 'true';
+      toolbar.addEventListener('click', event => {
+        const viewToggle = event.target.closest(`[${VIEW_TOGGLE_ATTR}]`);
+        if (viewToggle) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (viewToggle.dataset.amslViewToggle === 'row') openRowView(toolbar, viewToggle);
+          else openCalendarView(toolbar, viewToggle);
+          return;
+        }
+
+        if (toolbar.closest('#screen-calendar')) {
+          list.handleClick(event);
+        }
+      });
+      toolbar.addEventListener('input', event => {
+        if (toolbar.closest('#screen-calendar')) list.handleFilter(event);
+      });
+      toolbar.addEventListener('change', event => {
+        if (toolbar.closest('#screen-calendar')) list.handleFilter(event);
+      });
+    }
   }
 
   function install() {
@@ -145,8 +296,7 @@
     const list = window.AMSStudentList;
     const ops = window.AMSAdmissionOps;
 
-    // Goal 2 remains mapped to the actual student email. Add only the data fields
-    // required by the expanded Student Pipeline drawer.
+    // Existing Student Pipeline data enrichment remains scoped to the expanded row.
     const originalNormalizeStudent = list.normalizeStudent.bind(list);
     list.normalizeStudent = function patchedNormalizeStudent(student, index) {
       const row = originalNormalizeStudent(student, index);
@@ -162,8 +312,7 @@
       };
     };
 
-    // Goal 3: the row Stage action must reuse the existing Follow-Up form.
-    // Goal 6: the row Calendar action opens the already-created Admission Calendar.
+    // Stage/Status continues to reuse the existing AMS Follow-Up form.
     const originalHandleRowAction = ops.handleRowAction.bind(ops);
     ops.handleRowAction = function patchedHandleRowAction(action, row) {
       if (action === 'stage') {
@@ -171,28 +320,10 @@
         this.showFollowup(row.key);
         return true;
       }
-      if (action === 'calendar') {
-        window.AMSStudentList.state.openMenuKey = '';
-        if (window.AMSCalendar?.openExistingCalendar) window.AMSCalendar.openExistingCalendar();
-        else if (typeof AMSApp !== 'undefined') AMSApp.showScreen('calendar');
-        else window.AMSApp?.showScreen?.('calendar');
-        return true;
-      }
       return originalHandleRowAction(action, row);
     };
 
-    // Goal 6: place Calendar directly beside the row Expand / Collapse control.
-    const originalRenderRow = list.renderRow.bind(list);
-    list.renderRow = function patchedRenderRow(row, sequence) {
-      const html = originalRenderRow(row, sequence);
-      if (html.includes('data-amsl-row-action="calendar"')) return html;
-      const expandMarker = `<button type="button" data-amsl-row-action="expand" data-key="${this.escape(row.key)}"`;
-      const calendarButton = `<button type="button" data-amsl-row-action="calendar" data-key="${this.escape(row.key)}" data-tooltip="Admission Calendar" title="Admission Calendar"><i class="fas fa-calendar-days"></i></button>\n            `;
-      return html.replace(expandMarker, `${calendarButton}${expandMarker}`);
-    };
-
-    // Goals 4 and 5: preserve the existing expanded drawer shell and styling,
-    // remove only the large avatar, add Course/Enquiry IDs, and replace the grid.
+    // Preserve the existing expanded drawer changes from the prior requirement set.
     list.renderExtendedRow = function renderRequiredExtendedRow(row) {
       const empty = '—';
       const details = [
@@ -240,8 +371,8 @@
       }
     });
 
-    // Goal 6: Admission Calendar remains implemented but is no longer a sidebar/mobile-nav entry.
-    const app = typeof AMSApp !== 'undefined' ? AMSApp : window.AMSApp;
+    // Admission Calendar stays implemented but remains absent from sidebar/mobile navigation.
+    const app = getAmsApp();
     if (app) {
       const originalSetupSharedNavigation = app.setupSharedNavigation?.bind(app);
       if (originalSetupSharedNavigation) {
@@ -262,9 +393,13 @@
       }
     }
 
-    removeCalendarNavigation();
+    // Current requirement set: one toolbar toggle, no per-row Calendar action,
+    // and desktop-only quick-action positioning with the existing 18px row spacing.
+    ensureToolbarViewToggle(list);
+    ensureRowActionAlignment();
+    ensureCalendarNavigationGuard();
 
-    // Re-render only the Student Pipeline so already-rendered rows receive the scoped changes.
+    // Re-render only the Student Pipeline so the existing scoped row/drawer mappings remain current.
     list.populateFilters?.();
     list.render?.();
     return true;
