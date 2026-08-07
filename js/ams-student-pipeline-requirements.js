@@ -477,3 +477,86 @@
     boot();
   }
 })();
+
+// ============================================================
+// AMS STUDENT PIPELINE - More menu + expanded drawer refinement
+// Runs only after the targeted Student Pipeline requirement patch above.
+// ============================================================
+
+(() => {
+  const INSTALL_FLAG = '__amsStudentPipelineMenuDrawerRefinementInstalled';
+
+  function install() {
+    if (window[INSTALL_FLAG]) return true;
+    if (!window.__amsStudentPipelineRequirementsInstalled || !window.AMSStudentList || !window.AMSAdmissionOps) return false;
+    window[INSTALL_FLAG] = true;
+
+    const list = window.AMSStudentList;
+    const ops = window.AMSAdmissionOps;
+
+    const menuHtml = row => {
+      const key = list.escape(row.key);
+      return `<div class="amsl-more-menu">
+        <button type="button" data-amsl-row-action="followup" data-key="${key}"><i class="fas fa-redo"></i><span>Manage Follow-up</span></button>
+        <button type="button" data-amsl-row-action="print" data-key="${key}"><i class="fas fa-print"></i><span>Print OTR Form</span></button>
+        <button type="button" data-amsl-row-action="schedule-interview" data-key="${key}"><i class="fas fa-calendar-check"></i><span>Schedule Interview</span></button>
+        <button type="button" data-amsl-row-action="change-class" data-key="${key}"><i class="fas fa-link"></i><span>Change Class</span></button>
+        <button type="button" data-amsl-row-action="duplicate" data-key="${key}"><i class="fas fa-clone"></i><span>Duplicate Scan</span></button>
+        <button type="button" class="danger" data-amsl-row-action="archive" data-key="${key}"><i class="fas fa-box-archive"></i><span>Archive</span></button>
+        <button type="button" class="danger" data-amsl-row-action="delete" data-key="${key}"><i class="fas fa-trash"></i><span>Delete</span></button>
+      </div>`;
+    };
+
+    const originalRenderRow = list.renderRow.bind(list);
+    list.renderRow = function renderRowWithRequiredMoreMenu(row, sequence) {
+      const html = originalRenderRow(row, sequence);
+      if (this.state.openMenuKey !== row.key) return html;
+      return html.replace(/<div class="amsl-more-menu">[\s\S]*?<\/div>/, menuHtml(row));
+    };
+
+    const originalRenderExtendedRow = list.renderExtendedRow.bind(list);
+    list.renderExtendedRow = function renderExtendedRowWithoutDob(row) {
+      return originalRenderExtendedRow(row).replace(/\s*<span>DOB:[\s\S]*?<\/span>/, '');
+    };
+
+    if (typeof list.renderExtendedRowLegacy === 'function') {
+      const originalRenderExtendedRowLegacy = list.renderExtendedRowLegacy.bind(list);
+      list.renderExtendedRowLegacy = function renderExtendedRowLegacyWithoutDob(...args) {
+        return originalRenderExtendedRowLegacy(...args).replace(/\s*<span>DOB:[\s\S]*?<\/span>/g, '');
+      };
+    }
+
+    const originalHandleRowAction = ops.handleRowAction.bind(ops);
+    ops.handleRowAction = function handleRequiredMoreMenuAction(action, row) {
+      if (action === 'schedule-interview') {
+        window.AMSStudentList.state.openMenuKey = '';
+        window.AMSInterviews?.openStudentSchedule?.(row);
+        return true;
+      }
+      if (action === 'change-class') {
+        window.AMSStudentList.state.openMenuKey = '';
+        this.showChangeClass(row.key);
+        return true;
+      }
+      return originalHandleRowAction(action, row);
+    };
+
+    list.render?.();
+    return true;
+  }
+
+  function boot() {
+    if (install()) return;
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (install() || attempts >= 100) window.clearInterval(timer);
+    }, 25);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();
