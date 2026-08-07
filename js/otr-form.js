@@ -615,15 +615,14 @@ const AMSOTR = {
     const admissionMatch = (window.APP_DATA?.AMS_STUDENTS || []).find(student =>
       student.email?.toLowerCase() === payload.personal.email.toLowerCase() || student.phone === payload.personal.phone
     );
-    const sequence = String(records.length + 1).padStart(4, '0');
     const record = {
       ...payload,
       id: existing?.id || `OTR-${Date.now()}`,
-      otrNo: this.normalizeOtrNo(existing?.otrNo || admissionMatch?.otrNo || `AMS-OTR-${new Date().getFullYear()}-${sequence}`),
+      otrNo: this.normalizeOtrNo(existing?.otrNo || admissionMatch?.otrNo) || this.nextOtrNo(records),
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      statusKey: 'form_submitted',
-      status: 'Form Submitted'
+      statusKey: 'otr_submitted',
+      status: 'Submitted'
     };
     if (matchIndex >= 0) records[matchIndex] = record;
     else records.push(record);
@@ -664,10 +663,16 @@ const AMSOTR = {
       if (!Array.isArray(records)) return [];
       const allowedPersonalFields = ['fullName', 'dateOfBirth', 'gender', 'religion', 'phone', 'differentWhatsapp', 'whatsapp', 'email'];
       let changed = false;
-      const sanitized = records.map(record => {
+      const usedOtrIds = new Set();
+      const sanitized = records.map((record, index) => {
         if (!record || typeof record !== 'object') return record;
         const normalized = { ...record };
-        const otrNo = this.normalizeOtrNo(normalized.otrNo || normalized.admissionNo);
+        const sampleSequence = { 'OTR-SAMPLE-001': 15, 'OTR-SAMPLE-002': 16, 'OTR-SAMPLE-003': 17 }[normalized.id];
+        let otrNo = sampleSequence
+          ? `PA26${String(sampleSequence).padStart(4, '0')}`
+          : this.normalizeOtrNo(normalized.otrNo || normalized.admissionNo, normalized.createdAt, index + 1);
+        if (usedOtrIds.has(otrNo)) otrNo = this.nextOtrNo([...records, ...[...usedOtrIds].map(value => ({ otrNo: value }))], normalized.createdAt);
+        usedOtrIds.add(otrNo);
         if (normalized.otrNo !== otrNo) {
           normalized.otrNo = otrNo;
           changed = true;
@@ -704,8 +709,8 @@ const AMSOTR = {
       paid: 0,
       total: 0,
       owner: 'Admission Desk',
-      statusKey: record.statusKey || 'form_submitted',
-      status: record.status || 'Form Submitted',
+      statusKey: record.statusKey === 'form_submitted' ? 'otr_submitted' : (record.statusKey || 'otr_submitted'),
+      status: record.status === 'Form Submitted' ? 'Submitted' : (record.status || 'Submitted'),
       leadStatus: 'Direct AMS OTR',
       sourceLeadNo: 'AMS Direct',
       nextStep: 'Review OTR details',
@@ -714,11 +719,24 @@ const AMSOTR = {
     }));
   },
 
-  normalizeOtrNo(value) {
-    const otrNo = String(value || '').trim();
-    if (/^ADM-\d{4}-/i.test(otrNo)) return otrNo.replace(/^ADM-/i, 'AMS-OTR-');
-    if (/^OTR-\d{4}-/i.test(otrNo)) return `AMS-${otrNo}`;
-    return otrNo;
+  normalizeOtrNo(value, dateValue, fallbackSequence = 1) {
+    const raw = String(value || '').trim().toUpperCase();
+    if (!raw) return '';
+    if (/^PA\d{6}$/.test(raw)) return raw;
+    const match = raw.match(/(?:AMS-OTR-|ADM-|OTR-)?(20\d{2})-(\d{1,4})$/);
+    const year = match?.[1] || String(dateValue || '').match(/20\d{2}/)?.[0] || String(new Date().getFullYear());
+    const sequence = Number(match?.[2] || fallbackSequence) || fallbackSequence;
+    return `PA${year.slice(-2)}${String(sequence).padStart(4, '0')}`;
+  },
+
+  nextOtrNo(records = [], dateValue = new Date().toISOString()) {
+    const year = String(dateValue || '').match(/20\d{2}/)?.[0] || String(new Date().getFullYear());
+    const prefix = `PA${year.slice(-2)}`;
+    const max = records.reduce((highest, record) => {
+      const match = this.normalizeOtrNo(record?.otrNo || record?.admissionNo, record?.createdAt)?.match(new RegExp(`^${prefix}(\\d{4})$`));
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    return `${prefix}${String(max + 1).padStart(4, '0')}`;
   },
 
   openProfile(id) {

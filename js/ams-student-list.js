@@ -8,7 +8,7 @@ const AMSStudentList = {
   expanded: new Set(),
   state: {
     stage: 'otr',
-    stageStatus: 'Pending',
+    stageStatus: 'all',
     selectionMode: false,
     filtersVisible: true,
     allExpanded: false,
@@ -18,25 +18,50 @@ const AMSStudentList = {
     pageSize: 10,
     openMenuKey: '',
     filters: {
-      search: '', status: 'all', course: 'all', batch: 'all', owner: 'all',
-      document: 'all', source: 'all', date: '', followup: ''
+      search: '', course: 'all', mode: 'all', gender: 'all', enquiry: '',
+      otr: '', owner: 'all', dateFrom: '', dateTo: ''
     }
   },
 
   stages: [
     { key: 'all', label: 'All' },
     { key: 'otr', label: 'OTR Form' },
-    { key: 'interview', label: 'Interview' },
+    { key: 'course_selection', label: 'Course Selection' },
+    { key: 'exam', label: 'Exam' },
+    { key: 'interview', label: 'Interview Stage' },
+    { key: 'fees_pending', label: 'Fees Pending' },
     { key: 'confirmed', label: 'Admission Confirmed' },
-    { key: 'rejected', label: 'Admission Reject' }
+    { key: 'closed', label: 'Admission Closed' }
   ],
 
   stageStatuses: {
     all: [],
-    otr: ['Pending', 'Completed', 'Draft'],
-    interview: ['Pending', 'Scheduled', 'Completed'],
-    confirmed: ['Confirmed'],
-    rejected: ['Rejected']
+    otr: [
+      { key: 'all', label: 'All' },
+      { key: 'Pending', label: 'Pending' },
+      { key: 'Draft', label: 'Draft' },
+      { key: 'Submitted', label: 'Submitted' }
+    ],
+    course_selection: [],
+    exam: [
+      { key: 'all', label: 'All' },
+      { key: 'MCQ Stage', label: 'MCQ Stage' },
+      { key: 'Descriptive Stage', label: 'Descriptive Stage' },
+      { key: 'Submitted', label: 'Submitted' }
+    ],
+    interview: [
+      { key: 'all', label: 'All' },
+      { key: 'Academic', label: 'Academic' },
+      { key: 'Personality', label: 'Personality' },
+      { key: 'Overall', label: 'Overall' }
+    ],
+    fees_pending: [],
+    confirmed: [],
+    closed: [
+      { key: 'all', label: 'All' },
+      { key: 'Application Rejected', label: 'Application Rejected' },
+      { key: 'Declined by Student', label: 'Declined by Student' }
+    ]
   },
 
   init() {
@@ -66,32 +91,42 @@ const AMSStudentList = {
       ['10th (SSC)', education.ssc]
     ].find(([, fields]) => fields && Object.values(fields).some(Boolean))?.[0] || student.academicStatus || '';
     const cityParts = String(student.city || '').split(',').map(value => value.trim()).filter(Boolean);
-    const statusKey = student.statusKey || 'form_pending';
+    const legacyStatusMap = {
+      form_pending: 'otr_pending', draft: 'otr_draft', form_submitted: 'otr_submitted',
+      batch_allocation: 'course_selection', document_verification: 'interview_academic',
+      fee_pending: 'fees_pending', onboarded: 'admission_confirmed', rejected: 'application_rejected'
+    };
+    const statusKey = legacyStatusMap[student.statusKey] || student.statusKey || 'otr_pending';
     let stageKey = 'otr';
     let stage = 'OTR Form';
     let stageStatus = 'Pending';
-    if (['document_verification', 'fee_pending', 'batch_allocation'].includes(statusKey)) {
-      stageKey = 'interview';
-      stage = 'Interview';
-      stageStatus = statusKey === 'document_verification' ? 'Pending' : statusKey === 'fee_pending' ? 'Scheduled' : 'Completed';
-    } else if (statusKey === 'form_submitted') {
-      stageStatus = 'Completed';
-    } else if (statusKey === 'draft') {
+    if (statusKey === 'otr_submitted') {
+      stageStatus = 'Submitted';
+    } else if (statusKey === 'otr_draft') {
       stageStatus = 'Draft';
-    } else if (statusKey === 'onboarded') {
+    } else if (statusKey === 'course_selection') {
+      stageKey = 'course_selection'; stage = 'Course Selection'; stageStatus = '';
+    } else if (['exam_mcq', 'exam_descriptive', 'exam_submitted'].includes(statusKey)) {
+      stageKey = 'exam'; stage = 'Exam';
+      stageStatus = statusKey === 'exam_mcq' ? 'MCQ Stage' : statusKey === 'exam_descriptive' ? 'Descriptive Stage' : 'Submitted';
+    } else if (['interview_academic', 'interview_personality', 'interview_overall'].includes(statusKey)) {
+      stageKey = 'interview'; stage = 'Interview Stage';
+      stageStatus = statusKey === 'interview_academic' ? 'Academic' : statusKey === 'interview_personality' ? 'Personality' : 'Overall';
+    } else if (statusKey === 'fees_pending') {
+      stageKey = 'fees_pending'; stage = 'Fees Pending'; stageStatus = '';
+    } else if (statusKey === 'admission_confirmed') {
       stageKey = 'confirmed';
       stage = 'Admission Confirmed';
-      stageStatus = 'Confirmed';
-    } else if (statusKey === 'rejected') {
-      stageKey = 'rejected';
-      stage = 'Admission Reject';
-      stageStatus = 'Rejected';
+      stageStatus = '';
+    } else if (['application_rejected', 'declined_by_student'].includes(statusKey)) {
+      stageKey = 'closed'; stage = 'Admission Closed';
+      stageStatus = statusKey === 'application_rejected' ? 'Application Rejected' : 'Declined by Student';
     }
     const documentMatch = String(student.documents || '').match(/(\d+)\s*\/\s*(\d+)/);
     const verifiedDocuments = documentMatch ? Number(documentMatch[1]) : 0;
     const totalDocuments = documentMatch ? Number(documentMatch[2]) : 6;
-    const admissionNo = String(student.otrNo || student.admissionNo || student.sourceLeadNo || '').replace(/^AMS-OTR-/i, 'ADM-');
-    const internalKey = student.otrId || student.key || admissionNo || `AMS-STUDENT-${index}`;
+    const otrNo = this.normalizeOtrId(student.otrNo || student.admissionNo, student.createdAt, index + 1);
+    const internalKey = student.otrId || student.key || otrNo || `AMS-STUDENT-${index}`;
     const course = /^course not assigned$/i.test(String(student.course || '').trim()) ? '' : (student.course || '');
     const batch = /^pending allocation$/i.test(String(student.batch || '').trim()) ? '' : (student.batch || '');
     const personal = otrRecord?.personal || {};
@@ -99,7 +134,8 @@ const AMSStudentList = {
     return {
       ...student,
       key: internalKey,
-      admissionNo,
+      otrNo,
+      admissionNo: otrNo,
       course,
       batch,
       stageKey,
@@ -109,11 +145,13 @@ const AMSStudentList = {
       totalDocuments,
       hasDocuments: Boolean(student.otrId || verifiedDocuments > 0),
       admissionDate: student.createdAt?.slice(0, 10) || '',
-      source: student.sourceLeadNo || student.source || '',
+      enquiryId: student.enquiryId || student.sourceLeadNo || student.enqNo || '',
+      source: student.source || student.sourceLeadNo || '',
       documentNote: student.scholarship || '',
       state: student.state || address.state || (cityParts.length > 1 ? cityParts[1] : ''),
       district: student.district || address.district || (cityParts.length === 1 ? cityParts[0] : cityParts[0] || ''),
-      mode: student.mode || student.learningMode || '',
+      hostelStatus: student.hostelStatus || '',
+      mode: student.learningMode || student.mode || '',
       academicStatus: highestEducation,
       query: student.query || student.remark || '',
       campaign: student.campaign || '',
@@ -130,7 +168,8 @@ const AMSStudentList = {
       photo: student.photo || (photo?.type?.startsWith('image/') ? photo.dataUrl : ''),
       channel: student.channel || student.mode || student.learningMode || '',
       subStatus: student.subStatus || '',
-      submissionStatus: student.submissionStatus || (statusKey === 'form_pending' ? 'Not Submitted' : statusKey === 'draft' ? 'Draft' : 'Submitted'),
+      statusKey,
+      submissionStatus: student.submissionStatus || (statusKey === 'otr_pending' ? 'Not Submitted' : statusKey === 'otr_draft' ? 'Draft' : 'Submitted'),
       purpose: student.purpose || student.nextStep || '',
       nextActionDate: student.nextActionDate || student.dueDate || '',
       remark: student.remark || student.query || '',
@@ -160,8 +199,6 @@ const AMSStudentList = {
     const status = event.target.closest('[data-amsl-stage-status]')?.dataset.amslStageStatus;
     if (status) {
       this.state.stageStatus = status;
-      this.state.filters.status = 'all';
-      this.populateStatusFilter();
       this.render();
       return;
     }
@@ -183,14 +220,14 @@ const AMSStudentList = {
   handleFilter(event) {
     const map = {
       'amsl-search': 'search',
-      'amsl-status-filter': 'status',
       'amsl-course-filter': 'course',
-      'amsl-batch-filter': 'batch',
+      'amsl-mode-filter': 'mode',
+      'amsl-gender-filter': 'gender',
+      'amsl-enquiry-filter': 'enquiry',
+      'amsl-otr-filter': 'otr',
       'amsl-owner-filter': 'owner',
-      'amsl-document-filter': 'document',
-      'amsl-source-filter': 'source',
-      'amsl-date-filter': 'date',
-      'amsl-followup-filter': 'followup'
+      'amsl-date-from-filter': 'dateFrom',
+      'amsl-date-to-filter': 'dateTo'
     };
     const key = map[event.target.id];
     if (key) {
@@ -206,11 +243,9 @@ const AMSStudentList = {
 
   setStage(stage) {
     this.state.stage = stage;
-    this.state.stageStatus = this.stageStatuses[stage][0] || 'all';
-    this.state.filters.status = 'all';
+    this.state.stageStatus = this.stageStatuses[stage]?.[0]?.key || 'all';
     this.selected.clear();
     this.state.page = 1;
-    this.populateStatusFilter();
     this.render();
   },
 
@@ -242,7 +277,10 @@ const AMSStudentList = {
       return;
     }
     const stageRows = this.rows.filter(row => row.stageKey === this.state.stage);
-    container.innerHTML = statuses.map(status => `<button type="button" class="${this.state.stageStatus === status ? 'active' : ''}" data-amsl-stage-status="${status}"><span>${status}</span><b>${stageRows.filter(row => row.stageStatus === status).length}</b></button>`).join('');
+    container.innerHTML = statuses.map(status => {
+      const count = status.key === 'all' ? stageRows.length : stageRows.filter(row => row.stageStatus === status.key).length;
+      return `<button type="button" class="${this.state.stageStatus === status.key ? 'active' : ''}" data-amsl-stage-status="${status.key}"><span>${status.label}</span><b>${count}</b></button>`;
+    }).join('');
   },
 
   filteredRows() {
@@ -250,17 +288,17 @@ const AMSStudentList = {
     return this.rows.filter(row => {
       const stageMatch = this.state.stage === 'all' || row.stageKey === this.state.stage;
       const stageStatusMatch = this.state.stageStatus === 'all' || this.state.stage === 'all' || row.stageStatus === this.state.stageStatus;
-      const haystack = `${row.name} ${row.admissionNo} ${row.source} ${row.course} ${row.phone}`.toLowerCase();
+      const haystack = `${row.name} ${row.phone} ${row.otrNo} ${row.enquiryId}`.toLowerCase();
       return stageMatch && stageStatusMatch
         && (!f.search || haystack.includes(f.search.toLowerCase()))
-        && (f.status === 'all' || row.status === f.status)
         && (f.course === 'all' || row.course === f.course)
-        && (f.batch === 'all' || row.batch === f.batch)
+        && (f.mode === 'all' || row.mode === f.mode)
+        && (f.gender === 'all' || row.gender === f.gender)
+        && (!f.enquiry || row.enquiryId.toLowerCase().includes(f.enquiry.toLowerCase()))
+        && (!f.otr || row.otrNo.toLowerCase().includes(f.otr.toLowerCase()))
         && (f.owner === 'all' || row.owner === f.owner)
-        && (f.document === 'all' || (f.document === 'complete' ? row.verifiedDocuments >= row.totalDocuments : row.verifiedDocuments < row.totalDocuments))
-        && (f.source === 'all' || row.source === f.source)
-        && (!f.date || row.admissionDate === f.date)
-        && (!f.followup || row.followupDate === f.followup);
+        && (!f.dateFrom || row.admissionDate >= f.dateFrom)
+        && (!f.dateTo || row.admissionDate <= f.dateTo);
     }).sort((left, right) => {
       const field = this.state.sortField || 'admissionDate';
       const leftValue = String(left[field] || '').toLowerCase();
@@ -294,8 +332,9 @@ const AMSStudentList = {
           </button>
 
           <div class="amsl-card-student">
-            <button type="button" class="amsl-card-name" data-amsl-row-action="view" data-key="${this.escape(row.key)}">${this.escape(row.name)}</button>
-            <span><i class="fas fa-phone"></i>${this.escape(row.phone)}<button type="button" class="amsl-inline-email" data-amsl-row-action="email" data-key="${this.escape(row.key)}" title="Email ${this.escape(row.name)}"><i class="fas fa-envelope"></i></button></span>
+            <span class="amsl-card-avatar">${row.photo ? `<img src="${this.escape(row.photo)}" alt="">` : this.escape(this.initials(row.name))}</span>
+            <div><button type="button" class="amsl-card-name" data-amsl-row-action="view" data-key="${this.escape(row.key)}">${this.escape(row.name)}</button>
+            <span><i class="fas fa-phone"></i>${this.escape(row.phone)}<button type="button" class="amsl-inline-email" data-amsl-row-action="email" data-key="${this.escape(row.key)}" title="Email ${this.escape(row.name)}"><i class="fas fa-envelope"></i></button></span></div>
           </div>
 
           <div class="amsl-card-stage">
@@ -304,7 +343,7 @@ const AMSStudentList = {
           </div>
 
           <div class="amsl-card-meta">
-            <span><i class="fas fa-id-card"></i>${this.escape(row.admissionNo)}</span>
+            <span><i class="fas fa-id-card"></i>${this.escape(row.otrNo)}</span>
             <button type="button" data-amsl-preview="${this.escape(row.key)}" ${row.hasDocuments ? '' : 'disabled'}><i class="fas fa-folder-open"></i>${this.escape(row.documents || `${row.verifiedDocuments}/${row.totalDocuments} verified`)}</button>
           </div>
 
@@ -329,7 +368,7 @@ const AMSStudentList = {
                 <button type="button" data-amsl-row-action="documents" data-key="${this.escape(row.key)}" ${row.hasDocuments ? '' : 'disabled'}><i class="fas fa-folder-open"></i><span>View documents in 360° details</span></button>
                 <button type="button" data-amsl-row-action="duplicate" data-key="${this.escape(row.key)}"><i class="fas fa-clone"></i><span>Duplicate scan</span></button>
                 <button type="button" data-amsl-row-action="print" data-key="${this.escape(row.key)}"><i class="fas fa-print"></i><span>Print admission</span></button>
-                <button type="button" data-amsl-row-action="copy" data-key="${this.escape(row.key)}"><i class="fas fa-copy"></i><span>Copy admission no.</span></button>
+                <button type="button" data-amsl-row-action="copy" data-key="${this.escape(row.key)}"><i class="fas fa-copy"></i><span>Copy OTR ID</span></button>
                 <span class="amsl-menu-divider"></span>
                 <button type="button" class="danger" data-amsl-row-action="archive" data-key="${this.escape(row.key)}"><i class="fas fa-box-archive"></i><span>Archive</span></button>
                 <button type="button" class="danger" data-amsl-row-action="delete" data-key="${this.escape(row.key)}"><i class="fas fa-trash"></i><span>Delete</span></button>
@@ -369,7 +408,7 @@ const AMSStudentList = {
           <strong>${this.escape(row.course || 'Course not assigned')}</strong>
           <span>${this.escape(row.batch || 'Class not allocated')}</span>
           <span>DOB: ${this.escape(row.dateOfBirth ? this.formatShortDate(row.dateOfBirth) : empty)}</span>
-          <span>REF: ${this.escape(row.admissionNo || empty)}</span>
+          <span>OTR ID: ${this.escape(row.otrNo || empty)}</span>
           <span>MODE OF LEARNING: ${this.escape(row.mode || empty)}</span>
         </div>
         <div class="ams-admission-info-grid">${details.map(([label, value], index) => `<div class="${index >= 7 ? 'wide' : ''}"><span>${this.escape(label)}</span><strong>${this.escape(value)}</strong></div>`).join('')}</div>
@@ -429,7 +468,7 @@ const AMSStudentList = {
           <strong>${this.escape(row.course || 'Course not assigned')}</strong>
           <span>${this.escape(row.batch || 'Class not allocated')}</span>
           <span>DOB: ${this.escape(row.dateOfBirth ? this.formatShortDate(row.dateOfBirth) : '—')}</span>
-          <span>REF: ${this.escape(row.admissionNo || '—')}</span>
+          <span>OTR ID: ${this.escape(row.otrNo || '—')}</span>
           <span>MODE OF LEARNING: ${this.escape(row.mode || '—')}</span>
         </div>
         <div class="ams-admission-info-grid">${details.map(([label, value], index) => `<div class="${index >= 9 ? 'wide' : ''}"><span>${this.escape(label)}</span><strong>${this.escape(value)}</strong></div>`).join('')}</div>
@@ -442,10 +481,10 @@ const AMSStudentList = {
   },
 
   renderExtendedActionMenu(row) {
-    const eligible = !['confirmed', 'rejected'].includes(row.stageKey)
-      && !['form_pending', 'draft'].includes(row.statusKey);
-    const canChangeClass = Boolean(row.course) && !['confirmed', 'rejected'].includes(row.stageKey);
-    const hasAdmissionForm = Boolean(row.otrId || !['form_pending', 'draft'].includes(row.statusKey));
+    const eligible = !['confirmed', 'closed'].includes(row.stageKey)
+      && !['otr_pending', 'otr_draft'].includes(row.statusKey);
+    const canChangeClass = Boolean(row.course) && !['confirmed', 'closed'].includes(row.stageKey);
+    const hasAdmissionForm = Boolean(row.otrId || !['otr_pending', 'otr_draft'].includes(row.statusKey));
     const action = (key, icon, label, enabled = true, note = '') => `<button type="button" ${enabled ? `data-amsl-extended-action="${key}"` : 'disabled'} data-key="${this.escape(row.key)}" title="${this.escape(note)}"><i class="fas ${icon}"></i><span>${this.escape(label)}</span></button>`;
     return [
       action('followup', 'fa-bars-staggered', 'Manage Follow-Up'),
@@ -477,7 +516,7 @@ const AMSStudentList = {
     }
     if (action === 'print-admission') return window.AMSAdmissionOps?.printAdmission?.(key);
     if (action === 'copy') {
-      navigator.clipboard?.writeText([row.admissionNo, row.name, row.phone, row.email, row.course, row.batch].filter(Boolean).join(' | '));
+      navigator.clipboard?.writeText([row.otrNo, row.name, row.phone, row.email, row.course, row.batch].filter(Boolean).join(' | '));
       return window.AMSAdmissionOps?.toast?.('Admission record copied', 'success');
     }
     if (action === 'schedule-interview') return window.AMSInterviews?.openStudentSchedule?.(row);
@@ -512,14 +551,14 @@ const AMSStudentList = {
     }
     if (action === 'call') return window.location.href = `tel:${this.phone(row.phone)}`;
     if (action === 'whatsapp') return window.open(`https://wa.me/91${this.phone(row.phone)}`, '_blank', 'noopener');
-    if (action === 'email') return window.location.href = `mailto:${row.email || ''}?subject=${encodeURIComponent(`Admission ${row.admissionNo}`)}`;
+    if (action === 'email') return window.location.href = `mailto:${row.email || ''}?subject=${encodeURIComponent(`OTR ${row.otrNo}`)}`;
     if (action === 'more') {
       this.state.openMenuKey = this.state.openMenuKey === key ? '' : key;
       return this.renderTable();
     }
     if (action === 'documents') return window.AMSAdmissionDrawer?.open?.(key, 'ams-360-documents');
     if (action === 'copy') {
-      navigator.clipboard?.writeText(row.admissionNo);
+      navigator.clipboard?.writeText(row.otrNo);
       this.state.openMenuKey = '';
       this.renderTable();
       this.closeModal();
@@ -597,18 +636,7 @@ const AMSStudentList = {
 
   populateFilters() {
     this.populateSelect('amsl-course-filter', 'Course', this.rows.map(row => row.course));
-    this.populateSelect('amsl-batch-filter', 'Batch', this.rows.map(row => row.batch));
-    this.populateSelect('amsl-owner-filter', 'Owner', this.rows.map(row => row.owner));
-    this.populateSelect('amsl-source-filter', 'Source', this.rows.map(row => row.source), 'source');
-    this.populateStatusFilter();
-  },
-
-  populateStatusFilter() {
-    const statuses = this.rows
-      .filter(row => (this.state.stage === 'all' || row.stageKey === this.state.stage)
-        && (this.state.stageStatus === 'all' || row.stageStatus === this.state.stageStatus))
-      .map(row => row.status);
-    this.populateSelect('amsl-status-filter', 'Status', statuses, 'status');
+    this.populateSelect('amsl-owner-filter', 'Assigned To', this.rows.map(row => row.owner), 'owner');
   },
 
   populateSelect(id, label, values, filterKey) {
@@ -622,12 +650,12 @@ const AMSStudentList = {
 
   clearFilters() {
     Object.assign(this.state.filters, {
-      search: '', status: 'all', course: 'all', batch: 'all', owner: 'all',
-      document: 'all', source: 'all', date: '', followup: ''
+      search: '', course: 'all', mode: 'all', gender: 'all', enquiry: '',
+      otr: '', owner: 'all', dateFrom: '', dateTo: ''
     });
     this.state.page = 1;
-    ['amsl-search', 'amsl-date-filter', 'amsl-followup-filter'].forEach(id => { const input = document.getElementById(id); if (input) input.value = ''; });
-    ['amsl-document-filter', 'amsl-source-filter'].forEach(id => { const input = document.getElementById(id); if (input) input.value = 'all'; });
+    ['amsl-search', 'amsl-enquiry-filter', 'amsl-otr-filter', 'amsl-date-from-filter', 'amsl-date-to-filter'].forEach(id => { const input = document.getElementById(id); if (input) input.value = ''; });
+    ['amsl-course-filter', 'amsl-mode-filter', 'amsl-gender-filter', 'amsl-owner-filter'].forEach(id => { const input = document.getElementById(id); if (input) input.value = 'all'; });
     this.populateFilters();
     this.render();
   },
@@ -770,8 +798,8 @@ const AMSStudentList = {
   },
 
   exportRows() {
-    const headers = ['Admission', 'Source', 'Student', 'Mobile', 'Stage', 'Status', 'Documents', 'Owner'];
-    const data = this.filteredRows().map(row => [row.admissionNo, row.source, row.name, row.phone, row.stage, row.stageStatus, row.documents, row.owner]);
+    const headers = ['OTR ID', 'Enquiry ID', 'Student', 'Mobile', 'Course', 'Learning Mode', 'Hostel Status', 'Gender', 'Stage', 'Status', 'Owner', 'Date'];
+    const data = this.filteredRows().map(row => [row.otrNo, row.enquiryId, row.name, row.phone, row.course, row.mode, row.hostelStatus, row.gender, row.stage, row.stageStatus, row.owner, row.admissionDate]);
     const csv = [headers, ...data].map(row => row.map(value => `"${String(value || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const link = document.createElement('a');
@@ -793,6 +821,14 @@ const AMSStudentList = {
   },
   initials(name = '') { return name.split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase(); },
   phone(value = '') { return String(value).replace(/\D/g, '').slice(-10); },
+  normalizeOtrId(value, dateValue, fallbackSequence = 1) {
+    const raw = String(value || '').trim().toUpperCase();
+    if (/^PA\d{6}$/.test(raw)) return raw;
+    const parts = raw.match(/(?:AMS-OTR-|ADM-|OTR-)?(20\d{2})-(\d{1,4})$/);
+    const year = parts?.[1] || String(dateValue || '').match(/20\d{2}/)?.[0] || String(new Date().getFullYear());
+    const sequence = Number(parts?.[2] || fallbackSequence) || fallbackSequence;
+    return `PA${year.slice(-2)}${String(sequence).padStart(4, '0')}`;
+  },
   slug(value = '') { return value.toLowerCase().replace(/\s+/g, '-'); },
   titleCase(value = '') { return value.replace(/([A-Z])/g, ' $1').replace(/^./, character => character.toUpperCase()).trim(); },
   formatDate(value) { return new Date(`${value}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); },

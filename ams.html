@@ -212,7 +212,7 @@
                 <button type="button" data-amsl-action="sort" data-tooltip="Sort by admission date" title="Sort by admission date"><i class="fas fa-sort-amount-down"></i></button>
               </div>
               <div class="amsl-quick-row">
-                <label class="amsl-search"><i class="fas fa-search"></i><input id="amsl-search" placeholder="Search admission no., student name, mobile, email..." /></label>
+                <label class="amsl-search"><i class="fas fa-search"></i><input id="amsl-search" placeholder="Search student name, mobile number, OTR ID, enquiry ID..." /></label>
                 <button class="amsl-search-clear" type="button" data-amsl-action="clear-search" data-tooltip="Clear search" title="Clear search"><i class="fas fa-times"></i></button>
                 <button type="button" data-amsl-action="filter-summary" data-tooltip="Saved filter views" title="Saved filter views"><i class="fas fa-bookmark"></i></button>
                 <button type="button" data-amsl-action="filter-toggle" data-tooltip="Show or hide filters" title="Show or hide filters"><i class="fas fa-sliders"></i></button>
@@ -221,14 +221,13 @@
             </section>
 
             <section class="amsl-filter-panel" id="amsl-filter-panel" aria-label="Admission filters">
-              <label><span>Status</span><select id="amsl-status-filter" aria-label="Status filter"><option value="all">All Statuses</option></select></label>
               <label><span>Course</span><select id="amsl-course-filter" aria-label="Course filter"><option value="all">All Courses</option></select></label>
-              <label><span>Batch</span><select id="amsl-batch-filter" aria-label="Batch filter"><option value="all">All Batches</option></select></label>
-              <label><span>Owner</span><select id="amsl-owner-filter" aria-label="Owner filter"><option value="all">All Owners</option></select></label>
-              <label><span>Document Status</span><select id="amsl-document-filter" aria-label="Document status filter"><option value="all">All Documents</option><option value="complete">Complete</option><option value="pending">Pending</option></select></label>
-              <label><span>Admission Source</span><select id="amsl-source-filter" aria-label="Admission source filter"><option value="all">All Sources</option></select></label>
-              <label><span>Admission Date</span><input id="amsl-date-filter" type="date" aria-label="Admission date filter" /></label>
-              <label><span>Follow-up Date</span><input id="amsl-followup-filter" type="date" aria-label="Follow-up date filter" /></label>
+              <label><span>Learning Mode</span><select id="amsl-mode-filter" aria-label="Learning mode filter"><option value="all">All Learning Modes</option><option value="Online">Online</option><option value="Offline">Offline</option><option value="Offline with Hostel">Offline with Hostel</option><option value="Offline without Hostel">Offline without Hostel</option></select></label>
+              <label><span>Gender</span><select id="amsl-gender-filter" aria-label="Gender filter"><option value="all">All Genders</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+              <label><span>Enquiry Number</span><input id="amsl-enquiry-filter" type="text" placeholder="Enquiry number" aria-label="Enquiry number filter" /></label>
+              <label><span>OTR Number</span><input id="amsl-otr-filter" type="text" placeholder="PA260001" aria-label="OTR number filter" /></label>
+              <label><span>Assigned To</span><select id="amsl-owner-filter" aria-label="Assigned to filter"><option value="all">All Assigned</option></select></label>
+              <label class="amsl-date-range"><span>Date Range</span><div><input id="amsl-date-from-filter" type="date" aria-label="Date range from" /><input id="amsl-date-to-filter" type="date" aria-label="Date range to" /></div></label>
               <button class="amsl-clear" type="button" data-amsl-action="clear">Reset</button>
             </section>
 

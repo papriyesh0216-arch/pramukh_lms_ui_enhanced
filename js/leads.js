@@ -6,7 +6,7 @@ const LeadsModule = {
   leads: [],
   filteredLeads: [],
   activeStatus: 'all',
-  activeSubStatus: 'called',
+  activeSubStatus: 'all',
   viewMode: 'row',
   allExpanded: false,
   currentPage: 1,
@@ -17,6 +17,8 @@ const LeadsModule = {
   filterSearch: '',
   filterCounselor: 'all',
   filterMode: 'all',
+  filterGender: 'all',
+  filterOtrNumber: '',
   filterAcademicStatus: 'all',
   filterCity: '',
   filterBatch: 'all',
@@ -56,11 +58,11 @@ const LeadsModule = {
           email: 'amit.kumar@gmail.com', state: 'Gujarat', district: 'Surat', city: 'Surat, Gujarat', course: 'UPSC',
           batch: 'Foundation', mode: 'Offline', source: 'Instagram Ad', campaign: 'UPSC May 2026',
           inquiryDate: '26-06-2026 10:00 AM', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
-          status: 'exam', statusLabel: 'Exam Scheduled', priority: 'medium',
+          status: 'exam', statusLabel: 'Exam', priority: 'medium',
           leadScore: 75, leadAge: '0 Days', academicStatus: 'College Student',
           query: 'Exam syllabus.', assignedTo: 'Bharat Sir',
           assignedDate: '26-06-2026 10:00 AM', timeAgo: '7 hrs ago', isHot: false,
-          stage: 3, stageLabel: 'Form Sent',
+          stage: 3, stageLabel: 'Exam',
           communications: []
         },
         {
@@ -68,12 +70,12 @@ const LeadsModule = {
           email: 'priya.sharma@gmail.com', state: 'Gujarat', district: 'Rajkot', city: 'Rajkot, Gujarat', course: 'GPSC-Class1,2',
           mode: 'Online', source: 'Website', campaign: '-',
           inquiryDate: '25-06-2026 11:30 AM', owner: 'Vivek Sir', ownerTeam: 'GPSC Team',
-          status: 'interview', statusLabel: 'Interview Scheduled', priority: 'high',
+          status: 'interview', statusLabel: 'Interview Stage', priority: 'high',
           batch: 'Foundation',
           leadScore: 82, leadAge: '1 Day', academicStatus: 'College Student',
           query: 'Interview prep.', assignedTo: 'Vivek Sir',
           assignedDate: '25-06-2026 11:30 AM', timeAgo: '1 day ago', isHot: true,
-          stage: 3, stageLabel: 'Form Sent',
+          stage: 3, stageLabel: 'Interview Stage',
           communications: []
         },
         {
@@ -85,7 +87,7 @@ const LeadsModule = {
           leadScore: 95, leadAge: '2 Days', academicStatus: 'Graducation Completed',
           query: 'Fees paid.', assignedTo: 'Pooja Shah',
           assignedDate: '24-06-2026 09:15 AM', timeAgo: '2 days ago', isHot: false,
-          stage: 4, stageLabel: 'Admission',
+          stage: 4, stageLabel: 'Admission Confirmed',
           communications: []
         },
         {
@@ -93,11 +95,11 @@ const LeadsModule = {
           email: 'kunal.patel@gmail.com', state: 'Gujarat', district: 'Vadodara', city: 'Vadodara, Gujarat', course: 'UPSC',
           batch: 'Foundation', mode: 'Offline', source: 'Walk-in', campaign: '-',
           inquiryDate: '23-06-2026 04:00 PM', owner: 'Bharat Sir', ownerTeam: 'UPSC Team',
-          status: 'admission_rejected', statusLabel: 'Admission Rejected', priority: 'low',
+          status: 'closed', statusLabel: 'Application Rejected', priority: 'low',
           leadScore: 40, leadAge: '3 Days', academicStatus: 'Graducation Completed',
           query: 'Could not pass test.', assignedTo: 'Bharat Sir',
           assignedDate: '23-06-2026 04:00 PM', timeAgo: '3 days ago', isHot: false,
-          stage: 4, stageLabel: 'Admission',
+          stage: 4, stageLabel: 'Admission Closed',
           communications: []
         },
         {
@@ -105,12 +107,12 @@ const LeadsModule = {
           email: 'divya.shah@gmail.com', state: 'Gujarat', district: 'Surat', city: 'Surat, Gujarat', course: 'GPSC-Class1,2',
           mode: 'Online', source: 'Google Ads', campaign: '-',
           inquiryDate: '22-06-2026 12:00 PM', owner: 'Jignesh Trivedi', ownerTeam: 'Admin',
-          status: 'closed', statusLabel: 'Closed', priority: 'low',
+          status: 'closed', statusLabel: 'Declined by Student', priority: 'low',
           batch: 'Foundation',
           leadScore: 30, leadAge: '4 Days', academicStatus: 'School Student',
           query: 'Not interested anymore.', assignedTo: 'Jignesh Trivedi',
           assignedDate: '22-06-2026 12:00 PM', timeAgo: '4 days ago', isHot: false,
-          stage: 5, stageLabel: 'Closed',
+          stage: 5, stageLabel: 'Admission Closed',
           communications: []
         }
       ];
@@ -126,10 +128,10 @@ const LeadsModule = {
   },
 
   syncAdmissionShortlist() {
-    const admissionStatuses = ['admission_process', 'converted', 'exam', 'interview', 'admission_confirmed', 'admission_rejected', 'admission_form', 'form_submission', 'form_submitted'];
+    const admissionStatuses = ['otr', 'course_selection', 'exam', 'interview', 'fees_pending', 'confirmed', 'closed'];
     const shortlist = this.leads.filter(lead => (
       lead.shortlistedForAdmission ||
-      lead.stageKey === 'admission_form' ||
+      admissionStatuses.includes(lead.stageKey) ||
       admissionStatuses.includes((lead.status || '').toLowerCase())
     ));
     try {
@@ -140,17 +142,27 @@ const LeadsModule = {
   },
 
   normalizeInquiryLeadData() {
-    this.leads.forEach((lead) => {
+    const workflowSeeds = {
+      1: ['otr', 'pending'], 2: ['otr', 'draft'], 3: ['otr', 'submitted'],
+      4: ['course_selection', ''], 5: ['exam', 'descriptive'], 6: ['interview', 'personality'],
+      7: ['fees_pending', ''], 10: ['exam', 'mcq'], 11: ['interview', 'academic'],
+      12: ['confirmed', ''], 13: ['closed', 'application_rejected'], 14: ['closed', 'declined_by_student']
+    };
+    this.leads.forEach((lead, index) => {
       lead.state = this.getLeadState(lead);
       lead.district = this.getLeadDistrict(lead);
       lead.academicStatus = this.normalizeAcademicStatus(lead.academicStatus);
       lead.course = this.normalizeInquiryCourse(lead.course);
-      lead.mode = this.normalizeLearningMode(lead.mode, lead.course);
-      if (!this.courseNeedsBatchMode(lead.course)) {
-        lead.batch = '';
-        lead.mode = '';
-      } else if (!lead.batch) {
-        lead.batch = '';
+      lead.mode = this.normalizeLearningMode(lead.learningMode || lead.mode, lead.course);
+      lead.learningMode = lead.mode;
+      if (!lead.batch) lead.batch = '';
+      lead.gender = lead.gender || (index % 2 ? 'Female' : 'Male');
+      lead.hostelStatus = lead.hostelStatus || (lead.mode === 'Online' ? 'Not Applicable' : (index % 2 ? 'Without Hostel' : 'With Hostel'));
+      lead.enquiryId = lead.enquiryId || lead.enqNo;
+      lead.otrNo = /^PA\d{6}$/i.test(String(lead.otrNo || '')) ? String(lead.otrNo).toUpperCase() : `PA26${String(index + 1).padStart(4, '0')}`;
+      if (workflowSeeds[lead.id]) {
+        [lead.stageKey, lead.stageStatus] = workflowSeeds[lead.id];
+        lead.status = lead.stageKey;
       }
       this.normalizeLeadStageData(lead);
       lead.createdAt = lead.createdAt || lead.inquiryDate;
@@ -193,7 +205,6 @@ const LeadsModule = {
   },
 
   normalizeLearningMode(mode, course) {
-    if (!this.courseNeedsBatchMode(course)) return '';
     if (mode === 'Online') return 'Online';
     return 'Offline';
   },
@@ -205,40 +216,46 @@ const LeadsModule = {
   getStageDefinitions() {
     return [
       { key: 'all', label: 'All' },
-      { key: 'pending', label: 'Pending' },
-      { key: 'voicecall', label: 'Voicecall' },
-      { key: 'hot_lead', label: 'Hot Lead' },
-      { key: 'cold_lead', label: 'Cold Lead' },
-      { key: 'counselling', label: 'Counselling' },
-      { key: 'admission_form', label: 'OTR Form' },
-      { key: 'closed', label: 'Closed' }
+      { key: 'otr', label: 'OTR Form' },
+      { key: 'course_selection', label: 'Course Selection' },
+      { key: 'exam', label: 'Exam' },
+      { key: 'interview', label: 'Interview Stage' },
+      { key: 'fees_pending', label: 'Fees Pending' },
+      { key: 'confirmed', label: 'Admission Confirmed' },
+      { key: 'closed', label: 'Admission Closed' }
     ];
   },
 
   getStageStatusDefinitions(stageKey) {
     const statuses = {
-      voicecall: [
-        { key: 'called', label: 'Called' },
-        { key: 'not_connected', label: 'Not Connected' },
-        { key: 'switched_off', label: 'Switched Off' },
-        { key: 'schedule', label: 'Schedule' }
+      otr: [
+        { key: 'all', label: 'All' },
+        { key: 'pending', label: 'Pending' },
+        { key: 'draft', label: 'Draft' },
+        { key: 'submitted', label: 'Submitted' }
       ],
-      counselling: [
-        { key: 'reschedules', label: 'Reschedules' },
-        { key: 'conducted', label: 'Conducted' },
-        { key: 'schedule', label: 'Schedule' }
+      exam: [
+        { key: 'all', label: 'All' },
+        { key: 'mcq', label: 'MCQ Stage' },
+        { key: 'descriptive', label: 'Descriptive Stage' },
+        { key: 'submitted', label: 'Submitted' }
+      ],
+      interview: [
+        { key: 'all', label: 'All' },
+        { key: 'academic', label: 'Academic' },
+        { key: 'personality', label: 'Personality' },
+        { key: 'overall', label: 'Overall' }
+      ],
+      closed: [
+        { key: 'all', label: 'All' },
+        { key: 'application_rejected', label: 'Application Rejected' },
+        { key: 'declined_by_student', label: 'Declined by Student' }
       ]
     };
     return statuses[stageKey] || [];
   },
 
   getFollowupStageStatusDefinitions(stageKey) {
-    if (stageKey === 'counselling') {
-      return [
-        { key: 'schedule', label: 'Schedule' },
-        { key: 'reschedules', label: 'Reschedule' }
-      ];
-    }
     return this.getStageStatusDefinitions(stageKey);
   },
 
@@ -263,11 +280,11 @@ const LeadsModule = {
     const stageStatus = this.getLeadSubStatusKey(lead);
     lead.stageKey = stageKey;
     lead.stageStatus = stageStatus;
-    lead.status = stageKey === 'admission_form' ? stageKey : (lead.status || stageKey);
+    lead.status = stageKey;
     lead.statusLabel = this.formatStageLabel(stageKey);
     lead.stageLabel = this.formatStageLabel(stageKey);
     lead.stageStatusLabel = this.formatStageStatusLabel(stageKey, stageStatus);
-    lead.shortlistedForAdmission = stageKey === 'admission_form';
+    lead.shortlistedForAdmission = Boolean(stageKey);
   },
 
   getSortOptions() {
@@ -333,50 +350,27 @@ const LeadsModule = {
 
   getLeadStatusKey(lead) {
     if (lead.archived) return null;
-    if (lead.stageKey && lead.stageKey !== 'all') return lead.stageKey;
+    if (this.getStageDefinitions().some(stage => stage.key === lead.stageKey && stage.key !== 'all')) return lead.stageKey;
     const stageLabel = String(lead.stageLabel || '').toLowerCase().replace(/[\s_-]/g, '');
     const status = String(lead.status || '').toLowerCase().replace(/[\s_-]/g, '');
-    const priority = String(lead.priority || '').toLowerCase();
-
-    if (['closed', 'lost', 'notinterested', 'converted', 'admissionconfirmed', 'admissionrejected'].includes(status) || stageLabel === 'closed') {
-      return 'closed';
-    }
-    if (['admissionprocess', 'admissionform', 'otrform', 'exam', 'interview', 'formsubmission', 'formsubmitted'].includes(status) || ['admission', 'otrform'].includes(stageLabel)) {
-      return 'admission_form';
-    }
-    if (['counselling', 'reschedules', 'reschedule', 'conducted'].includes(status) || stageLabel === 'counselling') {
-      return 'counselling';
-    }
-    if (priority === 'high' || lead.isHot || status === 'hotlead') {
-      return 'hot_lead';
-    }
-    if (priority === 'low' || status === 'coldlead') {
-      return 'cold_lead';
-    }
-    if (['voicecall', 'called', 'notconnected', 'switchedoff', 'schedule', 'contacted', 'followup'].includes(status) || lead.followupDate) {
-      return 'voicecall';
-    }
-    return 'pending';
+    if (['closed', 'lost', 'notinterested', 'admissionrejected', 'applicationrejected', 'declinedbystudent'].includes(status) || stageLabel === 'admissionclosed') return 'closed';
+    if (['converted', 'admissionconfirmed'].includes(status) || stageLabel === 'admissionconfirmed') return 'confirmed';
+    if (['feespending', 'feepending'].includes(status) || stageLabel === 'feespending') return 'fees_pending';
+    if (status.includes('interview') || stageLabel === 'interviewstage') return 'interview';
+    if (status.includes('exam') || stageLabel === 'exam') return 'exam';
+    if (['courseselection', 'batchallocation'].includes(status) || stageLabel === 'courseselection') return 'course_selection';
+    return 'otr';
   },
 
   getLeadSubStatusKey(lead) {
     const stageKey = this.getLeadStatusKey(lead);
-    if (stageKey === 'admission_form') return '';
-    if (lead.stageStatus) return lead.stageStatus;
+    if (lead.stageStatus && this.getStageStatusDefinitions(stageKey).some(item => item.key === lead.stageStatus)) return lead.stageStatus;
     const status = String(lead.status || '').toLowerCase().replace(/[\s_-]/g, '');
     const statusLabel = String(lead.statusLabel || '').toLowerCase().replace(/[\s_-]/g, '');
-
-    if (stageKey === 'voicecall') {
-      if (['called'].includes(status) || statusLabel === 'called') return 'called';
-      if (['notconnected'].includes(status) || statusLabel === 'notconnected') return 'not_connected';
-      if (['switchedoff'].includes(status) || statusLabel === 'switchedoff') return 'switched_off';
-      if (lead.followupDate || ['voicecall', 'contacted', 'followup', 'schedule', 'scheduled'].includes(status)) return 'schedule';
-    }
-    if (stageKey === 'counselling') {
-      if (['conducted'].includes(status) || statusLabel === 'conducted') return 'conducted';
-      if (['reschedule', 'reschedules', 'rescheduled'].includes(status) || statusLabel.startsWith('reschedule')) return 'reschedules';
-      return 'schedule';
-    }
+    if (stageKey === 'otr') return status.includes('draft') ? 'draft' : (status.includes('submitted') || statusLabel.includes('submitted')) ? 'submitted' : 'pending';
+    if (stageKey === 'exam') return status.includes('descriptive') ? 'descriptive' : status.includes('submitted') ? 'submitted' : 'mcq';
+    if (stageKey === 'interview') return status.includes('personality') ? 'personality' : status.includes('overall') ? 'overall' : 'academic';
+    if (stageKey === 'closed') return status.includes('declined') ? 'declined_by_student' : 'application_rejected';
     return '';
   },
 
@@ -417,21 +411,7 @@ const LeadsModule = {
   },
 
   updateStatusBarCounts() {
-    const counts = {
-      all: 0,
-      pending: 0,
-      voicecall: 0,
-      hot_lead: 0,
-      cold_lead: 0,
-      counselling: 0,
-      admission_form: 0,
-      closed: 0,
-      called: 0,
-      not_connected: 0,
-      switched_off: 0,
-      reschedules: 0,
-      conducted: 0
-    };
+    const counts = Object.fromEntries(this.getStageDefinitions().map(stage => [stage.key, 0]));
     
     this.applyRoleScope(this.leads).forEach(l => {
       if (l.archived) return;
@@ -442,10 +422,6 @@ const LeadsModule = {
       }
       
       // Calculate sub-statuses
-      const subStatusKey = this.getLeadSubStatusKey(l);
-      if (subStatusKey && counts.hasOwnProperty(subStatusKey)) {
-        counts[subStatusKey]++;
-      }
     });
     
     for (const [key, count] of Object.entries(counts)) {
@@ -457,11 +433,8 @@ const LeadsModule = {
       .filter((stage) => stage.key !== 'all')
       .forEach((stage) => {
         this.getStageStatusDefinitions(stage.key).forEach((status) => {
-          const count = this.applyRoleScope(this.leads).filter((lead) => (
-            !lead.archived &&
-            this.getLeadStatusKey(lead) === stage.key &&
-            this.getLeadSubStatusKey(lead) === status.key
-          )).length;
+          const stageRows = this.applyRoleScope(this.leads).filter((lead) => !lead.archived && this.getLeadStatusKey(lead) === stage.key);
+          const count = status.key === 'all' ? stageRows.length : stageRows.filter(lead => this.getLeadSubStatusKey(lead) === status.key).length;
           const el = document.getElementById(`count-status-${stage.key}-${status.key}`);
           if (el) el.textContent = count;
         });
@@ -470,7 +443,7 @@ const LeadsModule = {
 
   setStatus(key, el) {
     this.activeStatus = key;
-    this.activeSubStatus = '';
+    this.activeSubStatus = 'all';
     document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
     if (el) el.classList.add('active');
     this.renderStageStatusBar();
@@ -495,14 +468,14 @@ const LeadsModule = {
     this.filterInquiryDate = '';
     this.filterFollowupDate = '';
 
-    // In the UI, Search represents (Name, Number, Email). Course/others are filtered separately.
+    // Search is limited to student name, mobile, OTR ID, and enquiry ID.
     let result = this.applyRoleScope([...this.leads]).filter(l => !l.archived);
 
 
     // Apply status filter
     if (this.activeStatus !== 'all') {
       result = result.filter(l => this.getLeadStatusKey(l) === this.activeStatus);
-      if (this.activeSubStatus && this.getStageStatusDefinitions(this.activeStatus).length) {
+      if (this.activeSubStatus && this.activeSubStatus !== 'all' && this.getStageStatusDefinitions(this.activeStatus).length) {
         result = result.filter(l => this.getLeadSubStatusKey(l) === this.activeSubStatus);
       }
     }
@@ -513,28 +486,26 @@ const LeadsModule = {
     }
 
     this.filterMode = document.getElementById('filter-mode')?.value || this.filterMode || 'all';
-    this.filterBatch = document.getElementById('filter-batch')?.value || this.filterBatch || 'all';
-    this.filterState = document.getElementById('filter-state')?.value || this.filterState || '';
-    this.filterCity = document.getElementById('filter-district')?.value || this.filterCity || '';
+    this.filterGender = document.getElementById('filter-gender')?.value || this.filterGender || 'all';
+    this.filterOtrNumber = document.getElementById('filter-otr-number')?.value || this.filterOtrNumber || '';
     this.filterDateFrom = document.getElementById('filter-date-from')?.value || this.filterDateFrom || '';
     this.filterDateTo = document.getElementById('filter-date-to')?.value || this.filterDateTo || '';
     this.filterInquiryNumber = document.getElementById('filter-inquiry-number')?.value || this.filterInquiryNumber || '';
     this.filterAssignInquiry = document.getElementById('filter-assign-inquiry')?.value || this.filterAssignInquiry || 'all';
-    this.filterSegment = document.getElementById('filter-segment')?.value || this.filterSegment || 'all';
 
     if (this.filterMode !== 'all') {
-      result = result.filter(l => l.mode === this.filterMode);
+      result = result.filter(l => {
+        const mode = l.learningMode || l.mode || '';
+        const hostel = String(l.hostelStatus || '').toLowerCase();
+        if (this.filterMode === 'Offline with Hostel') return mode === 'Offline' && hostel.includes('with') && !hostel.includes('without');
+        if (this.filterMode === 'Offline without Hostel') return mode === 'Offline' && (hostel.includes('without') || hostel === 'no');
+        return mode === this.filterMode;
+      });
     }
-    if (this.filterBatch !== 'all') {
-      result = result.filter(l => (l.batch || '') === this.filterBatch);
-    }
-    if (this.filterState) {
-      const state = this.filterState.toLowerCase();
-      result = result.filter(l => this.getLeadState(l).toLowerCase().includes(state));
-    }
-    if (this.filterCity) {
-      const district = this.filterCity.toLowerCase();
-      result = result.filter(l => this.getLeadDistrict(l).toLowerCase().includes(district));
+    if (this.filterGender !== 'all') result = result.filter(l => (l.gender || '') === this.filterGender);
+    if (this.filterOtrNumber) {
+      const otr = this.filterOtrNumber.toLowerCase();
+      result = result.filter(l => (l.otrNo || '').toLowerCase().includes(otr));
     }
     if (this.filterDateFrom || this.filterDateTo) {
       result = result.filter(l => {
@@ -547,23 +518,19 @@ const LeadsModule = {
     }
     if (this.filterInquiryNumber) {
       const inquiryNumber = this.filterInquiryNumber.toLowerCase();
-      result = result.filter(l => (l.enqNo || '').toLowerCase().includes(inquiryNumber));
+      result = result.filter(l => (l.enquiryId || l.enqNo || '').toLowerCase().includes(inquiryNumber));
     }
     if (this.filterAssignInquiry !== 'all') {
       result = result.filter(l => this.filterAssignInquiry === 'Unassigned' ? !l.assignedTo || l.assignedTo === 'Unassigned' : (l.assignedTo || l.owner) === this.filterAssignInquiry);
     }
-    if (this.filterSegment !== 'all') {
-      const segment = window.APP_DATA.SEGMENT_DATA?.find(s => s.name === this.filterSegment);
-      if (segment) result = result.filter(l => segment.leadIds.includes(l.id));
-    }
-
     // Apply search filter
     if (this.filterSearch) {
       const q = this.filterSearch.toLowerCase();
       result = result.filter(l => 
         l.name.toLowerCase().includes(q) ||
         l.phone.includes(q) ||
-        l.email.toLowerCase().includes(q)
+        (l.otrNo || '').toLowerCase().includes(q) ||
+        (l.enquiryId || l.enqNo || '').toLowerCase().includes(q)
       );
     }
 
@@ -892,8 +859,8 @@ const LeadsModule = {
           </div>
 
           <div class="lead-meta">
-          <span class="lead-meta-item"><i class="fas fa-book"></i>${lead.course}</span>
-            <span class="lead-meta-item"><i class="fas fa-map-marker-alt"></i>${this.getLeadDistrict(lead)}, ${this.getLeadState(lead)}</span>
+            <span class="lead-meta-item"><i class="fas fa-id-card"></i>${lead.otrNo}</span>
+            <span class="lead-meta-item"><i class="fas fa-book"></i>${lead.course}</span>
           </div>
 
           <span class="lead-timestamp">${lead.timeAgo}</span>
@@ -928,6 +895,10 @@ const LeadsModule = {
               <div class="detail-row">
                 <span class="detail-label">Inquiry Reference No.</span>
                 <span class="detail-value">${lead.enqNo}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">OTR ID</span>
+                <span class="detail-value">${lead.otrNo}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Full Name</span>
@@ -972,6 +943,14 @@ const LeadsModule = {
               <div class="detail-row">
                 <span class="detail-label">Mode Of Learning</span>
                 <span class="detail-value">${lead.mode || '-'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Hostel Status</span>
+                <span class="detail-value">${lead.hostelStatus || '-'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Gender</span>
+                <span class="detail-value">${lead.gender || '-'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Inquiry Date/Time</span>
@@ -1139,10 +1118,8 @@ const LeadsModule = {
   getBulkStageModalOptions() {
     return this.getStageDefinitions().filter((stage) => stage.key !== 'all').map((stage) => ({
       ...stage,
-      statuses: stage.key === 'admission_form'
-        ? []
-        : (this.getStageStatusDefinitions(stage.key).length
-          ? this.getStageStatusDefinitions(stage.key)
+      statuses: (this.getStageStatusDefinitions(stage.key).filter(status => status.key !== 'all').length
+          ? this.getStageStatusDefinitions(stage.key).filter(status => status.key !== 'all')
           : [{ key: stage.key, label: stage.label }])
     }));
   },
@@ -1164,7 +1141,7 @@ const LeadsModule = {
     const timeWrap = document.getElementById('bulk-stage-time-wrap');
     const dateInput = document.getElementById('bulk-stage-date');
     const timeInput = document.getElementById('bulk-stage-time');
-    const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
+    const shouldHideSchedule = ['confirmed', 'closed'].includes(stageKey);
     const stageStatuses = this.getBulkStageModalOptions().find((stage) => stage.key === stageKey)?.statuses || [];
 
     this.renderBulkStageStatusOptions(stageKey);
@@ -1193,7 +1170,7 @@ const LeadsModule = {
     const timeWrap = document.getElementById('f-time-wrap');
     const dateInput = document.getElementById('f-date');
     const timeInput = document.getElementById('f-time');
-    const shouldHideSchedule = ['closed', 'admission_form'].includes(stageKey);
+    const shouldHideSchedule = ['confirmed', 'closed'].includes(stageKey);
     const stageStatuses = this.getFollowupStageStatusDefinitions(stageKey);
 
     if (statusSelect) {
@@ -1204,10 +1181,10 @@ const LeadsModule = {
       if (!stageStatuses.length) statusSelect.value = '';
     }
     if (statusWrap) statusWrap.hidden = stageStatuses.length === 0;
-    if (mentorWrap) mentorWrap.hidden = stageKey !== 'counselling';
+    if (mentorWrap) mentorWrap.hidden = true;
     if (mentorInput) {
-      mentorInput.required = stageKey === 'counselling';
-      if (stageKey !== 'counselling') mentorInput.value = '';
+      mentorInput.required = false;
+      mentorInput.value = '';
     }
     if (dateWrap) dateWrap.hidden = shouldHideSchedule;
     if (timeWrap) timeWrap.hidden = shouldHideSchedule;
@@ -1290,7 +1267,7 @@ const LeadsModule = {
     const followupDate = document.getElementById('bulk-stage-date')?.value || '';
     const followupTime = document.getElementById('bulk-stage-time')?.value || '';
     const purpose = document.getElementById('bulk-stage-purpose')?.value.trim() || '';
-    const needsSchedule = !['closed', 'admission_form'].includes(stageKey);
+    const needsSchedule = !['confirmed', 'closed'].includes(stageKey);
     if (!stageKey || !purpose || (needsSchedule && !followupDate)) return;
     const followedBy = document.querySelector('#bulk-stage-form .readonly-field')?.textContent || '';
 
@@ -1320,7 +1297,7 @@ const LeadsModule = {
           'Automatic counselling stage email.'
         );
       }
-      if (stageKey === 'admission_form') {
+      if (stageKey === 'otr') {
         this.recordEmailNotification(
           lead,
           'OTR form link - Pramukh Academy',
@@ -1641,16 +1618,11 @@ const LeadsModule = {
   buildFilterPanel() {
     const filterPanel = document.getElementById('leads-filter-panel');
     if (!filterPanel) return;
-    const stateOptions = Object.keys(typeof INDIAN_STATE_DISTRICTS !== 'undefined' ? INDIAN_STATE_DISTRICTS : {}).map((state) => (
-      `<option value="${state}">${state}</option>`
-    )).join('');
-    const segmentOptions = (window.APP_DATA?.SEGMENT_DATA || []).map((segment) => (
-      `<option value="${segment.name}">${segment.name}</option>`
-    )).join('');
+    const ownerOptions = this.getMentorOptions().map(owner => `<option value="${this.escapeHtml(owner)}">${this.escapeHtml(owner)}</option>`).join('');
     filterPanel.innerHTML = `
       <div class="filter-field">
         <label>Search</label>
-        <input type="text" id="filter-search-input" placeholder="Name, number, email" oninput="LeadsModule.applyFilters()">
+        <input type="text" id="filter-search-input" placeholder="Student name, mobile, OTR ID, enquiry ID" oninput="LeadsModule.applyFilters()">
       </div>
       <div class="filter-field">
         <label>Course</label>
@@ -1665,64 +1637,25 @@ const LeadsModule = {
         </select>
       </div>
       <div class="filter-field">
-        <label>Batch</label>
-        <select id="filter-batch" onchange="LeadsModule.applyFilters()">
-          <option value="all">All Batches</option>
-          <option value="Foundation">Foundation</option>
-          <option value="mentorship">Mentorship</option>
-          <option value="Interview">Interview</option>
-          <option value="mains">Mains</option>
-          <option value="master-batch">Master batch</option>
-          <option value="others">Other</option>
-        </select>
-      </div>
-      <div class="filter-field">
-        <label>State</label>
-        <select id="filter-state" onchange="LeadsModule.applyFilters()">
-          <option value="">All States</option>
-          ${stateOptions}
-        </select>
-      </div>
-      <div class="filter-field">
-        <label>District</label>
-        <input type="text" id="filter-district" placeholder="District" oninput="LeadsModule.applyFilters()">
-      </div>
-      <div class="filter-field">
-        <label>Mode</label>
+        <label>Learning Mode</label>
         <select id="filter-mode" onchange="LeadsModule.applyFilters()">
-          <option value="all">All Modes</option>
+          <option value="all">All Learning Modes</option>
           <option value="Online">Online</option>
           <option value="Offline">Offline</option>
+          <option value="Offline with Hostel">Offline with Hostel</option>
+          <option value="Offline without Hostel">Offline without Hostel</option>
         </select>
       </div>
+      <div class="filter-field"><label>Gender</label><select id="filter-gender" onchange="LeadsModule.applyFilters()"><option value="all">All Genders</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+      <div class="filter-field"><label>Enquiry Number</label><input type="text" id="filter-inquiry-number" placeholder="Enquiry number" oninput="LeadsModule.applyFilters()"></div>
+      <div class="filter-field"><label>OTR Number</label><input type="text" id="filter-otr-number" placeholder="PA260001" oninput="LeadsModule.applyFilters()"></div>
+      <div class="filter-field"><label>Assigned To</label><select id="filter-assign-inquiry" onchange="LeadsModule.applyFilters()"><option value="all">All Assigned</option>${ownerOptions}<option value="Unassigned">Unassigned</option></select></div>
       <div class="filter-field">
         <label>Date Range</label>
         <div class="date-range-filter">
           <input type="date" id="filter-date-from" onchange="LeadsModule.applyFilters()">
           <input type="date" id="filter-date-to" onchange="LeadsModule.applyFilters()">
         </div>
-      </div>
-      <div class="filter-field">
-        <label>Lead Segment</label>
-        <select id="filter-segment" onchange="LeadsModule.applyFilters()">
-          <option value="all">All Segments</option>
-          ${segmentOptions}
-        </select>
-      </div>
-      <div class="filter-field">
-        <label>Inquiry Number</label>
-        <input type="text" id="filter-inquiry-number" placeholder="Inquiry number" oninput="LeadsModule.applyFilters()">
-      </div>
-      <div class="filter-field">
-        <label>Assigned To</label>
-        <select id="filter-assign-inquiry" onchange="LeadsModule.applyFilters()">
-          <option value="all">All Assigned</option>
-          <option value="Bharat Sir">Bharat Sir</option>
-          <option value="Vivek Sir">Vivek Sir</option>
-          <option value="Pooja Shah">Pooja Shah</option>
-          <option value="Jignesh Trivedi">Jignesh Trivedi</option>
-          <option value="Unassigned">Unassigned</option>
-        </select>
       </div>
       <div class="filter-actions">
         <button class="btn btn-outline btn-sm" onclick="LeadsModule.resetFilters()">Reset</button>
@@ -1763,6 +1696,8 @@ const LeadsModule = {
     this.filterSearch = '';
     this.filterCounselor = 'all';
     this.filterMode = 'all';
+    this.filterGender = 'all';
+    this.filterOtrNumber = '';
     this.filterAcademicStatus = 'all';
     this.filterCity = '';
     this.filterBatch = 'all';
@@ -1784,11 +1719,11 @@ const LeadsModule = {
     const searchInput = document.getElementById('filter-search-input');
     if (searchInput) searchInput.value = '';
 
-    ['filter-counselor', 'filter-mode', 'filter-academic-status', 'filter-segment', 'filter-batch', 'filter-assign-inquiry'].forEach(id => {
+    ['filter-mode', 'filter-gender', 'filter-assign-inquiry'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = 'all';
     });
-    ['filter-district', 'filter-state', 'filter-date-from', 'filter-date-to', 'filter-inquiry-number', 'filter-inquiry-date', 'filter-followup-date'].forEach(id => {
+    ['filter-date-from', 'filter-date-to', 'filter-inquiry-number', 'filter-otr-number'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -2666,9 +2601,9 @@ const LeadsModule = {
     const summary = document.getElementById('cs-summary').value;
     const remarks = document.getElementById('cs-remarks').value;
 
-    lead.stageKey = 'counselling';
-    lead.stageStatus = 'conducted';
-    lead.status = 'conducted';
+    lead.stageKey = 'interview';
+    lead.stageStatus = 'academic';
+    lead.status = 'interview';
     lead.counselling = { date, time, counselor, mode, interest, parentInvolvement, nextAction, course, learningMode, requirement, summary, remarks };
     this.normalizeLeadStageData(lead);
     this.stampLeadModified(lead);
@@ -2688,8 +2623,10 @@ const LeadsModule = {
   showManageFollowup(id, initialStageKey = '') {
     const lead = this.leads.find(l => l.id === id);
     if (!lead) return;
-    
+
+    document.getElementById('manage-followup-overlay')?.remove();
     const overlay = document.createElement('div');
+    overlay.id = 'manage-followup-overlay';
     overlay.className = 'custom-modal-overlay';
     const mentorOptions = this.getMentorOptions()
       .map((mentor) => `<option value="${this.escapeHtml(mentor)}"></option>`)
@@ -2793,7 +2730,7 @@ const LeadsModule = {
     const assignedMentor = document.getElementById('f-mentor')?.value.trim() || '';
     const purpose = document.getElementById('f-purpose').value.trim();
     const followedBy = document.getElementById('f-followed-by')?.textContent || lead.assignedTo || lead.owner || 'Unassigned';
-    const needsSchedule = !['closed', 'admission_form'].includes(stageKey);
+    const needsSchedule = !['confirmed', 'closed'].includes(stageKey);
     if (!stageKey || !purpose || (needsSchedule && !followupDate) || (stageKey === 'counselling' && !assignedMentor)) return;
     const validStatusKeys = this.getFollowupStageStatusDefinitions(stageKey).map((status) => status.key);
     if (stageStatus && !validStatusKeys.includes(stageStatus)) return;
@@ -2833,7 +2770,7 @@ const LeadsModule = {
         'Automatic counselling follow-up email.'
       );
     }
-    if (stageKey === 'admission_form') {
+      if (stageKey === 'otr') {
       this.recordEmailNotification(
         lead,
         'OTR form link - Pramukh Academy',
@@ -2852,9 +2789,9 @@ const LeadsModule = {
     if (!lead) return;
     
     if (confirm(`Are you sure you want to convert the inquiry "${lead.name}" to admission?`)) {
-      lead.stageKey = 'admission_form';
-      lead.stageStatus = '';
-      lead.status = 'admission_form';
+      lead.stageKey = 'otr';
+      lead.stageStatus = 'pending';
+      lead.status = 'otr';
       this.normalizeLeadStageData(lead);
       this.stampLeadModified(lead);
       this.recordEmailNotification(
@@ -2892,13 +2829,7 @@ const LeadsModule = {
           <div class="form-field">
             <label>Select New Stage</label>
             <select id="c-status">
-              <option value="pending" ${currentStage === 'pending' ? 'selected' : ''}>Pending</option>
-              <option value="voicecall" ${currentStage === 'voicecall' ? 'selected' : ''}>Voicecall</option>
-              <option value="hot_lead" ${currentStage === 'hot_lead' ? 'selected' : ''}>Hot Lead</option>
-              <option value="cold_lead" ${currentStage === 'cold_lead' ? 'selected' : ''}>Cold Lead</option>
-              <option value="counselling" ${currentStage === 'counselling' ? 'selected' : ''}>Counselling</option>
-              <option value="admission_form" ${currentStage === 'admission_form' ? 'selected' : ''}>OTR Form</option>
-              <option value="closed" ${currentStage === 'closed' ? 'selected' : ''}>Closed</option>
+              ${this.getStageDefinitions().filter(stage => stage.key !== 'all').map(stage => `<option value="${stage.key}" ${currentStage === stage.key ? 'selected' : ''}>${stage.label}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -2917,11 +2848,7 @@ const LeadsModule = {
     
     const newStatus = document.getElementById('c-status').value;
     lead.stageKey = newStatus;
-    lead.stageStatus =
-      newStatus === 'voicecall' ? 'schedule' :
-      newStatus === 'counselling' ? 'schedule' :
-      newStatus === 'admission_form' ? '' :
-      '';
+    lead.stageStatus = this.getStageStatusDefinitions(newStatus).find(status => status.key !== 'all')?.key || '';
     lead.status = lead.stageStatus || newStatus;
     this.normalizeLeadStageData(lead);
     this.stampLeadModified(lead);

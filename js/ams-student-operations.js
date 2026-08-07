@@ -19,26 +19,40 @@ const AMSAdmissionOps = {
     {
       key: 'otr', label: 'OTR Form',
       statuses: [
-        { key: 'form_pending', label: 'Pending' },
-        { key: 'form_submitted', label: 'Completed' },
-        { key: 'draft', label: 'Draft' }
+        { key: 'otr_pending', label: 'Pending' },
+        { key: 'otr_draft', label: 'Draft' },
+        { key: 'otr_submitted', label: 'Submitted' }
       ]
     },
     {
-      key: 'interview', label: 'Interview',
+      key: 'course_selection', label: 'Course Selection', statuses: [{ key: 'course_selection', label: 'Course Selection' }]
+    },
+    {
+      key: 'exam', label: 'Exam',
       statuses: [
-        { key: 'document_verification', label: 'Pending' },
-        { key: 'fee_pending', label: 'Scheduled' },
-        { key: 'batch_allocation', label: 'Completed' }
+        { key: 'exam_mcq', label: 'MCQ Stage' },
+        { key: 'exam_descriptive', label: 'Descriptive Stage' },
+        { key: 'exam_submitted', label: 'Submitted' }
       ]
     },
     {
-      key: 'confirmed', label: 'Admission Confirmed',
-      statuses: [{ key: 'onboarded', label: 'Confirmed' }]
+      key: 'interview', label: 'Interview Stage', statuses: [
+        { key: 'interview_academic', label: 'Academic' },
+        { key: 'interview_personality', label: 'Personality' },
+        { key: 'interview_overall', label: 'Overall' }
+      ]
     },
     {
-      key: 'rejected', label: 'Admission Reject',
-      statuses: [{ key: 'rejected', label: 'Rejected' }]
+      key: 'fees_pending', label: 'Fees Pending', statuses: [{ key: 'fees_pending', label: 'Fees Pending' }]
+    },
+    {
+      key: 'confirmed', label: 'Admission Confirmed', statuses: [{ key: 'admission_confirmed', label: 'Admission Confirmed' }]
+    },
+    {
+      key: 'closed', label: 'Admission Closed', statuses: [
+        { key: 'application_rejected', label: 'Application Rejected' },
+        { key: 'declined_by_student', label: 'Declined by Student' }
+      ]
     }
   ],
 
@@ -304,7 +318,7 @@ const AMSAdmissionOps = {
       const row = item.snapshot || {};
       return `<article class="amsl-archive-row">
         <span class="amsl-archive-icon"><i class="fas fa-box-archive"></i></span>
-        <div><strong>${this.escape(row.name || 'Admission Student')}</strong><small>${this.escape(row.admissionNo || item.key)}</small></div>
+        <div><strong>${this.escape(row.name || 'Admission Student')}</strong><small>${this.escape(row.otrNo || row.admissionNo || item.key)}</small></div>
         <div><span>Reason</span><strong>${this.title(item.reason)}</strong></div>
         <div><span>Archived on</span><strong>${this.formatDateTime(item.archivedAt)}</strong></div>
         <div><span>Archived by</span><strong>${this.escape(item.by || 'Admission Desk')}</strong></div>
@@ -547,7 +561,7 @@ const AMSAdmissionOps = {
     const options = [
       ['admissionDate', 'Admission Date'],
       ['name', 'Student Name'],
-      ['admissionNo', 'Admission Number'],
+      ['otrNo', 'OTR ID'],
       ['stage', 'Admission Stage'],
       ['course', 'Course'],
       ['owner', 'Owner']
@@ -639,8 +653,8 @@ const AMSAdmissionOps = {
   exportSelected() {
     const rows = this.selectedRows();
     if (!rows.length) return this.toast('Select admission records first', 'warning');
-    const headers = ['Admission', 'Source', 'Student', 'Mobile', 'Email', 'Stage', 'Status', 'Course', 'Batch', 'Documents', 'Owner'];
-    const values = rows.map(row => [row.admissionNo, row.source, row.name, row.phone, row.email, row.stage, row.stageStatus, row.course, row.batch, row.documents, row.owner]);
+    const headers = ['OTR ID', 'Enquiry ID', 'Student', 'Mobile', 'Email', 'Stage', 'Status', 'Course', 'Learning Mode', 'Gender', 'Owner'];
+    const values = rows.map(row => [row.otrNo || row.admissionNo, row.enquiryId || row.source, row.name, row.phone, row.email, row.stage, row.stageStatus, row.course, row.mode, row.gender, row.owner]);
     const csv = [headers, ...values].map(items => items.map(value => `"${String(value || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const link = document.createElement('a');
@@ -660,7 +674,7 @@ const AMSAdmissionOps = {
     overlay.id = 'ams-admission-journey';
     overlay.className = 'amsl-journey-overlay';
     overlay.innerHTML = `<div class="amsl-journey-drawer">
-      <header><div><span>Admission Journey</span><h2>${this.escape(row.name)}</h2><small>${this.escape(row.admissionNo)} · ${this.escape(row.owner)}</small></div><button type="button" data-ams-journey-close><i class="fas fa-times"></i></button></header>
+      <header><div><span>Admission Journey</span><h2>${this.escape(row.name)}</h2><small>${this.escape(row.otrNo || row.admissionNo)} · ${this.escape(row.owner)}</small></div><button type="button" data-ams-journey-close><i class="fas fa-times"></i></button></header>
       <div class="amsl-journey-body">
         <div class="amsl-funnel">${this.stageDefinitions.map((stage, index) => `<div class="${index < activeIndex ? 'complete' : index === activeIndex ? 'active' : ''}"><i class="fas ${index < activeIndex ? 'fa-check' : 'fa-circle'}"></i><span><strong>${stage.label}</strong><small>${index === activeIndex ? row.stageStatus : index < activeIndex ? 'Completed' : 'Upcoming'}</small></span></div>`).join('')}</div>
         ${this.timelineHtml(row)}
@@ -701,8 +715,8 @@ const AMSAdmissionOps = {
         || (candidate.name.toLowerCase() === row.name.toLowerCase() && candidate.course === row.course);
     });
     this.modal('Duplicate Scan', `
-      <div class="amsl-duplicate-source"><span>Selected admission</span><strong>${this.escape(row.name)} · ${this.escape(row.admissionNo)}</strong><small>${this.escape(row.phone)} · ${this.escape(row.email || 'No email')} · ${this.escape(row.course)}</small></div>
-      ${matches.length ? `<form id="ams-duplicate-form" data-source="${this.escape(key)}"><div class="amsl-duplicate-list">${matches.map(match => `<label><input type="checkbox" name="duplicate" value="${this.escape(match.key)}"><span><strong>${this.escape(match.name)} · ${this.escape(match.admissionNo)}</strong><small>${this.escape(match.phone)} · ${this.escape(match.email || 'No email')}</small><em>Matched admission identity or programme data</em></span></label>`).join('')}</div></form>` : '<div class="amsl-modal-empty">No matching duplicate admission records found.</div>'}`,
+      <div class="amsl-duplicate-source"><span>Selected admission</span><strong>${this.escape(row.name)} · ${this.escape(row.otrNo || row.admissionNo)}</strong><small>${this.escape(row.phone)} · ${this.escape(row.email || 'No email')} · ${this.escape(row.course)}</small></div>
+      ${matches.length ? `<form id="ams-duplicate-form" data-source="${this.escape(key)}"><div class="amsl-duplicate-list">${matches.map(match => `<label><input type="checkbox" name="duplicate" value="${this.escape(match.key)}"><span><strong>${this.escape(match.name)} · ${this.escape(match.otrNo || match.admissionNo)}</strong><small>${this.escape(match.phone)} · ${this.escape(match.email || 'No email')}</small><em>Matched admission identity or programme data</em></span></label>`).join('')}</div></form>` : '<div class="amsl-modal-empty">No matching duplicate admission records found.</div>'}`,
       `<button type="button" class="amsl-btn secondary" data-ams-dialog-close>Close</button>${matches.length ? '<button type="button" class="amsl-btn secondary" id="ams-duplicate-merge">Merge Selected</button><button type="button" class="amsl-btn primary" id="ams-duplicate-archive">Archive Selected</button>' : ''}`,
       'wide'
     );
@@ -777,7 +791,7 @@ const AMSAdmissionOps = {
       <form id="ams-import-form" class="amsl-form-grid single">
         <div class="amsl-import-guide"><strong>CSV columns</strong><span>name, phone, email, course, batch, owner, statusKey</span></div>
         <label class="full"><span>CSV File</span><input type="file" name="file" accept=".csv,text/csv"></label>
-        <label class="full"><span>Or paste CSV data *</span><textarea name="csv" rows="8" placeholder="name,phone,email,course,batch,owner,statusKey&#10;Student Name,9876543210,student@example.com,UPSC Foundation,July Morning,Admission Desk,form_pending"></textarea></label>
+        <label class="full"><span>Or paste CSV data *</span><textarea name="csv" rows="8" placeholder="name,phone,email,course,batch,owner,statusKey&#10;Student Name,9876543210,student@example.com,UPSC Foundation,July Morning,Admission Desk,otr_pending"></textarea></label>
       </form>`,
       `<button type="button" class="amsl-btn secondary" data-ams-dialog-close>Cancel</button><button type="submit" form="ams-import-form" class="amsl-btn primary"><i class="fas fa-file-import"></i> Import</button>`
     );
@@ -796,14 +810,14 @@ const AMSAdmissionOps = {
         this.store.records.push({
           key: id,
           otrId: id,
-          otrNo: `AMS-OTR-${now.getFullYear()}-${String(9000 + this.store.records.length + index + 1)}`,
+          otrNo: `PA${String(now.getFullYear()).slice(-2)}${String(this.store.records.length + index + 1).padStart(4, '0')}`,
           name: data.name || `Imported Student ${index + 1}`,
           phone: data.phone || '',
           email: data.email || '',
           course: data.course || 'Admission Programme',
           batch: data.batch || 'Pending Allocation',
           owner: data.owner || 'Admission Desk',
-          statusKey: this.getStageByStatus(data.statusKey)?.statusText ? data.statusKey : 'form_pending',
+          statusKey: this.getStageByStatus(data.statusKey)?.statusText ? data.statusKey : 'otr_pending',
           documents: '0/6 verified',
           sourceLeadNo: 'CSV Import',
           createdAt: now.toISOString(),

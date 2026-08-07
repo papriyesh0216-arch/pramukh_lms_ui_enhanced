@@ -99,7 +99,7 @@ const AMSInterviews = {
   enrichInterview(item, index) {
     const date = item.datetime?.slice(0, 10) || this.dateKey(new Date());
     const mappedOtr = item.otr || {
-      otrNo: item.otrNo || `AMS-OTR-2026-${String(index + 101).padStart(4, '0')}`,
+      otrNo: item.otrNo || `PA26${String(index + 101).padStart(4, '0')}`,
       updatedAt: item.submittedDate || `${date}T08:30:00`,
       personal: {
         fullName: item.name,
@@ -683,7 +683,7 @@ const AMSInterviews = {
     const reportAvailable = interviews.some(item => item.status === 'Completed' || Object.keys(item.evaluation || {}).length);
     const toolbar = `
       <div class="ams-student-interview-context">
-        <div><i class="fas fa-bars"></i><span>Search Result</span><strong>${this.escape(row.name)} (${this.escape(row.admissionNo || row.key)}) - ${this.escape(row.course || row.batch || 'Course not assigned')}</strong></div>
+        <div><i class="fas fa-bars"></i><span>Search Result</span><strong>${this.escape(row.name)} (${this.escape(row.otrNo || row.admissionNo || row.key)}) - ${this.escape(row.course || row.batch || 'Course not assigned')}</strong></div>
         <div>
           <button type="button" class="btn ams-interview-new" id="ams-student-schedule-new"><i class="fas fa-hourglass-half"></i>Schedule New</button>
           <button type="button" class="btn ams-interview-report" id="ams-student-overall-report" ${reportAvailable ? '' : 'disabled'}><i class="fas fa-hourglass-half"></i>Overall Report</button>
@@ -745,8 +745,8 @@ const AMSInterviews = {
       this.state.selectedDate = data.date;
       this.state.calendarDate = data.date;
       this.saveInterviews();
-      if (!['confirmed', 'rejected'].includes(row.stageKey)) {
-        window.AMSAdmissionOps?.update?.(row.key, { statusKey: 'fee_pending' }, {
+      if (!['confirmed', 'closed'].includes(row.stageKey)) {
+        window.AMSAdmissionOps?.update?.(row.key, { statusKey: 'interview_academic' }, {
           type: 'interview',
           title: existing ? 'Interview Rescheduled' : 'Interview Scheduled',
           description: `${this.structureById(data.structureId)?.name || 'Interview'} scheduled for ${data.date} ${data.startTime}.`,
@@ -998,7 +998,7 @@ const AMSInterviews = {
       <div class="im-detail-hero"><div class="im-detail-person">${profile.photo ? `<img src="${this.escape(profile.photo)}" alt="${this.escape(profile.name)}" />` : `<span>${this.initials(profile.name)}</span>`}<div><strong>${this.escape(profile.name)}</strong><small>${this.escape(profile.studentId)} · ${this.escape(profile.otrNo)}</small><em class="im-status ${this.statusClass(item.status)}">${this.escape(item.status)}</em></div></div><div class="im-detail-number"><span>Interview Number</span><strong>${this.escape(item.interviewNumber)}</strong></div></div>
       <div class="im-detail-grid">
         ${this.detailSection('Student Information', 'fa-user', [
-          ['Student / Admission ID', `${profile.studentId} / ${profile.admissionId}`], ['Date of Birth', profile.dateOfBirth ? this.formatDate(`${profile.dateOfBirth}T00:00`) : 'Not provided'],
+          ['Student / OTR ID', `${profile.studentId} / ${profile.otrNo || profile.admissionId}`], ['Date of Birth', profile.dateOfBirth ? this.formatDate(`${profile.dateOfBirth}T00:00`) : 'Not provided'],
           ['Gender', profile.gender || 'Not provided'], ['Phone Number', profile.phone || 'Not provided'], ['Email Address', profile.email || 'Not provided']
         ])}
         ${this.detailSection('Course Information', 'fa-graduation-cap', [['Selected Course', item.course], ['Batch', item.batch || 'Not allocated'], ['Mode of Learning', item.learningMode || item.mode]])}

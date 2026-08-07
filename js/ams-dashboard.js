@@ -54,23 +54,21 @@ const AMSDashboard = {
 
     const statusCount = key => students.filter(item => item.statusKey === key || item.stageKey === key).length;
     const otrCounts = {
-      pending: statusCount('form_pending') + otr.filter(item => /pending/i.test(item.statusKey || item.status || '')).length,
+      pending: statusCount('otr_pending') + otr.filter(item => /pending/i.test(item.statusKey || item.status || '')).length,
       draft: otr.filter(item => /draft/i.test(item.statusKey || item.status || '')).length,
-      submitted: otr.filter(item => /submitted/i.test(item.statusKey || item.status || '')).length,
-      returned: otr.filter(item => /returned/i.test(item.statusKey || item.status || '')).length,
-      approved: otr.filter(item => /approved/i.test(item.statusKey || item.status || '')).length
+      submitted: otr.filter(item => /submitted/i.test(item.statusKey || item.status || '')).length
     };
 
     return {
       students, otr, interviews, structures, now, today, weekEnd, monthEnd,
       todayInterviews, upcoming, overdue, completed, awaitingAssignment, pendingEvaluations,
       documents, otrCounts,
-      activeAdmissions: students.filter(item => !['rejected', 'onboarded'].includes(item.statusKey)).length,
-      confirmed: statusCount('onboarded'),
-      rejected: statusCount('rejected'),
-      awaitingApproval: students.filter(item => ['document_verification', 'form_submitted'].includes(item.statusKey)).length,
-      awaitingInterview: students.filter(item => ['form_submitted', 'document_verification'].includes(item.statusKey)).length,
-      awaitingFee: statusCount('fee_pending')
+      activeAdmissions: students.filter(item => !['application_rejected', 'declined_by_student', 'admission_confirmed'].includes(item.statusKey)).length,
+      confirmed: statusCount('admission_confirmed'),
+      rejected: statusCount('application_rejected') + statusCount('declined_by_student'),
+      awaitingApproval: students.filter(item => ['otr_submitted', 'course_selection', 'exam_submitted'].includes(item.statusKey)).length,
+      awaitingInterview: students.filter(item => ['interview_academic', 'interview_personality', 'interview_overall'].includes(item.statusKey)).length,
+      awaitingFee: statusCount('fees_pending')
     };
   },
 
@@ -117,27 +115,22 @@ const AMSDashboard = {
       ['upcoming-interviews', 'fa-clock', 'Upcoming Interviews', data.upcoming.length, 'Next 7 days', 'blue'],
       ['pending-documents', 'fa-folder-open', 'Documents Pending', data.documents.pending, `${data.documents.pendingStudents} student records`, 'amber'],
       ['confirmed', 'fa-circle-check', 'Confirmed', data.confirmed, 'Admission completed', 'green'],
-      ['rejected', 'fa-circle-xmark', 'Rejected', data.rejected, 'Closed admission records', 'red'],
+      ['rejected', 'fa-circle-xmark', 'Admission Closed', data.rejected, 'Rejected or student-declined records', 'red'],
       ['approval', 'fa-stamp', 'Awaiting Approval', data.awaitingApproval, 'Review required', 'purple']
     ];
     return `<section class="amsd-kpis" aria-label="AMS key performance indicators">${cards.map(card => `<button type="button" class="amsd-kpi ${this.activeKpi === card[0] ? 'active' : ''} tone-${card[5]}" data-amsd-kpi="${card[0]}"><span class="amsd-kpi-icon"><i class="fas ${card[1]}"></i></span><span class="amsd-kpi-copy"><small>${card[2]}</small><strong>${card[3]}</strong><em>${card[4]}</em></span><i class="fas fa-arrow-right amsd-kpi-arrow"></i></button>`).join('')}</section>`;
   },
 
   funnel(data) {
-    const studentKeys = new Set(data.students.flatMap(item => [item.email?.toLowerCase(), item.phone].filter(Boolean)));
-    const mappedInterviews = data.interviews.filter(item => studentKeys.has(item.email?.toLowerCase()) || studentKeys.has(item.phone));
-    const uniqueInterviewStudents = new Set(mappedInterviews.map(item => item.email?.toLowerCase() || item.phone).filter(Boolean)).size;
-    const otrStarted = Math.min(data.students.length, data.otrCounts.pending + data.otrCounts.draft + data.otrCounts.submitted + data.otrCounts.returned + data.otrCounts.approved);
     const stages = [
-      ['Inquiry / Admission Record', data.students.length],
-      ['OTR Sent / Started', otrStarted],
-      ['OTR Submitted', data.otrCounts.submitted],
-      ['OTR / Documents Verified', data.students.filter(item => Number(item.verifiedDocuments) >= Number(item.totalDocuments) && Number(item.totalDocuments) > 0).length],
-      ['Interview Scheduled', uniqueInterviewStudents],
-      ['Interview Completed', new Set(mappedInterviews.filter(item => item.status === 'Completed').map(item => item.email?.toLowerCase() || item.phone).filter(Boolean)).size],
-      ['Admission Approved', data.confirmed + data.awaitingFee],
+      ['All', data.students.length],
+      ['OTR Form', data.students.filter(item => item.stageKey === 'otr').length],
+      ['Course Selection', data.students.filter(item => item.stageKey === 'course_selection').length],
+      ['Exam', data.students.filter(item => item.stageKey === 'exam').length],
+      ['Interview Stage', data.students.filter(item => item.stageKey === 'interview').length],
+      ['Fees Pending', data.students.filter(item => item.stageKey === 'fees_pending').length],
       ['Admission Confirmed', data.confirmed],
-      ['Admission Rejected', data.rejected]
+      ['Admission Closed', data.rejected]
     ];
     const base = Math.max(1, stages[0][1]);
     return `<div class="amsd-funnel">${stages.map((stage, index) => {
@@ -168,7 +161,7 @@ const AMSDashboard = {
   },
 
   otrAnalytics(data) {
-    const items = [['Pending', data.otrCounts.pending], ['Draft', data.otrCounts.draft], ['Submitted', data.otrCounts.submitted], ['Returned', data.otrCounts.returned], ['Approved', data.otrCounts.approved]];
+    const items = [['All', data.otrCounts.pending + data.otrCounts.draft + data.otrCounts.submitted], ['Pending', data.otrCounts.pending], ['Draft', data.otrCounts.draft], ['Submitted', data.otrCounts.submitted]];
     const days = Array.from({ length: 7 }, (_, index) => this.addDays(data.now, index - 6));
     const counts = days.map(day => data.otr.filter(item => this.dateKey(new Date(item.updatedAt || item.createdAt)) === this.dateKey(day)).length);
     const max = Math.max(1, ...counts);
@@ -181,7 +174,7 @@ const AMSDashboard = {
   },
 
   admissionStatus(data) {
-    const items = [['Awaiting Interview', data.awaitingInterview, 'interviews'], ['Awaiting Approval', data.awaitingApproval, 'students'], ['Awaiting Fee', data.awaitingFee, 'students'], ['Admission Confirmed', data.confirmed, 'students'], ['Admission Rejected', data.rejected, 'students']];
+    const items = [['Interview Stage', data.awaitingInterview, 'interviews'], ['Course / Exam Review', data.awaitingApproval, 'students'], ['Fees Pending', data.awaitingFee, 'students'], ['Admission Confirmed', data.confirmed, 'students'], ['Admission Closed', data.rejected, 'students']];
     const max = Math.max(1, ...items.map(item => item[1]));
     return `<div class="amsd-horizontal-chart">${items.map(item => `<button type="button" data-amsd-go="${item[2]}"><span>${item[0]}</span><i><em style="width:${Math.round((item[1] / max) * 100)}%"></em></i><b>${item[1]}</b></button>`).join('')}</div>`;
   },
@@ -207,7 +200,7 @@ const AMSDashboard = {
     return `<div class="amsd-table-wrap"><table class="amsd-table"><thead><tr><th>Student</th><th>Admission Stage</th><th>Interview</th><th>Documents</th><th>OTR</th><th></th></tr></thead><tbody>${rows.map(student => {
       const interview = data.interviews.find(item => item.email?.toLowerCase() === student.email?.toLowerCase() || item.phone === student.phone);
       const otr = data.otr.find(item => item.personal?.email?.toLowerCase() === student.email?.toLowerCase() || item.personal?.phone === student.phone);
-      return `<tr><td><strong>${this.escape(student.name)}</strong><small>${this.escape(student.admissionNo || student.otrNo || '')}</small></td><td><span class="amsd-status ${this.slug(student.stageStatus || student.status)}">${this.escape(student.stage || student.status)}</span></td><td>${this.escape(interview?.status || 'Not scheduled')}</td><td>${this.escape(student.documents || `${student.verifiedDocuments}/${student.totalDocuments} verified`)}</td><td>${this.escape(otr?.status || (student.statusKey === 'form_pending' ? 'Pending' : 'Submitted'))}</td><td><button type="button" data-amsd-student="${this.escape(student.key || student.otrId || student.admissionNo)}" title="Open student"><i class="fas fa-chevron-right"></i></button></td></tr>`;
+      return `<tr><td><strong>${this.escape(student.name)}</strong><small>${this.escape(student.otrNo || student.admissionNo || '')}</small></td><td><span class="amsd-status ${this.slug(student.stageStatus || student.status)}">${this.escape(student.stage || student.status)}</span></td><td>${this.escape(interview?.status || 'Not scheduled')}</td><td>${this.escape(student.documents || `${student.verifiedDocuments}/${student.totalDocuments} verified`)}</td><td>${this.escape(otr?.status || (student.statusKey === 'otr_pending' ? 'Pending' : 'Submitted'))}</td><td><button type="button" data-amsd-student="${this.escape(student.key || student.otrId || student.otrNo || student.admissionNo)}" title="Open student"><i class="fas fa-chevron-right"></i></button></td></tr>`;
     }).join('')}</tbody></table></div>`;
   },
 
@@ -218,7 +211,7 @@ const AMSDashboard = {
       ['fa-file-circle-exclamation', 'Pending OTR review / submission', data.otrCounts.pending, 'otr', 'warning'],
       ['fa-folder-open', 'Pending document verification', data.documents.pendingStudents, 'documents', 'warning'],
       ['fa-stamp', 'Admissions awaiting approval', data.awaitingApproval, 'students', 'info'],
-      ['fa-phone-volume', 'Admissions requiring follow-up', data.students.filter(item => item.nextStep && !['onboarded', 'rejected'].includes(item.statusKey)).length, 'students', 'info']
+      ['fa-phone-volume', 'Admissions requiring follow-up', data.students.filter(item => item.nextStep && !['admission_confirmed', 'application_rejected', 'declined_by_student'].includes(item.statusKey)).length, 'students', 'info']
     ];
     return `<div class="amsd-work-list">${work.map(item => `<button type="button" data-amsd-go="${item[3]}" class="${item[4]}"><i class="fas ${item[0]}"></i><span><strong>${item[1]}</strong><small>${item[2] ? 'Open the related AMS queue' : 'No pending records'}</small></span><b>${item[2]}</b><i class="fas fa-chevron-right"></i></button>`).join('')}</div>`;
   },
@@ -227,7 +220,7 @@ const AMSDashboard = {
     const activities = [
       ...data.otr.map(item => ({ date: item.updatedAt || item.createdAt, icon: 'fa-file-circle-check', tone: 'blue', user: item.owner || 'AMS system', student: item.personal?.fullName, action: 'OTR submitted' })),
       ...data.interviews.map(item => ({ date: item.updatedAt || item.submittedDate || item.datetime, icon: item.status === 'Completed' ? 'fa-circle-check' : 'fa-calendar-check', tone: item.status === 'Completed' ? 'green' : 'purple', user: window.AMSInterviews?.interviewerById?.(item.interviewerId)?.name || 'Admission Team', student: item.name, action: `Interview ${String(item.status || 'scheduled').toLowerCase()}` })),
-      ...data.students.filter(item => ['onboarded', 'rejected'].includes(item.statusKey)).map(item => ({ date: item.updatedAt || item.createdAt, icon: item.statusKey === 'onboarded' ? 'fa-user-check' : 'fa-user-xmark', tone: item.statusKey === 'onboarded' ? 'green' : 'red', user: item.owner || 'Admission Team', student: item.name, action: item.statusKey === 'onboarded' ? 'Admission confirmed' : 'Admission rejected' }))
+      ...data.students.filter(item => ['admission_confirmed', 'application_rejected', 'declined_by_student'].includes(item.statusKey)).map(item => ({ date: item.updatedAt || item.createdAt, icon: item.statusKey === 'admission_confirmed' ? 'fa-user-check' : 'fa-user-xmark', tone: item.statusKey === 'admission_confirmed' ? 'green' : 'red', user: item.owner || 'Admission Team', student: item.name, action: item.statusKey === 'admission_confirmed' ? 'Admission confirmed' : 'Admission closed' }))
     ].filter(item => item.date && !Number.isNaN(new Date(item.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 7);
     return activities.length ? `<div class="amsd-activity-list">${activities.map(item => `<div><span class="tone-${item.tone}"><i class="fas ${item.icon}"></i></span><p><strong>${this.escape(item.action)}</strong><small>${this.escape(item.student || 'AMS record')} · ${this.escape(item.user)}</small></p><time>${this.timeAgo(item.date)}</time></div>`).join('')}</div>` : this.empty('fa-clock-rotate-left', 'No timestamped activity available', 'Activity appears when AMS records are created or updated.');
   },
@@ -372,11 +365,11 @@ const AMSDashboard = {
 
   filteredStudents(data) {
     const key = this.activeKpi;
-    if (key === 'active') return data.students.filter(item => !['rejected', 'onboarded'].includes(item.statusKey));
-    if (key === 'otr-pending') return data.students.filter(item => item.statusKey === 'form_pending');
-    if (key === 'confirmed') return data.students.filter(item => item.statusKey === 'onboarded');
-    if (key === 'rejected') return data.students.filter(item => item.statusKey === 'rejected');
-    if (key === 'approval') return data.students.filter(item => ['form_submitted', 'document_verification'].includes(item.statusKey));
+    if (key === 'active') return data.students.filter(item => !['application_rejected', 'declined_by_student', 'admission_confirmed'].includes(item.statusKey));
+    if (key === 'otr-pending') return data.students.filter(item => item.statusKey === 'otr_pending');
+    if (key === 'confirmed') return data.students.filter(item => item.statusKey === 'admission_confirmed');
+    if (key === 'rejected') return data.students.filter(item => ['application_rejected', 'declined_by_student'].includes(item.statusKey));
+    if (key === 'approval') return data.students.filter(item => ['otr_submitted', 'course_selection', 'exam_submitted'].includes(item.statusKey));
     if (key === 'pending-documents') return data.students.filter(item => Number(item.verifiedDocuments) < Number(item.totalDocuments));
     if (key === 'otr-completed') {
       const otrKeys = new Set(data.otr.flatMap(item => [item.personal?.email?.toLowerCase(), item.personal?.phone].filter(Boolean)));

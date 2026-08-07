@@ -3,23 +3,30 @@
 // ============================================================
 
 const AMS_STATUS_FLOW = [
-  { key: 'form_pending', label: 'Form Pending', icon: 'fa-file-pen' },
-  { key: 'form_submitted', label: 'Form Submitted', icon: 'fa-file-signature' },
-  { key: 'document_verification', label: 'Document Verification', icon: 'fa-folder-open' },
-  { key: 'fee_pending', label: 'Fee Pending', icon: 'fa-receipt' },
-  { key: 'batch_allocation', label: 'Batch Allocation', icon: 'fa-users-rectangle' },
-  { key: 'onboarded', label: 'Onboarded', icon: 'fa-user-graduate' },
-  { key: 'rejected', label: 'Rejected', icon: 'fa-circle-xmark' }
+  { key: 'otr_pending', stageKey: 'otr', stage: 'OTR Form', label: 'Pending', icon: 'fa-file-pen' },
+  { key: 'otr_draft', stageKey: 'otr', stage: 'OTR Form', label: 'Draft', icon: 'fa-file' },
+  { key: 'otr_submitted', stageKey: 'otr', stage: 'OTR Form', label: 'Submitted', icon: 'fa-file-signature' },
+  { key: 'course_selection', stageKey: 'course_selection', stage: 'Course Selection', label: '', icon: 'fa-book-open' },
+  { key: 'exam_mcq', stageKey: 'exam', stage: 'Exam', label: 'MCQ Stage', icon: 'fa-list-check' },
+  { key: 'exam_descriptive', stageKey: 'exam', stage: 'Exam', label: 'Descriptive Stage', icon: 'fa-pen-to-square' },
+  { key: 'exam_submitted', stageKey: 'exam', stage: 'Exam', label: 'Submitted', icon: 'fa-paper-plane' },
+  { key: 'interview_academic', stageKey: 'interview', stage: 'Interview Stage', label: 'Academic', icon: 'fa-graduation-cap' },
+  { key: 'interview_personality', stageKey: 'interview', stage: 'Interview Stage', label: 'Personality', icon: 'fa-user-check' },
+  { key: 'interview_overall', stageKey: 'interview', stage: 'Interview Stage', label: 'Overall', icon: 'fa-clipboard-check' },
+  { key: 'fees_pending', stageKey: 'fees_pending', stage: 'Fees Pending', label: '', icon: 'fa-receipt' },
+  { key: 'admission_confirmed', stageKey: 'confirmed', stage: 'Admission Confirmed', label: '', icon: 'fa-user-graduate' },
+  { key: 'application_rejected', stageKey: 'closed', stage: 'Admission Closed', label: 'Application Rejected', icon: 'fa-circle-xmark' },
+  { key: 'declined_by_student', stageKey: 'closed', stage: 'Admission Closed', label: 'Declined by Student', icon: 'fa-user-slash' }
 ];
 
 const AMS_OTR_SAMPLE_RECORDS = [
   {
     id: 'OTR-SAMPLE-001',
-    otrNo: 'AMS-OTR-2026-0001',
+    otrNo: 'PA260015',
     createdAt: '2026-07-12T05:30:00.000Z',
     updatedAt: '2026-07-12T05:30:00.000Z',
-    statusKey: 'form_submitted',
-    status: 'Form Submitted',
+    statusKey: 'otr_submitted',
+    status: 'Submitted',
     personal: {
       fullName: 'Aarav Patel',
       dateOfBirth: '2002-08-14',
@@ -70,11 +77,11 @@ const AMS_OTR_SAMPLE_RECORDS = [
   },
   {
     id: 'OTR-SAMPLE-002',
-    otrNo: 'AMS-OTR-2026-0002',
+    otrNo: 'PA260016',
     createdAt: '2026-07-13T06:15:00.000Z',
     updatedAt: '2026-07-13T06:15:00.000Z',
-    statusKey: 'form_submitted',
-    status: 'Form Submitted',
+    statusKey: 'otr_submitted',
+    status: 'Submitted',
     personal: {
       fullName: 'Diya Shah',
       dateOfBirth: '2001-11-23',
@@ -124,11 +131,11 @@ const AMS_OTR_SAMPLE_RECORDS = [
   },
   {
     id: 'OTR-SAMPLE-003',
-    otrNo: 'AMS-OTR-2026-0003',
+    otrNo: 'PA260017',
     createdAt: '2026-07-14T08:45:00.000Z',
     updatedAt: '2026-07-14T08:45:00.000Z',
-    statusKey: 'form_submitted',
-    status: 'Form Submitted',
+    statusKey: 'otr_submitted',
+    status: 'Submitted',
     personal: {
       fullName: 'Krish Mehta',
       dateOfBirth: '2000-03-09',
@@ -178,20 +185,20 @@ const AMS_OTR_SAMPLE_RECORDS = [
 
 const AMS_SHORTLISTED_LEAD_CONFIG = {
   1: {
-    statusKey: 'form_pending',
-    application: 'Shortlisted - Form Pending',
+    statusKey: 'otr_pending',
+    application: 'OTR Form - Pending',
     documents: '0/6 verified',
     feeStatus: 'Not Started',
     paid: 0,
     total: 85000,
     scholarship: 'Merit 10%',
     batch: 'UPSC July Morning',
-    nextStep: 'Send admission form',
+    nextStep: 'Send OTR form',
     dueDate: '04 Jul 2026'
   },
   4: {
-    statusKey: 'document_verification',
-    application: 'Form Submitted',
+    statusKey: 'interview_academic',
+    application: 'OTR Form - Submitted',
     documents: '2/6 verified',
     feeStatus: 'Token Pending',
     paid: 0,
@@ -202,8 +209,8 @@ const AMS_SHORTLISTED_LEAD_CONFIG = {
     dueDate: '05 Jul 2026'
   },
   5: {
-    statusKey: 'fee_pending',
-    application: 'Application Approved',
+    statusKey: 'fees_pending',
+    application: 'Fees Pending',
     documents: '6/6 verified',
     feeStatus: 'Balance Due',
     paid: 45000,
@@ -214,7 +221,7 @@ const AMS_SHORTLISTED_LEAD_CONFIG = {
     dueDate: '03 Jul 2026'
   },
   7: {
-    statusKey: 'batch_allocation',
+    statusKey: 'course_selection',
     application: 'Fee Plan Confirmed',
     documents: '6/6 verified',
     feeStatus: 'Installment 1 Paid',
@@ -259,15 +266,15 @@ function defaultAdmissionConfig(lead) {
   const confirmed = ['admission_confirmed', 'converted'].includes((lead.status || '').toLowerCase());
   const rejected = (lead.status || '').toLowerCase() === 'admission_rejected';
   return {
-    statusKey: rejected ? 'rejected' : confirmed ? 'onboarded' : 'form_pending',
-    application: rejected ? 'Rejected by admission team' : confirmed ? 'Student Created' : 'Shortlisted - Form Pending',
+    statusKey: rejected ? 'application_rejected' : confirmed ? 'admission_confirmed' : 'otr_pending',
+    application: rejected ? 'Application Rejected' : confirmed ? 'Admission Confirmed' : 'OTR Form - Pending',
     documents: confirmed ? '6/6 verified' : rejected ? 'Verification stopped' : '0/6 verified',
     feeStatus: confirmed ? 'Paid' : rejected ? 'Closed' : 'Not Started',
     paid: confirmed ? courseFee(lead.course) : 0,
     total: courseFee(lead.course),
     scholarship: 'Not Applied',
     batch: confirmed ? `${normalizeCourse(lead.course)} Active Batch` : 'Pending Allocation',
-    nextStep: confirmed ? 'Orientation checklist' : 'Send admission form',
+    nextStep: confirmed ? 'Orientation checklist' : 'Send OTR form',
     dueDate: '08 Jul 2026'
   };
 }
@@ -285,12 +292,19 @@ function buildAdmissionRowsFromLeads(leads = []) {
         leadId: lead.id,
         sourceLeadNo: lead.enqNo,
         leadStatus: lead.statusLabel,
-        otrNo: `AMS-OTR-2026-${String(148 + index).padStart(4, '0')}`,
+        otrNo: /^PA\d{6}$/i.test(String(lead.otrNo || ''))
+          ? String(lead.otrNo).toUpperCase()
+          : `PA26${String(index + 1).padStart(4, '0')}`,
+        enquiryId: lead.enqNo,
         name: lead.name,
         phone: lead.phone,
         email: lead.email,
+        gender: lead.gender || (index % 2 ? 'Female' : 'Male'),
         city: lead.city,
         course: normalizeCourse(lead.course),
+        learningMode: lead.learningMode || lead.mode || 'Offline',
+        hostelStatus: lead.hostelStatus || ((lead.learningMode || lead.mode) === 'Online' ? 'Not Applicable' : (index % 2 ? 'Without Hostel' : 'With Hostel')),
+        createdAt: lead.createdAt || lead.inquiryDate || '2026-07-01T09:00:00.000Z',
         owner: lead.assignedTo || lead.owner || 'Admission Desk',
         statusKey: status.key,
         status: status.label,
@@ -319,16 +333,16 @@ function mergeLeadSources(baseLeads = [], storedLeads = []) {
 const AMS_SOURCE_LEADS = mergeLeadSources([], getStoredAdmissionShortlist());
 const AMS_STUDENTS = buildAdmissionRowsFromLeads(AMS_SOURCE_LEADS);
 
-const AMS_PIPELINE = AMS_STATUS_FLOW
-  .filter(stage => stage.key !== 'rejected')
+const AMS_PIPELINE = [...new Map(AMS_STATUS_FLOW.map(status => [status.stageKey, status])).values()]
+  .filter(stage => stage.stageKey !== 'closed')
   .map(stage => {
-    const count = AMS_STUDENTS.filter(student => student.statusKey === stage.key).length;
+    const count = AMS_STUDENTS.filter(student => (AMS_STATUS_FLOW.find(status => status.key === student.statusKey)?.stageKey || 'otr') === stage.stageKey).length;
     return {
-      label: stage.label,
+      label: stage.stage,
       count,
       pct: AMS_STUDENTS.length ? Math.max(8, Math.round((count / AMS_STUDENTS.length) * 100)) : 0,
       icon: stage.icon,
-      key: stage.key
+      key: stage.stageKey
     };
   });
 

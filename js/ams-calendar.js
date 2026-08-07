@@ -118,7 +118,7 @@
         <article class="ams-calendar-admission-card">
           <header>
             <span class="calendar-avatar" style="background:${palette[(row.calendarId - 1) % palette.length]}">${this.initials(row.name)}</span>
-            <div><strong>${this.escapeHtml(row.name)}</strong><small>${this.escapeHtml(row.admissionNo || 'Admission reference unavailable')}</small></div>
+            <div><strong>${this.escapeHtml(row.name)}</strong><small>${this.escapeHtml(row.otrNo || row.admissionNo || 'OTR ID unavailable')}</small></div>
             <span class="ams-calendar-stage">${this.escapeHtml(row.stage)} · ${this.escapeHtml(row.stageStatus)}</span>
           </header>
           <div class="ams-calendar-detail-grid">
@@ -239,14 +239,17 @@
         if (statusDate) {
           const statusTitles = {
             otr: 'OTR Form',
-            interview: row.statusKey === 'document_verification' ? 'Document Verification' : 'Admission Progress',
+            course_selection: 'Course Selection',
+            exam: 'Exam',
+            interview: 'Interview Stage',
+            fees_pending: 'Fees Pending',
             confirmed: 'Admission Confirmation',
-            rejected: 'Admission Rejection'
+            closed: 'Admission Closed'
           };
           add({
             dateKey: statusDate,
             time: this.normalizeTime(String(row.updatedAt || row.admissionDateTime || '').slice(11, 16)),
-            type: row.stageKey === 'rejected' ? 'overdue' : ['confirmed', 'interview'].includes(row.stageKey) ? 'followup' : 'pending',
+            type: row.stageKey === 'closed' ? 'overdue' : ['confirmed', 'interview'].includes(row.stageKey) ? 'followup' : 'pending',
             title: statusTitles[row.stageKey] || 'Admission Update',
             completed: row.stageKey === 'confirmed',
             lead: row,
@@ -254,7 +257,7 @@
           });
         }
 
-        if (!row.followupDate && !['confirmed', 'rejected'].includes(row.stageKey)) {
+        if (!row.followupDate && !['confirmed', 'closed'].includes(row.stageKey)) {
           const pendingDate = this.parseDateKey(row.nextActionDate)
             || this.parseDateKey(row.admissionDate)
             || this.dateKey(this.today);
@@ -330,7 +333,7 @@
     },
 
     isPendingLead(row) {
-      return !row.followupDate && !['confirmed', 'rejected'].includes(row.stageKey);
+      return !row.followupDate && !['confirmed', 'closed'].includes(row.stageKey);
     },
 
     isFollowupLead(row) {
@@ -356,7 +359,7 @@
             ${items.length ? items.map(item => `
               <button type="button" class="ams-calendar-row-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.calendarId}, event)">
                 <time>${this.escapeHtml(item.dateKey)} · ${this.escapeHtml(item.time)}</time>
-                <span><strong>${this.escapeHtml(item.title)}</strong><small>${this.escapeHtml(item.lead.name)} · ${this.escapeHtml(item.lead.admissionNo)} · ${this.escapeHtml(item.lead.course || 'Course not assigned')}</small></span>
+                <span><strong>${this.escapeHtml(item.title)}</strong><small>${this.escapeHtml(item.lead.name)} · ${this.escapeHtml(item.lead.otrNo || item.lead.admissionNo)} · ${this.escapeHtml(item.lead.course || 'Course not assigned')}</small></span>
                 <em>${this.escapeHtml(item.lead.owner || 'Admission Desk')}</em>
                 <i class="fas fa-chevron-right"></i>
               </button>`).join('') : '<div class="calendar-row-empty">No admission activity requires action for this period.</div>'}
@@ -371,10 +374,10 @@
       return `
         <div class="week-hour-cell">
           ${items.map(item => `
-            <button type="button" class="week-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.calendarId}, event)" title="${this.escapeHtml(`${item.title} · ${item.lead.name} · ${item.lead.admissionNo} · ${item.lead.course || 'Course not assigned'} · ${item.lead.owner || 'Admission Desk'}`)}">
+            <button type="button" class="week-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.calendarId}, event)" title="${this.escapeHtml(`${item.title} · ${item.lead.name} · ${item.lead.otrNo || item.lead.admissionNo} · ${item.lead.course || 'Course not assigned'} · ${item.lead.owner || 'Admission Desk'}`)}">
               <span>${this.escapeHtml(item.time)}</span>
               <strong>${this.escapeHtml(item.title)}</strong>
-              <small>${this.escapeHtml(`${item.lead.name} · ${item.lead.admissionNo}`)}</small>
+              <small>${this.escapeHtml(`${item.lead.name} · ${item.lead.otrNo || item.lead.admissionNo}`)}</small>
             </button>
           `).join('')}
         </div>
@@ -406,7 +409,7 @@
         <button type="button" class="agenda-event event-${item.type}" onclick="CalendarModule.openLeadRow(${item.lead.calendarId}, event)">
           <span>${this.escapeHtml(item.time)}</span>
           <strong>${this.escapeHtml(item.title)}</strong>
-          <small>${this.escapeHtml(`${item.lead.name} · ${item.lead.admissionNo} · ${item.lead.course || 'Course not assigned'} · ${item.lead.owner || 'Admission Desk'}`)}</small>
+          <small>${this.escapeHtml(`${item.lead.name} · ${item.lead.otrNo || item.lead.admissionNo} · ${item.lead.course || 'Course not assigned'} · ${item.lead.owner || 'Admission Desk'}`)}</small>
         </button>
       `;
     },

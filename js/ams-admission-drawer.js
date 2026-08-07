@@ -63,8 +63,8 @@ const AMSAdmissionDrawer = {
 
   render(row) {
     if (!row) return;
-    this.text('ams-drawer-reference', row.admissionNo);
-    this.text('ams-drawer-reference-secondary', row.admissionNo);
+    this.text('ams-drawer-reference', row.otrNo || row.admissionNo);
+    this.text('ams-drawer-reference-secondary', row.otrNo || row.admissionNo);
     this.text('ams-drawer-avatar', row.name?.charAt(0).toUpperCase() || 'A');
     this.text('ams-drawer-name', row.name);
     const status = document.getElementById('ams-drawer-status');
@@ -139,7 +139,7 @@ const AMSAdmissionDrawer = {
     };
 
     const workflowFields = [
-      ['Admission Reference', row.admissionNo],
+      ['OTR ID', row.otrNo || row.admissionNo],
       ['OTR Reference', record?.otrNo],
       ['Last Modified', window.AMSStudentList?.formatDateTime?.(row.updatedAt || record?.updatedAt || row.admissionDateTime)],
       ['Admission Date', window.AMSStudentList?.formatDateTime?.(row.admissionDateTime || row.admissionDate)],
@@ -286,7 +286,7 @@ const AMSAdmissionDrawer = {
     this.text('ams-drawer-summary-course', row.course || 'Course not assigned');
     this.text('ams-drawer-summary-batch', row.batch || 'Class not allocated');
     this.text('ams-drawer-summary-dob', row.dateOfBirth ? `DOB: ${this.formatDate(row.dateOfBirth)}` : 'DOB: —');
-    this.text('ams-drawer-summary-reference', `REF: ${row.admissionNo || '—'}`);
+    this.text('ams-drawer-summary-reference', `OTR ID: ${row.otrNo || row.admissionNo || '—'}`);
     this.text('ams-drawer-summary-mode', `MODE OF LEARNING: ${row.mode || '—'}`);
     const extended = [
       ['Last Modified', window.AMSStudentList.formatDateTime(row.updatedAt || row.admissionDateTime)],
@@ -309,10 +309,10 @@ const AMSAdmissionDrawer = {
   },
 
   renderActionMenu(row) {
-    const eligibleForInterview = !['confirmed', 'rejected'].includes(row.stageKey)
-      && !['form_pending', 'draft'].includes(row.statusKey);
-    const canChangeClass = Boolean(row.course) && !['confirmed', 'rejected'].includes(row.stageKey);
-    const hasAdmissionForm = Boolean(row.otrId || !['form_pending', 'draft'].includes(row.statusKey));
+    const eligibleForInterview = !['confirmed', 'closed'].includes(row.stageKey)
+      && !['otr_pending', 'otr_draft'].includes(row.statusKey);
+    const canChangeClass = Boolean(row.course) && !['confirmed', 'closed'].includes(row.stageKey);
+    const hasAdmissionForm = Boolean(row.otrId || !['otr_pending', 'otr_draft'].includes(row.statusKey));
     const actions = [
       ['followup', 'fa-bars-staggered', 'Manage Follow-Up', true],
       ['edit', 'fa-pen-to-square', 'Edit Admission Record', true],
@@ -371,7 +371,7 @@ const AMSAdmissionDrawer = {
     if (action === 'print-admission') return window.AMSAdmissionOps?.printAdmission?.(row.key);
     if (action === 'accounts') return this.openAccounts(row);
     if (action === 'copy') {
-      const value = [row.admissionNo, row.name, row.phone, row.email, row.course, row.batch].filter(Boolean).join(' | ');
+      const value = [row.otrNo || row.admissionNo, row.name, row.phone, row.email, row.course, row.batch].filter(Boolean).join(' | ');
       navigator.clipboard?.writeText(value);
       return window.AMSAdmissionOps?.toast?.('Admission record copied', 'success');
     }
@@ -449,9 +449,9 @@ const AMSAdmissionDrawer = {
         at: row.updatedAt || created
       }] : []),
       ...interviews,
-      ...(['confirmed', 'rejected'].includes(row.stageKey) ? [{
+      ...(['confirmed', 'closed'].includes(row.stageKey) ? [{
         type: 'note',
-        title: row.stageKey === 'confirmed' ? 'Admission Confirmed' : 'Admission Rejected',
+        title: row.stageKey === 'confirmed' ? 'Admission Confirmed' : 'Admission Closed',
         description: `${row.stage} · ${row.stageStatus}`,
         by: row.owner,
         at: row.updatedAt || created
@@ -520,7 +520,7 @@ const AMSAdmissionDrawer = {
     });
     if (type === 'call') window.location.href = `tel:${window.AMSStudentList.phone(row.phone)}`;
     if (type === 'whatsapp') window.open(`https://wa.me/91${window.AMSStudentList.phone(row.phone)}`, '_blank', 'noopener');
-    if (type === 'email') window.location.href = `mailto:${row.email || ''}?subject=${encodeURIComponent(`Admission ${row.admissionNo}`)}`;
+    if (type === 'email') window.location.href = `mailto:${row.email || ''}?subject=${encodeURIComponent(`OTR ${row.otrNo || row.admissionNo}`)}`;
   },
 
   quickAction(type) {
@@ -601,12 +601,12 @@ const AMSAdmissionDrawer = {
     if (!row) return;
     window.AMSAdmissionOps.confirmDialog(
       'Close Admission Process',
-      `Close the admission process for ${row.name}? The record will move to Admission Reject and remain in the AMS history.`,
+      `Close the admission process for ${row.name}? The record will move to Admission Closed and remain in the AMS history.`,
       'Close Admission',
       () => {
-        window.AMSAdmissionOps.update(row.key, { statusKey: 'rejected' }, {
+        window.AMSAdmissionOps.update(row.key, { statusKey: 'application_rejected' }, {
           title: 'Admission Process Closed',
-          description: 'Admission moved to Admission Reject from the 360° details view.',
+          description: 'Admission moved to Admission Closed from the 360° details view.',
           by: row.owner
         });
         window.AMSAdmissionOps.closeDialog();

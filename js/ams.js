@@ -58,11 +58,11 @@ const AMSModule = {
     const pendingFees = students.filter(item => item.paid < item.total).length;
     const kpis = [
       { icon: 'fa-user-check', label: 'Shortlisted Leads', value: students.length, meta: 'Pulled from LMS shortlist' },
-      { icon: 'fa-file-signature', label: 'Admission Forms', value: students.filter(item => item.statusKey !== 'form_pending').length, meta: 'Started or submitted' },
+      { icon: 'fa-file-signature', label: 'OTR Forms', value: students.filter(item => item.statusKey !== 'otr_pending').length, meta: 'Draft or submitted' },
       { icon: 'fa-folder-open', label: 'Document Pending', value: pendingDocs, meta: 'Verification required' },
-      { icon: 'fa-receipt', label: 'Fee Pending', value: pendingFees, meta: 'Payment follow-up' },
+      { icon: 'fa-receipt', label: 'Fees Pending', value: pendingFees, meta: 'Payment follow-up' },
       { icon: 'fa-indian-rupee-sign', label: 'Fee Collected', value: this.money(collectedFees), meta: `${this.money(totalFees - collectedFees)} outstanding` },
-      { icon: 'fa-user-graduate', label: 'Onboarded', value: students.filter(item => item.statusKey === 'onboarded').length, meta: 'Student profile created' }
+      { icon: 'fa-user-graduate', label: 'Admission Confirmed', value: students.filter(item => item.statusKey === 'admission_confirmed').length, meta: 'Admission confirmed' }
     ];
     container.innerHTML = kpis.map(kpi => `
       <div class="ams-kpi-card">
@@ -80,12 +80,13 @@ const AMSModule = {
     const container = document.getElementById('ams-pipeline-list');
     if (!container) return;
     const students = this.students;
-    const pipeline = (window.APP_DATA?.AMS_STATUS_FLOW || [])
-      .filter(stage => stage.key !== 'rejected')
+    const pipeline = [...new Map((window.APP_DATA?.AMS_STATUS_FLOW || []).map(status => [status.stageKey, status])).values()]
+      .filter(stage => stage.stageKey !== 'closed')
       .map(stage => {
-        const count = students.filter(student => student.statusKey === stage.key).length;
+        const count = students.filter(student => (window.APP_DATA?.AMS_STATUS_FLOW || []).find(status => status.key === student.statusKey)?.stageKey === stage.stageKey).length;
         return {
           ...stage,
+          label: stage.stage,
           count,
           pct: students.length ? Math.max(8, Math.round((count / students.length) * 100)) : 0
         };
@@ -108,7 +109,7 @@ const AMSModule = {
   renderStatusTabs() {
     const container = document.getElementById('ams-status-bar');
     if (!container) return;
-    const statuses = window.APP_DATA?.AMS_STATUS_FLOW || [];
+    const statuses = [...new Map((window.APP_DATA?.AMS_STATUS_FLOW || []).map(status => [status.stageKey, status])).values()];
     const rows = this.students;
     const allCount = rows.length;
     container.innerHTML = `
@@ -116,10 +117,10 @@ const AMSModule = {
         All Shortlisted <span class="status-count">${allCount}</span>
       </div>
       ${statuses.map(status => {
-        const count = rows.filter(row => row.statusKey === status.key).length;
+        const count = rows.filter(row => (window.APP_DATA?.AMS_STATUS_FLOW || []).find(item => item.key === row.statusKey)?.stageKey === status.stageKey).length;
         return `
-          <div class="status-tab ${this.activeStatus === status.key ? 'active' : ''}" data-ams-status="${status.key}" onclick="AMSModule.setAdmissionStatus('${status.key}')">
-            ${status.label} <span class="status-count">${count}</span>
+          <div class="status-tab ${this.activeStatus === status.stageKey ? 'active' : ''}" data-ams-status="${status.stageKey}" onclick="AMSModule.setAdmissionStatus('${status.stageKey}')">
+            ${status.stage} <span class="status-count">${count}</span>
           </div>
         `;
       }).join('')}
@@ -142,7 +143,7 @@ const AMSModule = {
       { icon: 'fa-folder-tree', title: 'Document Center', body: 'Photo, ID, marksheets, certificates, migration, category, and signed declarations.' },
       { icon: 'fa-sack-dollar', title: 'Fees & Receipts', body: 'Token, installments, discounts, scholarship approval, refunds, dues, and receipt print.' },
       { icon: 'fa-comments', title: 'Interview / Counselling', body: 'Interview slots, counsellor remarks, eligibility, parent notes, and admission approval.' },
-      { icon: 'fa-users-rectangle', title: 'Batch Allocation', body: 'Course batch, classroom, faculty group, timetable, capacity, and waitlist handling.' },
+      { icon: 'fa-users-rectangle', title: 'Course Selection', body: 'Course, batch, classroom, faculty group, timetable, capacity, and waitlist handling.' },
       { icon: 'fa-user-check', title: 'Student Onboarding', body: 'Student ID, LMS login, ID card, welcome kit, orientation, and first-day checklist.' }
     ];
     container.innerHTML = ops.map(item => `
@@ -158,7 +159,7 @@ const AMSModule = {
     const container = document.getElementById('ams-task-list');
     if (!container) return;
     const tasks = this.students.slice(0, 4).map(student => ({
-      icon: student.statusKey === 'fee_pending' ? 'fa-phone' : student.statusKey === 'document_verification' ? 'fa-id-card' : 'fa-file-circle-check',
+      icon: student.statusKey === 'fees_pending' ? 'fa-phone' : student.stageKey === 'interview' ? 'fa-id-card' : 'fa-file-circle-check',
       title: `${student.nextStep} - ${student.name}`,
       meta: `${student.course} - LMS ${student.sourceLeadNo} - due ${student.dueDate}`
     }));
@@ -178,11 +179,11 @@ const AMSModule = {
     if (!container) return;
     const docsPending = this.students.filter(student => !student.documents.startsWith('6/6')).length;
     const feesPending = this.students.filter(student => student.paid < student.total).length;
-    const formPending = this.students.filter(student => student.statusKey === 'form_pending').length;
+    const formPending = this.students.filter(student => student.statusKey === 'otr_pending').length;
     const risks = [
-      { type: 'danger', label: 'Fee Pending', text: `${feesPending} shortlisted admission(s) need payment follow-up.` },
+      { type: 'danger', label: 'Fees Pending', text: `${feesPending} shortlisted admission(s) need payment follow-up.` },
       { type: 'warning', label: 'Missing Documents', text: `${docsPending} shortlisted lead(s) have incomplete verification.` },
-      { type: 'info', label: 'Form Pending', text: `${formPending} shortlisted lead(s) still need admission form submission.` },
+      { type: 'info', label: 'OTR Pending', text: `${formPending} shortlisted lead(s) still need OTR form submission.` },
       { type: 'success', label: 'LMS Connected', text: 'AMS list is generated only from shortlisted LMS leads.' }
     ];
     container.innerHTML = risks.map(risk => `
