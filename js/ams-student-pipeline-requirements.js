@@ -299,6 +299,12 @@
     const expandButton = quickRow?.querySelector('[data-amsl-action="expand-all"]');
     if (!toolbar || !quickRow || !expandButton) return;
 
+    // The sliders/filter-toggle control is redundant in this shared Row/Calendar toolbar.
+    // Remove only that quick-row button; the main Admission filters control remains intact.
+    [...quickRow.querySelectorAll('[data-amsl-action="filter-toggle"]')]
+      .find(button => button.querySelector('.fa-sliders'))
+      ?.remove();
+
     if (!viewState.toolbarPlaceholder) {
       viewState.toolbarPlaceholder = document.createComment('AMS Student Pipeline toolbar position');
       toolbar.parentNode?.insertBefore(viewState.toolbarPlaceholder, toolbar);
