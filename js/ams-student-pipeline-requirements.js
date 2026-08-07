@@ -175,6 +175,56 @@
     document.head.appendChild(style);
   }
 
+  function ensureFollowupForegroundLayer() {
+    if (document.getElementById('ams-student-pipeline-followup-layer')) return;
+    const style = document.createElement('style');
+    style.id = 'ams-student-pipeline-followup-layer';
+    style.textContent = `
+      #ams-ops-dialog.custom-modal-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483000 !important;
+        overflow: auto !important;
+        isolation: isolate;
+        pointer-events: auto !important;
+      }
+
+      #ams-ops-dialog.custom-modal-overlay > .custom-modal-card {
+        position: relative;
+        z-index: 1;
+        max-height: calc(100vh - 32px);
+      }
+
+      #ams-ops-dialog.custom-modal-overlay .custom-modal-body {
+        min-height: 0;
+        overflow: auto;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function bindStageStatusFollowupTriggers(ops) {
+    const screen = document.getElementById('screen-ams-students');
+    if (!screen || screen.dataset.amsStageStatusFollowupBound === 'true') return;
+    screen.dataset.amsStageStatusFollowupBound = 'true';
+
+    screen.addEventListener('click', event => {
+      const badge = event.target.closest('.amsl-stage-badge, .amsl-status-badge');
+      if (!badge || !badge.closest('.amsl-card-header')) return;
+
+      const card = badge.closest('[data-amsl-card]');
+      const key = card?.dataset.amslCard;
+      if (!key) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      window.AMSStudentList.state.openMenuKey = '';
+      ops.showFollowup(key);
+    }, true);
+  }
+
   function ensureCalendarToolbarHost() {
     if (viewState.calendarToolbarHost?.isConnected) return viewState.calendarToolbarHost;
     const screen = document.getElementById('screen-calendar');
@@ -393,10 +443,11 @@
       }
     }
 
-    // Current requirement set: one toolbar toggle, no per-row Calendar action,
-    // and desktop-only quick-action positioning with the existing 18px row spacing.
+    // Current Student Pipeline interaction requirements.
     ensureToolbarViewToggle(list);
     ensureRowActionAlignment();
+    ensureFollowupForegroundLayer();
+    bindStageStatusFollowupTriggers(ops);
     ensureCalendarNavigationGuard();
 
     // Re-render only the Student Pipeline so the existing scoped row/drawer mappings remain current.
