@@ -274,3 +274,13 @@ const AMSModule = {
 };
 
 window.AMSModule = AMSModule;
+
+// AMS-only Student Pipeline requirements are isolated in a dedicated patch.
+// Loading it here keeps LMS and Accounts completely outside this change.
+(() => {
+  if (document.querySelector('script[data-ams-student-pipeline-requirements]')) return;
+  const script = document.createElement('script');
+  script.src = 'js/ams-student-pipeline-requirements.js';
+  script.dataset.amsStudentPipelineRequirements = 'true';
+  document.head.appendChild(script);
+})();
