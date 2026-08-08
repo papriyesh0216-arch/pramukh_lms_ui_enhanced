@@ -160,12 +160,12 @@
 
       #screen-ams-students .amsl-card-student .amsl-satsangi-indicator {
         display: inline-block;
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         margin-left: 6px;
-        border: 2px solid #f59e0b;
+        border: 2px solid #fed7aa;
         border-radius: 50%;
-        background: #dc2626;
+        background: #f97316;
         box-sizing: border-box;
         vertical-align: middle;
       }
