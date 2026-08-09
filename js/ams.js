@@ -255,12 +255,12 @@ const AMSModule = {
   },
 
   escape(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, character => ({
+    return String(value ?? '').replace(/[&<>'\"]/g, character => ({
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
       "'": '&#39;',
-      '"': '&quot;'
+      '\"': '&quot;'
     })[character]);
   },
 
@@ -282,6 +282,15 @@ window.AMSModule = AMSModule;
   const script = document.createElement('script');
   script.src = 'js/ams-student-pipeline-requirements.js';
   script.dataset.amsStudentPipelineRequirements = 'true';
+  document.head.appendChild(script);
+})();
+
+// AMS Student Pipeline bulk-selection toolbar behavior is isolated as a second scoped patch.
+(() => {
+  if (document.querySelector('script[data-ams-student-pipeline-bulk-toolbar]')) return;
+  const script = document.createElement('script');
+  script.src = 'js/ams-student-pipeline-bulk-toolbar.js';
+  script.dataset.amsStudentPipelineBulkToolbar = 'true';
   document.head.appendChild(script);
 })();
 
