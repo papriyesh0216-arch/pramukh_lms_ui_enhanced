@@ -284,3 +284,12 @@ window.AMSModule = AMSModule;
   script.dataset.amsStudentPipelineRequirements = 'true';
   document.head.appendChild(script);
 })();
+
+// AMS Student Pipeline bulk-selection toolbar behavior is isolated as a second scoped patch.
+(() => {
+  if (document.querySelector('script[data-ams-student-pipeline-bulk-toolbar]')) return;
+  const script = document.createElement('script');
+  script.src = 'js/ams-student-pipeline-bulk-toolbar.js';
+  script.dataset.amsStudentPipelineBulkToolbar = 'true';
+  document.head.appendChild(script);
+})();
