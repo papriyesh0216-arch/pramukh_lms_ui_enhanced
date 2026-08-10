@@ -59,13 +59,32 @@
     style.id = 'ams-interview-management-refinements-style';
     style.textContent = `
       #screen-ams-interviews #ams-interview-root .im-stage-filters .im-filter-search .im-search {
+        position: relative;
         width: 100%;
         max-width: none;
+        height: 34px;
+      }
+
+      #screen-ams-interviews #ams-interview-root .im-stage-filters .im-filter-search .im-search i {
+        position: absolute;
+        z-index: 1;
+        top: 50%;
+        left: 10px;
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 10px;
+        line-height: 1;
+        pointer-events: none;
+        transform: translateY(-50%);
       }
 
       #screen-ams-interviews #ams-interview-root .im-stage-filters .im-filter-search .im-search input {
+        box-sizing: border-box;
         width: 100%;
         min-width: 0;
+        height: 34px;
+        padding: 0 10px 0 32px;
+        border-radius: 8px;
       }
     `;
     document.head.appendChild(style);
