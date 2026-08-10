@@ -293,3 +293,22 @@ window.AMSModule = AMSModule;
   script.dataset.amsStudentPipelineBulkToolbar = 'true';
   document.head.appendChild(script);
 })();
+
+// AMS Interview Scheduling stage workflow is isolated from Student Pipeline,
+// OTR, Accounts, LMS, and Interview Structure implementation files.
+(() => {
+  if (document.querySelector('script[data-ams-interview-stage-workflow]')) return;
+  const script = document.createElement('script');
+  script.src = 'js/ams-interview-stage-workflow.js';
+  script.dataset.amsInterviewStageWorkflow = 'true';
+  document.head.appendChild(script);
+})();
+
+// AMS Interview Management refinements consume the stage workflow and its existing data sources.
+(() => {
+  if (document.querySelector('script[data-ams-interview-management-refinements]')) return;
+  const script = document.createElement('script');
+  script.src = 'js/ams-interview-management-refinements.js';
+  script.dataset.amsInterviewManagementRefinements = 'true';
+  document.head.appendChild(script);
+})();
