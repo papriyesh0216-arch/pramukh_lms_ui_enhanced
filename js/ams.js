@@ -255,12 +255,12 @@ const AMSModule = {
   },
 
   escape(value) {
-    return String(value ?? '').replace(/[&<>'\"]/g, character => ({
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
       "'": '&#39;',
-      '\"': '&quot;'
+      '"': '&quot;'
     })[character]);
   },
 
@@ -301,5 +301,14 @@ window.AMSModule = AMSModule;
   const script = document.createElement('script');
   script.src = 'js/ams-interview-stage-workflow.js';
   script.dataset.amsInterviewStageWorkflow = 'true';
+  document.head.appendChild(script);
+})();
+
+// AMS Interview Management refinements consume the stage workflow and its existing data sources.
+(() => {
+  if (document.querySelector('script[data-ams-interview-management-refinements]')) return;
+  const script = document.createElement('script');
+  script.src = 'js/ams-interview-management-refinements.js';
+  script.dataset.amsInterviewManagementRefinements = 'true';
   document.head.appendChild(script);
 })();
