@@ -14,7 +14,7 @@ const LEAD_DATA = [
     assignedDate: '15-05-2026 10:26 AM', timeAgo: '2 min ago', isHot: true,
     followupDate: '18 May 2025', followupTime: '11:00 AM', followupType: 'Call',
     followupPurpose: 'Share batch structure, demo class & fee options.',
-    stage: 2, stageLabel: 'Counselling',
+    stageKey: 'counselling', stageStatus: 'conducted', stage: 4, stageLabel: 'Counselling',
     communications: [
       { type: 'call', day: '15', month: 'May', title: 'Voice Call (Connected)', desc: 'Spoke with student, interested in Foundation batch.', time: '10:20 AM', by: 'Bharat Sir' },
       { type: 'whatsapp', day: '15', month: 'May', title: 'WhatsApp Message', desc: 'Brochure & fee details sent.', time: '10:35 AM', by: 'Bharat Sir' },
@@ -32,7 +32,7 @@ const LEAD_DATA = [
     leadScore: 60, leadAge: '0 Days', academicStatus: 'Graducation Completed',
     query: 'B.Sc. Agriculture.', assignedTo: 'Apurva Mahipatbhai Jani',
     assignedDate: '25-06-2026 02:16 PM', timeAgo: '19 min ago', isHot: false,
-    stage: 0, stageLabel: 'New',
+    stageKey: 'pending', stageStatus: '', stage: 0, stageLabel: 'Pending',
     communications: []
   },
   {
@@ -44,7 +44,7 @@ const LEAD_DATA = [
     leadScore: 55, leadAge: '0 Days', academicStatus: 'Graducation Completed',
     query: 'Details about UPSC Foundation.', assignedTo: 'Jignesh Trivedi',
     assignedDate: '25-06-2026 01:57 PM', timeAgo: '38 min ago', isHot: false,
-    stage: 0, stageLabel: 'New',
+    stageKey: 'pending', stageStatus: '', stage: 0, stageLabel: 'Pending',
     communications: []
   },
   {
@@ -57,7 +57,7 @@ const LEAD_DATA = [
     leadScore: 72, leadAge: '5 Days', academicStatus: 'Graducation Completed',
     query: 'Batch schedule and fee details.', assignedTo: 'Vivek Sir',
     assignedDate: '14-05-2025 09:15 AM', timeAgo: '5 hrs ago', isHot: false,
-    stage: 1, stageLabel: 'Contacted',
+    stageKey: 'voicecall', stageStatus: 'called', stage: 1, stageLabel: 'Voice Call',
     communications: [
       { type: 'call', day: '14', month: 'May', title: 'Voice Call (Connected)', desc: 'Discussed batch schedule.', time: '09:15 AM', by: 'Vivek Sir' }
     ]
@@ -71,7 +71,7 @@ const LEAD_DATA = [
     leadScore: 90, leadAge: '6 Days', academicStatus: 'Graducation Completed',
     query: 'Admission process and scholarship.', assignedTo: 'Bharat Sir',
     assignedDate: '13-05-2025 11:10 AM', timeAgo: '1 day ago', isHot: true,
-    stage: 3, stageLabel: 'Form Sent',
+    stageKey: 'hotlead', stageStatus: '', stage: 2, stageLabel: 'Hot Lead',
     communications: [
       { type: 'meeting', day: '13', month: 'May', title: 'Counselling Done', desc: 'Counselling session completed.', time: '11:10 AM', by: 'Bharat Sir' }
     ]
@@ -85,7 +85,7 @@ const LEAD_DATA = [
     leadScore: 68, leadAge: '12 Days', academicStatus: 'School Student',
     query: 'Hostel facility available?', assignedTo: 'Pooja Shah',
     assignedDate: '13-04-2025 04:30 PM', timeAgo: '2 days ago', isHot: false,
-    stage: 1, stageLabel: 'Contacted',
+    stageKey: 'coldlead', stageStatus: '', stage: 3, stageLabel: 'Cold Lead',
     communications: []
   },
   {
@@ -99,7 +99,7 @@ const LEAD_DATA = [
     assignedDate: '27-06-2026 10:45 AM', timeAgo: '1 hr ago', isHot: false,
     followupDate: '28-06-2026', followupTime: '04:00 PM', followupType: 'Call',
     followupPurpose: 'Confirm batch timing and scholarship eligibility.',
-    stage: 3, stageLabel: 'Follow-up',
+    stageKey: 'voicecall', stageStatus: 'scheduled', stage: 1, stageLabel: 'Voice Call',
     communications: [
       { type: 'call', day: '27', month: 'Jun', title: 'Initial Call Connected', desc: 'Student asked for UPSC weekday batch details.', time: '10:50 AM', by: 'Hary Sir' }
     ]
@@ -236,3 +236,21 @@ const STATUS_DISTRIBUTION = [
 ];
 
 window.APP_DATA = { LEAD_DATA, COUNSELOR_DATA, FOLLOWUP_CALENDAR_DATA, SEGMENTATION_DATA, SEGMENT_DATA, FUNNEL_DATA, STATUS_DISTRIBUTION };
+
+// Inquiry List workflow is loaded separately so LMS owns its stage/status map.
+// The runtime connector refreshes the already-initialized Inquiry List without
+// changing AMS, Accounts, or other LMS module implementations.
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.querySelector('script[data-lms-inquiry-stage-status]')) return;
+  const workflow = document.createElement('script');
+  workflow.src = 'js/lms-inquiry-stage-status.js';
+  workflow.dataset.lmsInquiryStageStatus = 'true';
+  workflow.onload = () => {
+    if (document.querySelector('script[data-lms-inquiry-stage-runtime]')) return;
+    const runtime = document.createElement('script');
+    runtime.src = 'js/lms-inquiry-stage-status-runtime.js';
+    runtime.dataset.lmsInquiryStageRuntime = 'true';
+    document.head.appendChild(runtime);
+  };
+  document.head.appendChild(workflow);
+}, { once: true });
