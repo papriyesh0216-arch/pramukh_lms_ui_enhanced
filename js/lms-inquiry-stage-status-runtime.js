@@ -7,6 +7,19 @@
   const leads = typeof LeadsModule !== 'undefined' ? LeadsModule : window.LeadsModule;
   if (!leads?.__lmsInquiryStageStatusInstalled) return;
 
+  // The legacy Inquiry initializer previously overwrote the base dummy rows
+  // with AMS stage keys before this isolated workflow patch loaded. Restore
+  // the LMS-owned dummy mapping before the canonical migration runs.
+  const BASE_LMS_STAGE_SEEDS = {
+    1: ['counselling', 'conducted'],
+    2: ['pending', ''],
+    3: ['pending', ''],
+    4: ['voicecall', 'called'],
+    5: ['hotlead', ''],
+    6: ['coldlead', ''],
+    7: ['voicecall', 'scheduled']
+  };
+
   const drawer = typeof DrawerModule !== 'undefined' ? DrawerModule : window.DrawerModule;
   if (drawer && !drawer.__lmsInquiryStageStatusPatched) {
     drawer.__lmsInquiryStageStatusPatched = true;
@@ -117,6 +130,12 @@
 
   // Re-normalize data that may have been initialized before this scoped patch loaded.
   if (Array.isArray(leads.leads) && leads.leads.length) {
+    leads.leads.forEach(lead => {
+      const seed = BASE_LMS_STAGE_SEEDS[lead.id];
+      if (!seed) return;
+      lead.stageKey = seed[0];
+      lead.stageStatus = seed[1];
+    });
     leads.normalizeInquiryLeadData();
     leads.activeStatus = 'all';
     leads.activeSubStatus = 'all';
