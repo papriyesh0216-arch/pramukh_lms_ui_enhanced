@@ -172,13 +172,15 @@ const AMSDashboard = {
       interview.decision,
       interview.evaluation?.result,
       interview.evaluation?.overallResult,
+      student?.waitingList,
       student?.subStatus,
       student?.stageStatus,
       student?.nextStep,
       student?.purpose
     ].filter(value => value !== undefined && value !== null).join(' ').toLowerCase();
-    if (interview.waitingList === true || /waiting\s*list|waitlist|on\s*hold|reserve\s*list/.test(text)) return true;
-    return Boolean(student && student.stageKey === 'interview' && !['admission_confirmed', 'application_rejected', 'declined_by_student'].includes(student.statusKey));
+    return interview.waitingList === true
+      || student?.waitingList === true
+      || /waiting\s*list|waitlist|on\s*hold|reserve\s*list/.test(text);
   },
 
   data() {
@@ -333,8 +335,9 @@ const AMSDashboard = {
       ['Draft', rows.filter(item => item.status === 'Draft').length],
       ['Submitted', rows.filter(item => item.status === 'Submitted').length]
     ];
+    const available = this.courseFilter === 'all' ? data.availableCourses : data.availableCourses.filter(course => course === this.courseFilter);
     const options = ['<option value="all">All Courses</option>']
-      .concat(data.availableCourses.map(course => `<option value="${this.escape(course)}" ${selected === course ? 'selected' : ''}>${this.escape(course)}</option>`))
+      .concat(available.map(course => `<option value="${this.escape(course)}" ${selected === course ? 'selected' : ''}>${this.escape(course)}</option>`))
       .join('');
     return `
       <div class="amsd-otr-toolbar"><select class="chart-filter-select" id="amsd-otr-course-filter" aria-label="Filter OTR analytics by course">${options}</select></div>
@@ -553,18 +556,30 @@ const AMSDashboard = {
   openInterviews(filter = 'all') {
     window.AMSApp?.showScreen?.('ams-interviews');
     if (!window.AMSInterviews) return;
-    Object.assign(window.AMSInterviews.state.filters, { search: '', from: '', to: '', course: 'all', interviewer: 'all', structure: 'all', status: 'all', mode: 'all' });
-    window.AMSInterviews.state.view = 'list';
-    window.AMSInterviews.state.activeKpi = 'all';
+    const module = window.AMSInterviews;
+    Object.assign(module.state.filters, { search: '', from: '', to: '', course: 'all', interviewer: 'all', structure: 'all', status: 'all', mode: 'all' });
+    module.state.view = 'list';
+    module.state.activeKpi = 'pending';
 
-    if (['pending', 'scheduled', 'completed'].includes(filter)) {
-      window.AMSInterviews.state.activeKpi = filter;
-    } else if (filter === 'waiting') {
-      window.AMSInterviews.state.activeKpi = 'completed';
-    } else if (['today', 'upcoming', 'overdue'].includes(filter)) {
-      window.AMSInterviews.state.activeKpi = filter;
+    if (filter === 'pending') module.state.activeKpi = 'pending';
+    else if (filter === 'scheduled') module.state.activeKpi = 'scheduled';
+    else if (filter === 'completed' || filter === 'waiting') module.state.activeKpi = 'completed';
+    else if (filter === 'today') {
+      module.state.activeKpi = 'scheduled';
+      const today = this.dateKey(new Date());
+      module.state.filters.from = today;
+      module.state.filters.to = today;
+    } else if (filter === 'upcoming') {
+      module.state.activeKpi = 'scheduled';
+      module.state.filters.from = this.dateKey(this.addDays(new Date(), 1));
+      module.state.filters.to = this.dateKey(this.addDays(new Date(), 7));
+    } else if (filter === 'overdue') {
+      module.state.activeKpi = 'scheduled';
+      module.state.filters.to = this.dateKey(this.addDays(new Date(), -1));
+    } else {
+      module.state.activeKpi = 'pending';
     }
-    window.AMSInterviews.render();
+    module.render();
   },
 
   openInterviewCalendar(date) {
