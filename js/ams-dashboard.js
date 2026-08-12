@@ -17,6 +17,7 @@ const AMSDashboard = {
     const root = document.getElementById('ams-dashboard-root');
     if (!root || this.initialized) return;
     this.initialized = true;
+    this.ensureDateDialogStyles();
     root.addEventListener('click', event => this.handleClick(event));
     root.addEventListener('change', event => this.handleChange(event));
     window.addEventListener('ams:data-change', () => {
@@ -54,13 +55,8 @@ const AMSDashboard = {
     return [...courses].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   },
 
-  normalizeEmail(value = '') {
-    return String(value).trim().toLowerCase();
-  },
-
-  normalizePhone(value = '') {
-    return String(value).replace(/\D/g, '');
-  },
+  normalizeEmail(value = '') { return String(value).trim().toLowerCase(); },
+  normalizePhone(value = '') { return String(value).replace(/\D/g, ''); },
 
   identity(item = {}) {
     const email = this.normalizeEmail(item.email || item.personal?.email || item.otr?.personal?.email);
@@ -111,23 +107,19 @@ const AMSDashboard = {
   buildOtrDataset(students, otrRecords) {
     const result = [];
     const usedRecords = new Set();
-
     students.forEach((student, index) => {
       const matchedIndex = otrRecords.findIndex((record, recordIndex) => {
         if (usedRecords.has(recordIndex)) return false;
-        const matchedStudent = this.findStudentForRecord(record, [student]);
-        return Boolean(matchedStudent);
+        return Boolean(this.findStudentForRecord(record, [student]));
       });
       const matched = matchedIndex >= 0 ? otrRecords[matchedIndex] : null;
       if (matchedIndex >= 0) usedRecords.add(matchedIndex);
-
       const statusKey = String(student.statusKey || '').toLowerCase();
       const matchedStatus = String(matched?.statusKey || matched?.status || '').toLowerCase();
       let status = 'Submitted';
       if (statusKey === 'otr_draft' || /draft/.test(matchedStatus)) status = 'Draft';
       else if (statusKey === 'otr_pending' || /pending/.test(matchedStatus)) status = 'Pending';
       else if (student.stageKey === 'otr' && statusKey !== 'otr_submitted' && !matched) status = 'Pending';
-
       result.push({
         key: String(student.otrNo || student.admissionNo || matched?.otrNo || `AMS-OTR-${index}`),
         course: String(student.course || matched?.__course || 'Course not mapped'),
@@ -136,7 +128,6 @@ const AMSDashboard = {
         record: matched
       });
     });
-
     otrRecords.forEach((record, index) => {
       if (usedRecords.has(index)) return;
       const rawStatus = String(record.statusKey || record.status || '').toLowerCase();
@@ -149,7 +140,6 @@ const AMSDashboard = {
         record
       });
     });
-
     return [...new Map(result.map(item => [item.key, item])).values()];
   },
 
@@ -166,17 +156,9 @@ const AMSDashboard = {
     if (String(interview.status || '') !== 'Completed') return false;
     const student = this.findStudentForRecord(interview, students);
     const text = [
-      interview.waitingList,
-      interview.result,
-      interview.outcome,
-      interview.decision,
-      interview.evaluation?.result,
-      interview.evaluation?.overallResult,
-      student?.waitingList,
-      student?.subStatus,
-      student?.stageStatus,
-      student?.nextStep,
-      student?.purpose
+      interview.waitingList, interview.result, interview.outcome, interview.decision,
+      interview.evaluation?.result, interview.evaluation?.overallResult,
+      student?.waitingList, student?.subStatus, student?.stageStatus, student?.nextStep, student?.purpose
     ].filter(value => value !== undefined && value !== null).join(' ').toLowerCase();
     return interview.waitingList === true
       || student?.waitingList === true
@@ -187,7 +169,6 @@ const AMSDashboard = {
     const raw = this.rawData();
     const availableCourses = this.availableCourses(raw);
     const selectedCourse = this.courseFilter;
-
     let students = raw.students.filter(item => selectedCourse === 'all' || String(item.course || '') === selectedCourse);
     let interviews = raw.interviews.filter(item => selectedCourse === 'all' || String(item.course || '') === selectedCourse);
     let otr = raw.otr.map(record => ({ ...record, __course: this.recordCourse(record, raw.students) }))
@@ -203,13 +184,11 @@ const AMSDashboard = {
     const activeInterviewStatuses = new Set(['Scheduled', 'Awaiting Assignment', 'In Progress', 'Rescheduled', 'Pending']);
     const scheduledInterviewStatuses = new Set(['Scheduled', 'In Progress', 'Rescheduled']);
     const interviewDate = item => String(item.datetime || '').slice(0, 10);
-
     const todayInterviews = interviews.filter(item => interviewDate(item) === today && !['Cancelled', 'Canceled'].includes(item.status));
     const upcoming = interviews.filter(item => interviewDate(item) > today && interviewDate(item) <= weekEnd && activeInterviewStatuses.has(item.status));
     const overdue = interviews.filter(item => item.datetime && new Date(item.datetime) < now && activeInterviewStatuses.has(item.status));
     const completed = interviews.filter(item => item.status === 'Completed');
     const waitingList = completed.filter(item => this.isWaitingListInterview(item, students));
-
     const pendingInterviewRecords = interviews.filter(item => {
       const status = String(item.status || '');
       return status === 'Awaiting Assignment' || status === 'Pending' || (!item.interviewerId && !['Completed', 'Cancelled', 'Canceled'].includes(status));
@@ -220,7 +199,6 @@ const AMSDashboard = {
     });
     const pendingInterviews = this.uniqueRows([...pendingInterviewRecords, ...interviewStageStudentsWithoutRecord]);
     const scheduledInterviews = this.uniqueRows(interviews.filter(item => scheduledInterviewStatuses.has(item.status) && item.interviewerId));
-
     const documents = students.reduce((result, student) => {
       const verified = Number(student.verifiedDocuments ?? this.documentRatio(student.documents)[0]);
       const total = Number(student.totalDocuments ?? this.documentRatio(student.documents)[1]);
@@ -230,35 +208,18 @@ const AMSDashboard = {
       if (verified === 0) result.missingStudents += 1;
       return result;
     }, { verified: 0, total: 0, pendingStudents: 0, missingStudents: 0 });
-
     const otrDataset = this.buildOtrDataset(students, otr);
     const statusCount = key => students.filter(item => item.statusKey === key || item.stageKey === key).length;
     const confirmed = statusCount('admission_confirmed');
     const closed = statusCount('application_rejected') + statusCount('declined_by_student');
     const examProcess = students.filter(item => item.stageKey === 'exam' || /^exam_/.test(String(item.statusKey || ''))).length;
-
     return {
-      students,
-      otr,
-      interviews,
-      availableCourses,
-      now,
-      today,
-      weekEnd,
-      todayInterviews,
-      upcoming,
-      overdue,
-      completed,
-      waitingList,
-      pendingInterviews,
-      scheduledInterviews,
-      documents,
-      otrDataset,
+      students, otr, interviews, availableCourses, now, today, weekEnd,
+      todayInterviews, upcoming, overdue, completed, waitingList,
+      pendingInterviews, scheduledInterviews, documents, otrDataset,
       totalOtrGenerated: otrDataset.length,
       otrPending: otrDataset.filter(item => item.status === 'Pending').length,
-      examProcess,
-      confirmed,
-      closed,
+      examProcess, confirmed, closed,
       awaitingInterview: students.filter(item => item.stageKey === 'interview').length,
       awaitingApproval: students.filter(item => ['otr_submitted', 'course_selection', 'exam_submitted'].includes(item.statusKey)).length,
       awaitingFee: statusCount('fees_pending')
@@ -279,27 +240,16 @@ const AMSDashboard = {
         ${this.panel('Course Analytics', 'Admission volume by course, batch, and learning mode', this.courseAnalytics(data), 'span-2 amsd-course-panel')}
         ${this.rotatingPanel(data)}
         ${this.panel('Notifications', 'Urgent operational signals from current AMS records', this.notifications(data), 'amsd-notifications-panel')}
-      </div>
-    `;
+      </div>`;
   },
 
   header(data) {
     const options = ['<option value="all">All Courses</option>']
-      .concat(data.availableCourses.map(course => `<option value="${this.escape(course)}" ${this.courseFilter === course ? 'selected' : ''}>${this.escape(course)}</option>`))
-      .join('');
-    return `
-      <header class="dashboard-header dashboard-hero-header amsd-lms-header">
-        <div class="dashboard-title-wrap">
-          <div class="section-eyebrow">Admission Management System</div>
-          <h1>Admission Operations <span>Dashboard</span></h1>
-          <div class="dashboard-welcome">One live view of OTR, exams, interviews, course movement, and admission outcomes.</div>
-        </div>
-        <div class="dashboard-controls">
-          <select class="chart-filter-select" id="amsd-course-filter" aria-label="Filter AMS Dashboard by course">${options}</select>
-          <button class="date-filter-btn" type="button" data-amsd-action="date-filter" title="${this.dateFrom || this.dateTo ? `${this.dateFrom || 'Start'} to ${this.dateTo || 'Today'}` : 'Custom Date'}"><i class="fas fa-calendar-alt"></i> Custom Date</button>
-        </div>
-      </header>
-    `;
+      .concat(data.availableCourses.map(course => `<option value="${this.escape(course)}" ${this.courseFilter === course ? 'selected' : ''}>${this.escape(course)}</option>`)).join('');
+    return `<header class="dashboard-header dashboard-hero-header amsd-lms-header">
+      <div class="dashboard-title-wrap"><div class="section-eyebrow">Admission Management System</div><h1>Admission Operations <span>Dashboard</span></h1><div class="dashboard-welcome">One live view of OTR, exams, interviews, course movement, and admission outcomes.</div></div>
+      <div class="dashboard-controls"><select class="chart-filter-select" id="amsd-course-filter" aria-label="Filter AMS Dashboard by course">${options}</select><button class="date-filter-btn" type="button" data-amsd-action="date-filter" title="${this.dateFrom || this.dateTo ? `${this.dateFrom || 'Start'} to ${this.dateTo || 'Today'}` : 'Custom Date'}"><i class="fas fa-calendar-alt"></i> Custom Date</button></div>
+    </header>`;
   },
 
   kpis(data) {
@@ -329,30 +279,14 @@ const AMSDashboard = {
   otrAnalytics(data) {
     const selected = this.otrCourseFilter;
     const rows = data.otrDataset.filter(item => selected === 'all' || item.course === selected);
-    const items = [
-      ['All', rows.length],
-      ['Pending', rows.filter(item => item.status === 'Pending').length],
-      ['Draft', rows.filter(item => item.status === 'Draft').length],
-      ['Submitted', rows.filter(item => item.status === 'Submitted').length]
-    ];
+    const items = [['All', rows.length], ['Pending', rows.filter(item => item.status === 'Pending').length], ['Draft', rows.filter(item => item.status === 'Draft').length], ['Submitted', rows.filter(item => item.status === 'Submitted').length]];
     const available = this.courseFilter === 'all' ? data.availableCourses : data.availableCourses.filter(course => course === this.courseFilter);
-    const options = ['<option value="all">All Courses</option>']
-      .concat(available.map(course => `<option value="${this.escape(course)}" ${selected === course ? 'selected' : ''}>${this.escape(course)}</option>`))
-      .join('');
-    return `
-      <div class="amsd-otr-toolbar"><select class="chart-filter-select" id="amsd-otr-course-filter" aria-label="Filter OTR analytics by course">${options}</select></div>
-      <div class="amsd-segment-list amsd-otr-counts">${items.map(item => `<span><small>${item[0]}</small><strong>${item[1]}</strong></span>`).join('')}</div>
-    `;
+    const options = ['<option value="all">All Courses</option>'].concat(available.map(course => `<option value="${this.escape(course)}" ${selected === course ? 'selected' : ''}>${this.escape(course)}</option>`)).join('');
+    return `<div class="amsd-otr-toolbar"><select class="chart-filter-select" id="amsd-otr-course-filter" aria-label="Filter OTR analytics by course">${options}</select></div><div class="amsd-segment-list amsd-otr-counts">${items.map(item => `<span><small>${item[0]}</small><strong>${item[1]}</strong></span>`).join('')}</div>`;
   },
 
   admissionStatus(data) {
-    const items = [
-      ['Interview Stage', data.awaitingInterview, 'interviews'],
-      ['Course / Exam Review', data.awaitingApproval, 'students'],
-      ['Fees Pending', data.awaitingFee, 'students'],
-      ['Admission Confirmed', data.confirmed, 'students'],
-      ['Admission Closed', data.closed, 'students']
-    ];
+    const items = [['Interview Stage', data.awaitingInterview, 'interviews'], ['Course / Exam Review', data.awaitingApproval, 'students'], ['Fees Pending', data.awaitingFee, 'students'], ['Admission Confirmed', data.confirmed, 'students'], ['Admission Closed', data.closed, 'students']];
     const max = Math.max(1, ...items.map(item => item[1]));
     return `<div class="amsd-horizontal-chart">${items.map(item => `<button type="button" data-amsd-go="${item[2]}"><span>${item[0]}</span><i><em style="width:${Math.round((item[1] / max) * 100)}%"></em></i><b>${item[1]}</b></button>`).join('')}</div>`;
   },
@@ -366,29 +300,14 @@ const AMSDashboard = {
 
   rotatingPanel(data) {
     const view = this.rotatorView(data);
-    return `
-      <section class="amsd-panel span-2 amsd-rotator-panel" id="amsd-rotator-panel">
-        <header>
-          <div><h2 id="amsd-rotator-title">${view.title}</h2><p id="amsd-rotator-subtitle">${view.subtitle}</p></div>
-          <div class="amsd-rotator-controls" aria-label="Dashboard activity navigation">
-            <button type="button" data-amsd-rotate="prev" title="Previous view" aria-label="Previous view"><i class="fas fa-chevron-left"></i></button>
-            <button type="button" data-amsd-rotate="next" title="Next view" aria-label="Next view"><i class="fas fa-chevron-right"></i></button>
-          </div>
-        </header>
-        <div class="amsd-panel-body amsd-rotator-body" id="amsd-rotator-body" aria-live="polite">${view.content}</div>
-      </section>
-    `;
+    return `<section class="amsd-panel span-2 amsd-rotator-panel" id="amsd-rotator-panel"><header><div><h2 id="amsd-rotator-title">${view.title}</h2><p id="amsd-rotator-subtitle">${view.subtitle}</p></div><div class="amsd-rotator-controls" aria-label="Dashboard activity navigation"><button type="button" data-amsd-rotate="prev" title="Previous view" aria-label="Previous view"><i class="fas fa-chevron-left"></i></button><button type="button" data-amsd-rotate="next" title="Next view" aria-label="Next view"><i class="fas fa-chevron-right"></i></button></div></header><div class="amsd-panel-body amsd-rotator-body" id="amsd-rotator-body" aria-live="polite">${view.content}</div></section>`;
   },
 
   rotatorView(data) {
     const key = this.rotationOrder[this.rotatorIndex] || 'timeline';
-    if (key === 'activity') {
-      return { title: 'Recent Activity', subtitle: 'Latest timestamped activity available in AMS', content: this.recentActivity(data) };
-    }
-    if (key === 'calendar') {
-      return { title: 'Operational Calendar', subtitle: 'Interviews and admission deadlines for the next seven days', content: this.calendar(data) };
-    }
-    return { title: "Today’s Timeline", subtitle: `${this.formatDate(data.today)} interview workload`, content: this.timeline(data) };
+    if (key === 'activity') return { title: 'Recent Activity', subtitle: 'Latest timestamped activity available in AMS', content: this.recentActivity(data) };
+    if (key === 'calendar') return { title: 'Operational Calendar', subtitle: 'Interviews and admission deadlines for the next seven days', content: this.calendar(data) };
+    return { title: 'Today’s Timeline', subtitle: `${this.formatDate(data.today)} interview workload`, content: this.timeline(data) };
   },
 
   updateRotator() {
@@ -409,8 +328,7 @@ const AMSDashboard = {
   },
 
   advanceRotator(delta, manual = false) {
-    const length = this.rotationOrder.length;
-    this.rotatorIndex = (this.rotatorIndex + delta + length) % length;
+    this.rotatorIndex = (this.rotatorIndex + delta + this.rotationOrder.length) % this.rotationOrder.length;
     this.updateRotator();
     if (manual) this.startRotation();
   },
@@ -442,11 +360,7 @@ const AMSDashboard = {
     const interviewEvents = data.interviews.filter(item => String(item.datetime).slice(0, 10) >= data.today && String(item.datetime).slice(0, 10) <= data.weekEnd && !['Cancelled', 'Canceled'].includes(item.status)).map(item => ({ type: 'interview', date: String(item.datetime).slice(0, 10), datetime: item.datetime, id: item.id, title: item.name, meta: item.status }));
     const admissionEvents = data.students.map(item => ({ item, date: this.dateKey(new Date(item.dueDate || item.nextActionDate || '')) })).filter(event => event.date >= data.today && event.date <= data.weekEnd).map(event => ({ type: 'student', date: event.date, datetime: `${event.date}T23:59:00`, id: event.item.key || event.item.admissionNo, title: event.item.name, meta: event.item.nextStep || event.item.purpose || 'Admission deadline' }));
     const events = [...interviewEvents, ...admissionEvents].sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
-    return `<div class="amsd-calendar-strip">${days.map(day => {
-      const key = this.dateKey(day);
-      const count = events.filter(item => item.date === key).length;
-      return `<button type="button" data-amsd-calendar-date="${key}" class="${key === data.today ? 'today' : ''}"><small>${day.toLocaleDateString('en-IN', { weekday: 'short' })}</small><strong>${day.getDate()}</strong><span>${count || ''}</span></button>`;
-    }).join('')}</div><div class="amsd-calendar-events">${events.slice(0, 5).map(item => `<button type="button" ${item.type === 'interview' ? `data-amsd-interview-id="${this.escape(item.id)}"` : `data-amsd-student="${this.escape(item.id)}"`}><time>${this.formatShortDate(item.datetime)}${item.type === 'interview' ? ` · ${this.formatTime(item.datetime)}` : ''}</time><strong>${this.escape(item.title)}</strong><span>${this.escape(item.meta)}</span></button>`).join('') || '<div class="amsd-inline-empty">No upcoming calendar events.</div>'}</div>`;
+    return `<div class="amsd-calendar-strip">${days.map(day => { const key = this.dateKey(day); const count = events.filter(item => item.date === key).length; return `<button type="button" data-amsd-calendar-date="${key}" class="${key === data.today ? 'today' : ''}"><small>${day.toLocaleDateString('en-IN', { weekday: 'short' })}</small><strong>${day.getDate()}</strong><span>${count || ''}</span></button>`; }).join('')}</div><div class="amsd-calendar-events">${events.slice(0, 5).map(item => `<button type="button" ${item.type === 'interview' ? `data-amsd-interview-id="${this.escape(item.id)}"` : `data-amsd-student="${this.escape(item.id)}"`}><time>${this.formatShortDate(item.datetime)}${item.type === 'interview' ? ` · ${this.formatTime(item.datetime)}` : ''}</time><strong>${this.escape(item.title)}</strong><span>${this.escape(item.meta)}</span></button>`).join('') || '<div class="amsd-inline-empty">No upcoming calendar events.</div>'}</div>`;
   },
 
   notifications(data) {
@@ -459,21 +373,110 @@ const AMSDashboard = {
     return notices.length ? `<div class="amsd-notices">${notices.map(item => `<button type="button" class="${item[0]}" data-amsd-go="${item[4]}"><i class="fas ${item[1]}"></i><span><strong>${item[2]}</strong><small>${item[3]}</small></span><i class="fas fa-chevron-right"></i></button>`).join('')}</div>` : this.empty('fa-bell-slash', 'No operational alerts', 'Current AMS queues have no urgent notifications.');
   },
 
+  ensureDateDialogStyles() {
+    if (document.getElementById('amsd-date-dialog-reference-style')) return;
+    const style = document.createElement('style');
+    style.id = 'amsd-date-dialog-reference-style';
+    style.textContent = `
+      #amsd-date-overlay.amsd-date-overlay{position:fixed!important;inset:0!important;z-index:2147483000!important;display:grid!important;place-items:center!important;padding:24px!important;background:rgba(38,54,73,.50)!important;backdrop-filter:blur(4px)!important;-webkit-backdrop-filter:blur(4px)!important}
+      #amsd-date-overlay .amsd-date-card{width:min(450px,calc(100vw - 32px))!important;border:0!important;border-radius:28px!important;background:#f8fafc!important;box-shadow:0 28px 80px rgba(15,23,42,.28)!important;padding:28px 30px 30px!important;color:#162033!important}
+      body.dark #amsd-date-overlay .amsd-date-card{background:#111d2e!important;color:#f8fafc!important}
+      #amsd-date-overlay .amsd-date-head{display:flex!important;align-items:center!important;gap:12px!important;padding:0 0 24px!important;border:0!important}
+      #amsd-date-overlay .amsd-date-head>i{font-size:18px!important;color:#0e4775!important}
+      body.dark #amsd-date-overlay .amsd-date-head>i{color:#8bc2ec!important}
+      #amsd-date-overlay .amsd-date-head h2{margin:0!important;font-size:20px!important;line-height:1.2!important;font-weight:800!important;letter-spacing:-.02em!important;color:inherit!important}
+      #amsd-date-overlay .amsd-date-fields{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important;padding:0!important}
+      #amsd-date-overlay .amsd-date-fields label{display:grid!important;gap:8px!important}
+      #amsd-date-overlay .amsd-date-fields label span{font-size:13px!important;font-weight:800!important;letter-spacing:.02em!important;text-transform:uppercase!important;color:#64748b!important}
+      #amsd-date-overlay .amsd-date-fields input{width:100%!important;min-height:44px!important;padding:0 14px!important;border:1px solid #d8dee8!important;border-radius:18px!important;background:#fff!important;color:#263044!important;font-size:14px!important;box-shadow:0 1px 2px rgba(15,23,42,.02)!important}
+      body.dark #amsd-date-overlay .amsd-date-fields input{background:#0c1727!important;border-color:#334155!important;color:#f8fafc!important}
+      #amsd-date-overlay .amsd-date-quick{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:8px!important;margin:20px 0!important}
+      #amsd-date-overlay .amsd-date-quick button{min-height:29px!important;padding:5px 13px!important;border:1px solid #d9e0e9!important;border-radius:999px!important;background:transparent!important;color:#172033!important;font-size:13px!important;font-weight:500!important;line-height:1!important;transition:background .15s ease,color .15s ease,border-color .15s ease!important}
+      #amsd-date-overlay .amsd-date-quick button.active{border-color:#0f4674!important;background:#0f4674!important;color:#fff!important;font-weight:700!important}
+      body.dark #amsd-date-overlay .amsd-date-quick button{border-color:#3b4758!important;color:#e5edf7!important}
+      body.dark #amsd-date-overlay .amsd-date-quick button.active{border-color:#2d75ad!important;background:#2d75ad!important;color:#fff!important}
+      #amsd-date-overlay .amsd-date-actions{display:flex!important;justify-content:flex-end!important;gap:10px!important;padding:0!important;margin-top:4px!important}
+      #amsd-date-overlay .amsd-date-actions button{min-height:42px!important;padding:9px 16px!important;border-radius:18px!important;font-size:13px!important;font-weight:700!important}
+      #amsd-date-overlay .amsd-date-cancel{border:1px solid #d8dee8!important;background:#fff!important;color:#173052!important}
+      #amsd-date-overlay .amsd-date-apply{border:1px solid #135080!important;background:#135080!important;color:#fff!important;padding-inline:18px!important}
+      #amsd-date-overlay .amsd-date-apply i{margin-right:6px!important}
+      @media(max-width:560px){#amsd-date-overlay.amsd-date-overlay{padding:14px!important}#amsd-date-overlay .amsd-date-card{padding:24px 20px!important;border-radius:24px!important}#amsd-date-overlay .amsd-date-fields{grid-template-columns:1fr!important}#amsd-date-overlay .amsd-date-actions{justify-content:stretch!important}#amsd-date-overlay .amsd-date-actions button{flex:1!important}}
+    `;
+    document.head.appendChild(style);
+  },
+
   showDateDialog() {
     document.getElementById('amsd-date-overlay')?.remove();
-    const root = document.getElementById('ams-dashboard-root');
-    if (!root) return;
+    this.ensureDateDialogStyles();
     const overlay = document.createElement('div');
     overlay.id = 'amsd-date-overlay';
     overlay.className = 'amsd-date-overlay';
-    overlay.innerHTML = `
-      <div class="amsd-date-card" role="dialog" aria-modal="true" aria-labelledby="amsd-date-title">
-        <div class="amsd-date-head"><div><span>AMS Dashboard</span><h2 id="amsd-date-title">Custom Date</h2></div><button type="button" data-amsd-action="date-close" aria-label="Close"><i class="fas fa-times"></i></button></div>
-        <div class="amsd-date-fields"><label><span>From</span><input id="amsd-date-from" type="date" value="${this.dateFrom}"></label><label><span>To</span><input id="amsd-date-to" type="date" value="${this.dateTo}"></label></div>
-        <div class="amsd-date-actions"><button type="button" class="btn btn-outline" data-amsd-action="date-clear">Clear</button><button type="button" class="btn btn-primary" data-amsd-action="date-apply">Apply</button></div>
+    const today = this.dateKey(new Date());
+    const initialFrom = this.dateFrom || this.dateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const initialTo = this.dateTo || today;
+    overlay.innerHTML = `<div class="amsd-date-card" role="dialog" aria-modal="true" aria-labelledby="amsd-date-title">
+      <div class="amsd-date-head"><i class="fas fa-calendar-alt" aria-hidden="true"></i><h2 id="amsd-date-title">Custom Date Range</h2></div>
+      <div class="amsd-date-fields"><label><span>From Date</span><input id="amsd-date-from" type="date" value="${initialFrom}"></label><label><span>To Date</span><input id="amsd-date-to" type="date" value="${initialTo}"></label></div>
+      <div class="amsd-date-quick" aria-label="Quick date ranges">
+        <button type="button" data-amsd-range="month">This Month</button>
+        <button type="button" data-amsd-range="week">This Week</button>
+        <button type="button" data-amsd-range="today">Today</button>
+        <button type="button" data-amsd-range="quarter">Quarter</button>
       </div>
-    `;
-    root.appendChild(overlay);
+      <div class="amsd-date-actions"><button type="button" class="amsd-date-cancel" data-amsd-action="date-close">Cancel</button><button type="button" class="amsd-date-apply" data-amsd-action="date-apply"><i class="fas fa-check"></i>Apply Filter</button></div>
+    </div>`;
+    document.body.appendChild(overlay);
+    this.syncDateQuickState();
+    const onKeydown = event => {
+      if (event.key === 'Escape' && document.getElementById('amsd-date-overlay')) {
+        document.getElementById('amsd-date-overlay')?.remove();
+        document.removeEventListener('keydown', onKeydown);
+      }
+    };
+    document.addEventListener('keydown', onKeydown);
+  },
+
+  quickRange(range) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let from = new Date(today);
+    let to = new Date(today);
+    if (range === 'month') {
+      from = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else if (range === 'week') {
+      const day = today.getDay();
+      const mondayOffset = day === 0 ? -6 : 1 - day;
+      from = this.addDays(today, mondayOffset);
+    } else if (range === 'quarter') {
+      const quarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
+      from = new Date(today.getFullYear(), quarterStartMonth, 1);
+    }
+    const fromInput = document.getElementById('amsd-date-from');
+    const toInput = document.getElementById('amsd-date-to');
+    if (fromInput) fromInput.value = this.dateKey(from);
+    if (toInput) toInput.value = this.dateKey(to);
+    this.syncDateQuickState(range);
+  },
+
+  syncDateQuickState(forced = '') {
+    const overlay = document.getElementById('amsd-date-overlay');
+    if (!overlay) return;
+    const from = document.getElementById('amsd-date-from')?.value || '';
+    const to = document.getElementById('amsd-date-to')?.value || '';
+    let active = forced;
+    if (!active) {
+      const now = new Date();
+      const today = this.dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+      const monthStart = this.dateKey(new Date(now.getFullYear(), now.getMonth(), 1));
+      const day = now.getDay();
+      const weekStart = this.dateKey(this.addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), day === 0 ? -6 : 1 - day));
+      const quarterStart = this.dateKey(new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1));
+      if (from === today && to === today) active = 'today';
+      else if (from === weekStart && to === today) active = 'week';
+      else if (from === monthStart && to === today) active = 'month';
+      else if (from === quarterStart && to === today) active = 'quarter';
+    }
+    overlay.querySelectorAll('[data-amsd-range]').forEach(button => button.classList.toggle('active', button.dataset.amsdRange === active));
   },
 
   handleChange(event) {
@@ -486,39 +489,30 @@ const AMSDashboard = {
     if (event.target.id === 'amsd-otr-course-filter') {
       this.otrCourseFilter = event.target.value || 'all';
       this.render();
+      return;
     }
+    if (event.target.id === 'amsd-date-from' || event.target.id === 'amsd-date-to') this.syncDateQuickState();
   },
 
   handleClick(event) {
+    const range = event.target.closest('[data-amsd-range]')?.dataset.amsdRange;
+    if (range) return this.quickRange(range);
     const rotate = event.target.closest('[data-amsd-rotate]')?.dataset.amsdRotate;
-    if (rotate) {
-      this.advanceRotator(rotate === 'prev' ? -1 : 1, true);
-      return;
-    }
-
+    if (rotate) return this.advanceRotator(rotate === 'prev' ? -1 : 1, true);
     const action = event.target.closest('[data-amsd-action]')?.dataset.amsdAction;
     if (action === 'date-filter') return this.showDateDialog();
     if (action === 'date-close') return document.getElementById('amsd-date-overlay')?.remove();
-    if (action === 'date-clear') {
-      this.dateFrom = '';
-      this.dateTo = '';
-      return this.render();
-    }
     if (action === 'date-apply') {
       let from = document.getElementById('amsd-date-from')?.value || '';
       let to = document.getElementById('amsd-date-to')?.value || '';
       if (from && to && from > to) [from, to] = [to, from];
       this.dateFrom = from;
       this.dateTo = to;
+      document.getElementById('amsd-date-overlay')?.remove();
       return this.render();
     }
-
     const kpi = event.target.closest('[data-amsd-kpi]')?.dataset.amsdKpi;
-    if (kpi) {
-      this.activeKpi = kpi;
-      return this.openKpi(kpi);
-    }
-
+    if (kpi) { this.activeKpi = kpi; return this.openKpi(kpi); }
     const interviewFilter = event.target.closest('[data-amsd-interview]')?.dataset.amsdInterview;
     if (interviewFilter) return this.openInterviews(interviewFilter);
     const interviewId = event.target.closest('[data-amsd-interview-id]')?.dataset.amsdInterviewId;
@@ -534,14 +528,9 @@ const AMSDashboard = {
   openKpi(key) {
     if (key === 'pending-interview') return this.openInterviews('pending');
     if (key === 'interview-scheduled') return this.openInterviews('scheduled');
-
     window.AMSApp?.showScreen?.('ams-students');
     if (!window.AMSStudentList) return;
-    if (key === 'otr-pending') {
-      window.AMSStudentList.setStage?.('otr');
-      window.AMSStudentList.state.stageStatus = 'Pending';
-      return window.AMSStudentList.render?.();
-    }
+    if (key === 'otr-pending') { window.AMSStudentList.setStage?.('otr'); window.AMSStudentList.state.stageStatus = 'Pending'; return window.AMSStudentList.render?.(); }
     if (key === 'exam-process') return window.AMSStudentList.setStage?.('exam');
     if (key === 'confirmed') return window.AMSStudentList.setStage?.('confirmed');
     if (key === 'closed') return window.AMSStudentList.setStage?.('closed');
@@ -560,25 +549,12 @@ const AMSDashboard = {
     Object.assign(module.state.filters, { search: '', from: '', to: '', course: 'all', interviewer: 'all', structure: 'all', status: 'all', mode: 'all' });
     module.state.view = 'list';
     module.state.activeKpi = 'pending';
-
     if (filter === 'pending') module.state.activeKpi = 'pending';
     else if (filter === 'scheduled') module.state.activeKpi = 'scheduled';
     else if (filter === 'completed' || filter === 'waiting') module.state.activeKpi = 'completed';
-    else if (filter === 'today') {
-      module.state.activeKpi = 'scheduled';
-      const today = this.dateKey(new Date());
-      module.state.filters.from = today;
-      module.state.filters.to = today;
-    } else if (filter === 'upcoming') {
-      module.state.activeKpi = 'scheduled';
-      module.state.filters.from = this.dateKey(this.addDays(new Date(), 1));
-      module.state.filters.to = this.dateKey(this.addDays(new Date(), 7));
-    } else if (filter === 'overdue') {
-      module.state.activeKpi = 'scheduled';
-      module.state.filters.to = this.dateKey(this.addDays(new Date(), -1));
-    } else {
-      module.state.activeKpi = 'pending';
-    }
+    else if (filter === 'today') { module.state.activeKpi = 'scheduled'; const today = this.dateKey(new Date()); module.state.filters.from = today; module.state.filters.to = today; }
+    else if (filter === 'upcoming') { module.state.activeKpi = 'scheduled'; module.state.filters.from = this.dateKey(this.addDays(new Date(), 1)); module.state.filters.to = this.dateKey(this.addDays(new Date(), 7)); }
+    else if (filter === 'overdue') { module.state.activeKpi = 'scheduled'; module.state.filters.to = this.dateKey(this.addDays(new Date(), -1)); }
     module.render();
   },
 
@@ -604,13 +580,8 @@ const AMSDashboard = {
     if (row) window.AMSStudentList?.openProfile?.(row.key);
   },
 
-  panel(title, subtitle, content, className = '', action = '') {
-    return `<section class="amsd-panel ${className}"><header><div><h2>${title}</h2><p>${subtitle}</p></div>${action}</header><div class="amsd-panel-body">${content}</div></section>`;
-  },
-
-  linkButton(label, target) {
-    return `<button type="button" class="amsd-panel-link" data-amsd-go="${target}">${label} <i class="fas fa-arrow-right"></i></button>`;
-  },
+  panel(title, subtitle, content, className = '', action = '') { return `<section class="amsd-panel ${className}"><header><div><h2>${title}</h2><p>${subtitle}</p></div>${action}</header><div class="amsd-panel-body">${content}</div></section>`; },
+  linkButton(label, target) { return `<button type="button" class="amsd-panel-link" data-amsd-go="${target}">${label} <i class="fas fa-arrow-right"></i></button>`; },
 
   barRows(groups, total, emptyText) {
     const entries = Object.entries(groups).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -619,71 +590,17 @@ const AMSDashboard = {
     return `<div class="amsd-bars">${entries.map(([label, value]) => `<div><span title="${this.escape(label)}">${this.escape(label)}</span><i><em style="width:${Math.round((value / max) * 100)}%"></em></i><b>${value}</b><small>${total ? Math.round((value / total) * 100) : 0}%</small></div>`).join('')}</div>`;
   },
 
-  groupBy(rows, getKey) {
-    return rows.reduce((result, item) => {
-      const key = getKey(item) || 'Not mapped';
-      result[key] = (result[key] || 0) + 1;
-      return result;
-    }, {});
-  },
-
-  documentRatio(value) {
-    const match = String(value || '').match(/(\d+)\s*\/\s*(\d+)/);
-    return match ? [Number(match[1]), Number(match[2])] : [0, 6];
-  },
-
-  empty(icon, title, text) {
-    return `<div class="amsd-empty"><i class="fas ${icon}"></i><strong>${title}</strong><span>${text}</span></div>`;
-  },
-
-  statusTone(status) {
-    if (status === 'Completed') return 'green';
-    if (status === 'Cancelled' || status === 'Canceled') return 'red';
-    if (status === 'Awaiting Assignment') return 'amber';
-    if (status === 'Rescheduled') return 'purple';
-    return 'blue';
-  },
-
-  dateKey(date) {
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  },
-
-  addDays(date, days) {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  },
-
-  formatDate(value) {
-    const date = new Date(String(value).length === 10 ? `${value}T00:00:00` : value);
-    return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  },
-
-  formatShortDate(value) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-  },
-
-  formatTime(value) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  },
-
-  timeAgo(value) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Time unavailable';
-    const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`;
-    if (minutes < 10080) return `${Math.floor(minutes / 1440)}d ago`;
-    return this.formatShortDate(value);
-  },
-
-  escape(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
-  }
+  groupBy(rows, getKey) { return rows.reduce((result, item) => { const key = getKey(item) || 'Not mapped'; result[key] = (result[key] || 0) + 1; return result; }, {}); },
+  documentRatio(value) { const match = String(value || '').match(/(\d+)\s*\/\s*(\d+)/); return match ? [Number(match[1]), Number(match[2])] : [0, 6]; },
+  empty(icon, title, text) { return `<div class="amsd-empty"><i class="fas ${icon}"></i><strong>${title}</strong><span>${text}</span></div>`; },
+  statusTone(status) { if (status === 'Completed') return 'green'; if (status === 'Cancelled' || status === 'Canceled') return 'red'; if (status === 'Awaiting Assignment') return 'amber'; if (status === 'Rescheduled') return 'purple'; return 'blue'; },
+  dateKey(date) { if (!(date instanceof Date) || Number.isNaN(date.getTime())) return ''; return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; },
+  addDays(date, days) { const result = new Date(date); result.setDate(result.getDate() + days); return result; },
+  formatDate(value) { const date = new Date(String(value).length === 10 ? `${value}T00:00:00` : value); return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); },
+  formatShortDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }); },
+  formatTime(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); },
+  timeAgo(value) { const date = new Date(value); if (Number.isNaN(date.getTime())) return 'Time unavailable'; const minutes = Math.floor((Date.now() - date.getTime()) / 60000); if (minutes < 1) return 'Just now'; if (minutes < 60) return `${minutes}m ago`; if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`; if (minutes < 10080) return `${Math.floor(minutes / 1440)}d ago`; return this.formatShortDate(value); },
+  escape(value) { return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]); }
 };
 
 window.AMSDashboard = AMSDashboard;
