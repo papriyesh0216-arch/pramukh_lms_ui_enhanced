@@ -408,6 +408,8 @@ const AMSDashboard = {
   showDateDialog() {
     document.getElementById('amsd-date-overlay')?.remove();
     this.ensureDateDialogStyles();
+    const root = document.getElementById('ams-dashboard-root');
+    if (!root) return;
     const overlay = document.createElement('div');
     overlay.id = 'amsd-date-overlay';
     overlay.className = 'amsd-date-overlay';
@@ -425,7 +427,7 @@ const AMSDashboard = {
       </div>
       <div class="amsd-date-actions"><button type="button" class="amsd-date-cancel" data-amsd-action="date-close">Cancel</button><button type="button" class="amsd-date-apply" data-amsd-action="date-apply"><i class="fas fa-check"></i>Apply Filter</button></div>
     </div>`;
-    document.body.appendChild(overlay);
+    root.appendChild(overlay);
     this.syncDateQuickState();
     const onKeydown = event => {
       if (event.key === 'Escape' && document.getElementById('amsd-date-overlay')) {
