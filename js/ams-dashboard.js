@@ -9,7 +9,6 @@ const AMSDashboard = {
   courseFilter: 'all',
   dateFrom: '',
   dateTo: '',
-  otrCourseFilter: 'all',
   rotatorIndex: 0,
   rotationTimer: null,
   rotationOrder: ['activity', 'calendar'],
@@ -226,7 +225,7 @@ const AMSDashboard = {
       <div class="amsd-layout amsd-report-layout">
         ${this.panel('Interview Overview', 'Upcoming, current, overdue, completed, and post-interview waiting records', this.interviewOverview(data), 'amsd-report-interviews span-2', this.reportActions('interviews', this.linkButton('Open Interviews', 'interviews')))}
         ${this.panel('OTR Form Analytics', 'OTR submission counts with course-level filtering', this.otrAnalytics(data), 'amsd-report-otr', this.reportActions('otr'))}
-        ${this.panel('Course Analytics', 'Admission volume by course, batch, and learning mode', this.courseAnalytics(data), 'amsd-report-course span-2', this.reportActions('courses'))}
+        ${this.panel('Course Analytics', 'Admission volume by course, batch, and learning mode', this.courseAnalytics(data), 'amsd-report-course', this.reportActions('courses'))}
         ${this.rotatingPanel(data)}
       </div>`;
   },
@@ -262,61 +261,214 @@ const AMSDashboard = {
       ['completed', 'Completed', data.completed.length, 'green'],
       ['waiting', 'Student Waiting List', data.waitingList.length, 'purple']
     ];
-    const total = Math.max(1, items.reduce((sum, item) => sum + item[2], 0));
-    const segments = items.map((item, index) => {
-      const previous = items.slice(0, index).reduce((sum, entry) => sum + entry[2], 0);
-      const start = Math.round((previous / total) * 100);
-      const end = Math.round(((previous + item[2]) / total) * 100);
-      return `var(--report-${item[3]}) ${start}% ${end}%`;
-    }).join(', ');
-    return `<div class="amsd-interview-report">
+    const actualTotal = items.reduce((sum, item) => sum + item[2], 0);
+    const denominator = Math.max(1, actualTotal);
+    const segments = actualTotal
+      ? items.map((item, index) => {
+          const previous = items.slice(0, index).reduce((sum, entry) => sum + entry[2], 0);
+          const start = (previous / denominator) * 100;
+          const end = ((previous + item[2]) / denominator) * 100;
+          return `var(--report-${item[3]}) ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+        }).join(', ')
+      : 'var(--border-light) 0 100%';
+
+    return `<div class="amsd-interview-report amsd-interview-report-single">
       <div class="amsd-interview-summary">
-        <div class="amsd-report-donut" style="--donut:${segments}"><div><strong>${items.reduce((sum, item) => sum + item[2], 0)}</strong><span>interview records</span></div></div>
-        <div class="amsd-report-legend">${items.map(item => `<button type="button" data-amsd-interview="${item[0]}"><i class="tone-${item[3]}"></i><span>${item[1]}</span><strong>${item[2]}</strong></button>`).join('')}</div>
+        <div class="amsd-report-donut" style="--donut:${segments}" aria-label="${actualTotal} interview records"><div><strong>${actualTotal}</strong><span>interview records</span></div></div>
+        <div class="amsd-report-legend">${items.map(item => {
+          const percent = Math.round((item[2] / denominator) * 100);
+          return `<button type="button" data-amsd-interview="${item[0]}" title="${item[1]}: ${item[2]} (${percent}%)"><i class="tone-${item[3]}"></i><span>${item[1]}</span><strong>${item[2]}</strong><small>${percent}%</small></button>`;
+        }).join('')}</div>
       </div>
-      <div class="amsd-interview-bars">${items.map(item => `<button type="button" data-amsd-interview="${item[0]}"><div><span>${item[1]}</span><strong>${item[2]}</strong></div><i><em class="tone-${item[3]}" style="width:${Math.round((item[2] / Math.max(1, ...items.map(entry => entry[2]))) * 100)}%"></em></i><small>${Math.round((item[2] / total) * 100)}%</small></button>`).join('')}</div>
     </div>`;
   },
 
   otrAnalytics(data) {
-    const selected = this.otrCourseFilter;
-    const rows = data.otrDataset.filter(item => selected === 'all' || item.course === selected);
+    const rows = data.otrDataset;
     const metrics = [
-      ['All', rows.length, 'navy'],
       ['Pending', rows.filter(item => item.status === 'Pending').length, 'amber'],
       ['Draft', rows.filter(item => item.status === 'Draft').length, 'purple'],
       ['Submitted', rows.filter(item => item.status === 'Submitted').length, 'green']
     ];
-    const available = this.courseFilter === 'all' ? data.availableCourses : data.availableCourses.filter(course => course === this.courseFilter);
-    const options = ['<option value="all">All Courses</option>'].concat(available.map(course => `<option value="${this.escape(course)}" ${selected === course ? 'selected' : ''}>${this.escape(course)}</option>`)).join('');
-    const statusTotal = Math.max(1, metrics.slice(1).reduce((sum, item) => sum + item[1], 0));
+    const total = rows.length;
+    const denominator = Math.max(1, total);
+
     return `<div class="amsd-otr-report">
-      <div class="amsd-otr-toolbar"><select class="chart-filter-select" id="amsd-otr-course-filter" aria-label="Filter OTR analytics by course">${options}</select></div>
-      <div class="amsd-otr-metrics">${metrics.map(item => `<article><span class="tone-${item[2]}"></span><small>${item[0]}</small><strong>${item[1]}</strong></article>`).join('')}</div>
-      <div class="amsd-otr-distribution">
-        <div class="amsd-otr-stack">${metrics.slice(1).map(item => `<span class="tone-${item[2]}" style="width:${Math.round((item[1] / statusTotal) * 100)}%" title="${item[0]}: ${item[1]}"></span>`).join('')}</div>
-        <div class="amsd-otr-status-list">${metrics.slice(1).map(item => `<div><span><i class="tone-${item[2]}"></i>${item[0]}</span><strong>${item[1]}</strong><small>${Math.round((item[1] / statusTotal) * 100)}%</small></div>`).join('')}</div>
+      <div class="amsd-otr-flow">
+        <article class="amsd-otr-total">
+          <span class="tone-navy"><i class="fas fa-file-lines"></i></span>
+          <small>Total OTR</small>
+          <strong>${total}</strong>
+          <em>Generated records</em>
+        </article>
+        <div class="amsd-otr-flow-arrow" aria-hidden="true"><i class="fas fa-arrow-right"></i></div>
+        <div class="amsd-otr-statuses">${metrics.map(item => {
+          const percent = Math.round((item[1] / denominator) * 100);
+          return `<article class="amsd-otr-status" title="${item[0]}: ${item[1]} (${percent}%)">
+            <div><span><i class="tone-${item[2]}"></i>${item[0]}</span><strong>${item[1]}</strong><small>${percent}%</small></div>
+            <b><i class="tone-${item[2]}" style="width:${percent}%"></i></b>
+          </article>`;
+        }).join('')}</div>
       </div>
     </div>`;
+  },
+
+  courseFlowRows(data) {
+    const grouped = new Map();
+    data.students.forEach(student => {
+      const interview = data.interviews.find(item => Boolean(this.findStudentForRecord(item, [student])));
+      const course = String(student.course || 'Course not mapped');
+      const batch = String(student.batch || 'Batch not mapped');
+      const mode = String(
+        student.learningMode
+        || student.modeOfLearning
+        || interview?.learningMode
+        || interview?.mode
+        || 'Mode not mapped'
+      );
+      const key = `${course}␟${batch}␟${mode}`;
+      if (!grouped.has(key)) grouped.set(key, { course, batch, mode, count: 0 });
+      grouped.get(key).count += 1;
+    });
+    return [...grouped.values()].sort((a, b) =>
+      a.course.localeCompare(b.course, undefined, { numeric: true })
+      || a.batch.localeCompare(b.batch, undefined, { numeric: true })
+      || a.mode.localeCompare(b.mode, undefined, { numeric: true })
+    );
   },
 
   courseAnalytics(data) {
-    const courses = this.groupBy(data.students, item => item.course || 'Course not mapped');
-    const batches = this.groupBy(data.students, item => item.batch || 'Batch not mapped');
-    const modes = this.groupBy(data.interviews, item => item.learningMode || item.mode || 'Mode not mapped');
-    const topCourse = Object.entries(courses).sort((a, b) => b[1] - a[1])[0];
+    const flows = this.courseFlowRows(data);
+    const total = flows.reduce((sum, item) => sum + item.count, 0);
+    if (!flows.length) return this.empty('fa-diagram-project', 'No course flow data available', 'Course, batch, and learning-mode mappings will appear here.');
+
+    const courseCounts = new Map();
+    const batchCounts = new Map();
+    const modeCounts = new Map();
+    flows.forEach(flow => {
+      courseCounts.set(flow.course, (courseCounts.get(flow.course) || 0) + flow.count);
+      const batchKey = `${flow.course}␟${flow.batch}`;
+      batchCounts.set(batchKey, {
+        id: batchKey,
+        label: flow.batch,
+        course: flow.course,
+        count: (batchCounts.get(batchKey)?.count || 0) + flow.count
+      });
+      modeCounts.set(flow.mode, (modeCounts.get(flow.mode) || 0) + flow.count);
+    });
+
+    const courses = [...courseCounts].map(([id, count]) => ({ id, label: id, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    const batches = [...batchCounts.values()].sort((a, b) => a.course.localeCompare(b.course) || b.count - a.count || a.label.localeCompare(b.label));
+    const modes = [...modeCounts].map(([id, count]) => ({ id, label: id, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+    const scale = Math.max(1, Math.min(18, 220 / Math.max(1, total)));
+    const gap = 18;
+    const nodeWidth = 14;
+    const courseX = 200;
+    const batchX = 500;
+    const modeX = 800;
+    const palette = ['#2674d9', '#0e4775', '#078f85', '#7544d8', '#d87a08', '#16854c', '#d94747'];
+    const courseColor = new Map(courses.map((item, index) => [item.id, palette[index % palette.length]]));
+
+    const columnHeight = entries => entries.reduce((sum, item) => sum + item.count * scale, 0) + Math.max(0, entries.length - 1) * gap;
+    const height = Math.max(320, columnHeight(courses), columnHeight(batches), columnHeight(modes)) + 70;
+    const place = (entries, x) => {
+      const contentHeight = columnHeight(entries);
+      let y = Math.max(36, (height - contentHeight) / 2);
+      return new Map(entries.map(item => {
+        const node = { ...item, x, y, height: item.count * scale, inOffset: 0, outOffset: 0 };
+        y += node.height + gap;
+        return [item.id, node];
+      }));
+    };
+
+    const courseNodes = place(courses, courseX);
+    const batchNodes = place(batches, batchX);
+    const modeNodes = place(modes, modeX);
+
+    const courseBatchLinks = new Map();
+    const batchModeLinks = new Map();
+    flows.forEach(flow => {
+      const batchKey = `${flow.course}␟${flow.batch}`;
+      const cbKey = `${flow.course}␞${batchKey}`;
+      const bmKey = `${batchKey}␞${flow.mode}`;
+      if (!courseBatchLinks.has(cbKey)) courseBatchLinks.set(cbKey, { source: flow.course, target: batchKey, course: flow.course, count: 0, sourceLabel: flow.course, targetLabel: flow.batch });
+      if (!batchModeLinks.has(bmKey)) batchModeLinks.set(bmKey, { source: batchKey, target: flow.mode, course: flow.course, count: 0, sourceLabel: flow.batch, targetLabel: flow.mode });
+      courseBatchLinks.get(cbKey).count += flow.count;
+      batchModeLinks.get(bmKey).count += flow.count;
+    });
+
+    const linkPath = (source, target, count, color, label) => {
+      const width = count * scale;
+      const sy = source.y + source.outOffset + width / 2;
+      const ty = target.y + target.inOffset + width / 2;
+      source.outOffset += width;
+      target.inOffset += width;
+      const sx = source.x + nodeWidth;
+      const tx = target.x;
+      const curve = (tx - sx) * 0.48;
+      const percent = Math.round((count / Math.max(1, total)) * 100);
+      return `<path class="amsd-sankey-link" d="M ${sx} ${sy} C ${sx + curve} ${sy}, ${tx - curve} ${ty}, ${tx} ${ty}" stroke="${color}" stroke-width="${width}" stroke-opacity=".26" fill="none"><title>${this.escape(label)}: ${count} student${count === 1 ? '' : 's'} (${percent}% of filtered students)</title></path>`;
+    };
+
+    const firstLinks = [...courseBatchLinks.values()].map(link => linkPath(
+      courseNodes.get(link.source),
+      batchNodes.get(link.target),
+      link.count,
+      courseColor.get(link.course),
+      `${link.sourceLabel} → ${link.targetLabel}`
+    )).join('');
+
+    batchNodes.forEach(node => { node.outOffset = 0; });
+    modeNodes.forEach(node => { node.inOffset = 0; });
+
+    const secondLinks = [...batchModeLinks.values()].map(link => linkPath(
+      batchNodes.get(link.source),
+      modeNodes.get(link.target),
+      link.count,
+      courseColor.get(link.course),
+      `${link.sourceLabel} → ${link.targetLabel}`
+    )).join('');
+
+    const nodeSvg = (nodes, type) => [...nodes.values()].map(node => {
+      const color = type === 'course'
+        ? courseColor.get(node.id)
+        : type === 'batch'
+          ? courseColor.get(node.course)
+          : '#078f85';
+      const percent = Math.round((node.count / Math.max(1, total)) * 100);
+      const labelX = type === 'course' ? node.x - 10 : node.x + nodeWidth + 9;
+      const anchor = type === 'course' ? 'end' : 'start';
+      const label = this.shortLabel(node.label, type === 'course' ? 24 : 20);
+      return `<g class="amsd-sankey-node amsd-sankey-${type}">
+        <rect x="${node.x}" y="${node.y}" width="${nodeWidth}" height="${Math.max(1, node.height)}" rx="5" fill="${color}"><title>${this.escape(node.label)}: ${node.count} student${node.count === 1 ? '' : 's'} (${percent}%)</title></rect>
+        <text class="amsd-sankey-label" x="${labelX}" y="${node.y + node.height / 2}" dominant-baseline="middle" text-anchor="${anchor}"><title>${this.escape(node.label)}</title>${this.escape(label)} · ${node.count}</text>
+      </g>`;
+    }).join('');
+
+    const svg = `<svg class="amsd-sankey-svg" viewBox="0 0 1000 ${height}" role="img" aria-label="Course to batch to learning mode student flow">
+      <text class="amsd-sankey-column-title" x="${courseX}" y="20" text-anchor="middle">COURSE</text>
+      <text class="amsd-sankey-column-title" x="${batchX}" y="20" text-anchor="middle">BATCH</text>
+      <text class="amsd-sankey-column-title" x="${modeX}" y="20" text-anchor="middle">LEARNING MODE</text>
+      <g class="amsd-sankey-links">${firstLinks}${secondLinks}</g>
+      <g class="amsd-sankey-nodes">${nodeSvg(courseNodes, 'course')}${nodeSvg(batchNodes, 'batch')}${nodeSvg(modeNodes, 'mode')}</g>
+    </svg>`;
+
     return `<div class="amsd-course-report">
-      <div class="amsd-course-highlight"><div><small>Highest student volume</small><strong>${this.escape(topCourse?.[0] || 'No course mapped')}</strong><span>${topCourse?.[1] || 0} student${topCourse?.[1] === 1 ? '' : 's'}</span></div><i class="fas fa-chart-column"></i></div>
-      <div class="amsd-analytics-columns">
-        ${this.reportBarSection('Admissions per course', `${Object.keys(courses).length} courses`, courses, data.students.length, 'No course mappings available.')}
-        ${this.reportBarSection('Admissions per batch', `${Object.keys(batches).length} batches`, batches, data.students.length, 'No batch mappings available.')}
-        ${this.reportBarSection('Learning mode', 'Mapped interviews', modes, data.interviews.length, 'No learning modes mapped.')}
+      <div class="amsd-sankey-summary">
+        <span><small>Students</small><strong>${total}</strong></span>
+        <span><small>Courses</small><strong>${courses.length}</strong></span>
+        <span><small>Batches</small><strong>${batches.length}</strong></span>
+        <span><small>Learning Modes</small><strong>${modes.length}</strong></span>
       </div>
+      <div class="amsd-sankey-scroll">${svg}</div>
+      <p class="amsd-sankey-note"><i class="fas fa-circle-info"></i> Flow width represents the actual number of filtered AMS students. Hover a node or connection for full mapping details.</p>
     </div>`;
   },
 
-  reportBarSection(title, meta, groups, total, emptyText) {
-    return `<section class="amsd-report-subsection"><div class="amsd-subhead"><strong>${title}</strong><span>${meta}</span></div>${this.barRows(groups, total, emptyText)}</section>`;
+  shortLabel(value, max = 22) {
+    const text = String(value || '');
+    return text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text;
   },
 
   rotatingPanel(data) {
@@ -428,7 +580,7 @@ const AMSDashboard = {
 
   exportReport(key) {
     const data = this.data();
-    let filename = `ams-${key}-report.csv`;
+    const filename = `ams-${key}-report.csv`;
     let headers = [];
     let rows = [];
 
@@ -451,20 +603,18 @@ const AMSDashboard = {
         window.AMSInterviews?.interviewerById?.(item.interviewerId)?.name || ''
       ])));
     } else if (key === 'otr') {
-      const selected = this.otrCourseFilter;
       headers = ['OTR ID', 'Student', 'Course', 'OTR Status'];
-      rows = data.otrDataset.filter(item => selected === 'all' || item.course === selected).map(item => [
+      rows = data.otrDataset.map(item => [
         item.key,
         item.student?.name || item.record?.personal?.fullName || '',
         item.course,
         item.status
       ]);
     } else if (key === 'courses') {
-      headers = ['Student', 'OTR ID', 'Course', 'Batch', 'Learning Mode'];
-      rows = data.students.map(student => {
-        const interview = data.interviews.find(item => Boolean(this.findStudentForRecord(item, [student])));
-        return [student.name || '', student.otrNo || student.admissionNo || '', student.course || '', student.batch || '', interview?.learningMode || interview?.mode || student.learningMode || ''];
-      });
+      const flowRows = this.courseFlowRows(data);
+      const total = Math.max(1, flowRows.reduce((sum, item) => sum + item.count, 0));
+      headers = ['Course', 'Batch', 'Learning Mode', 'Student Count', 'Percentage of Filtered Students'];
+      rows = flowRows.map(item => [item.course, item.batch, item.mode, item.count, `${Math.round((item.count / total) * 100)}%`]);
     } else if (key === 'activity') {
       headers = ['Date / Time', 'Student', 'Course', 'Activity Type', 'Activity', 'Performed By'];
       rows = this.activityRows(data).map(item => [item.date, item.student, item.course, item.type, item.action, item.user]);
@@ -476,8 +626,7 @@ const AMSDashboard = {
     const filterContext = [
       ['Dashboard Course', this.courseFilter === 'all' ? 'All Courses' : this.courseFilter],
       ['From Date', this.dateFrom || 'All dates'],
-      ['To Date', this.dateTo || 'All dates'],
-      ...(key === 'otr' ? [['OTR Report Course', this.otrCourseFilter === 'all' ? 'All Courses' : this.otrCourseFilter]] : [])
+      ['To Date', this.dateTo || 'All dates']
     ];
     const csv = [
       ['Report Filters'],
@@ -592,12 +741,6 @@ const AMSDashboard = {
   handleChange(event) {
     if (event.target.id === 'amsd-course-filter') {
       this.courseFilter = event.target.value || 'all';
-      this.otrCourseFilter = 'all';
-      this.render();
-      return;
-    }
-    if (event.target.id === 'amsd-otr-course-filter') {
-      this.otrCourseFilter = event.target.value || 'all';
       this.render();
       return;
     }
