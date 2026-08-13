@@ -313,162 +313,150 @@ const AMSDashboard = {
     </div>`;
   },
 
-  courseFlowRows(data) {
+  courseModeBucket(student = {}) {
+    const raw = String(student.mode || student.learningMode || student.modeOfLearning || '').trim().toLowerCase();
+    if (raw === 'online' || raw.startsWith('online ')) return 'Online';
+    if (raw === 'offline' || raw.startsWith('offline ')) return 'Offline';
+    return 'Unmapped';
+  },
+
+  courseEnrollmentRows(data) {
     const grouped = new Map();
     data.students.forEach(student => {
-      const interview = data.interviews.find(item => Boolean(this.findStudentForRecord(item, [student])));
       const course = String(student.course || 'Course not mapped');
-      const batch = String(student.batch || 'Batch not mapped');
-      const mode = String(
-        student.learningMode
-        || student.modeOfLearning
-        || interview?.learningMode
-        || interview?.mode
-        || 'Mode not mapped'
-      );
-      const key = `${course}␟${batch}␟${mode}`;
-      if (!grouped.has(key)) grouped.set(key, { course, batch, mode, count: 0 });
-      grouped.get(key).count += 1;
+      if (!grouped.has(course)) grouped.set(course, []);
+      grouped.get(course).push(student);
     });
-    return [...grouped.values()].sort((a, b) =>
-      a.course.localeCompare(b.course, undefined, { numeric: true })
-      || a.batch.localeCompare(b.batch, undefined, { numeric: true })
-      || a.mode.localeCompare(b.mode, undefined, { numeric: true })
-    );
+    return [...grouped.entries()].map(([course, students]) => {
+      const total = students.length;
+      const offline = students.filter(student => this.courseModeBucket(student) === 'Offline').length;
+      const online = students.filter(student => this.courseModeBucket(student) === 'Online').length;
+      return {
+        course,
+        students,
+        total,
+        offline,
+        online,
+        offlinePct: total ? Math.round((offline / total) * 100) : 0,
+        onlinePct: total ? Math.round((online / total) * 100) : 0
+      };
+    }).sort((a, b) => b.total - a.total || a.course.localeCompare(b.course, undefined, { numeric: true }));
+  },
+
+  courseBatchDetails(students) {
+    const groups = new Map();
+    students.forEach(student => {
+      const batch = String(student.batch || 'Batch not mapped');
+      const mode = String(student.mode || student.learningMode || student.modeOfLearning || 'Mode not mapped');
+      const key = `${batch}␟${mode}`;
+      if (!groups.has(key)) groups.set(key, { batch, mode, count: 0 });
+      groups.get(key).count += 1;
+    });
+    return [...groups.values()].sort((a, b) => b.count - a.count || a.batch.localeCompare(b.batch, undefined, { numeric: true }) || a.mode.localeCompare(b.mode));
   },
 
   courseAnalytics(data) {
-    const flows = this.courseFlowRows(data);
-    const total = flows.reduce((sum, item) => sum + item.count, 0);
-    if (!flows.length) return this.empty('fa-diagram-project', 'No course flow data available', 'Course, batch, and learning-mode mappings will appear here.');
+    const courses = this.courseEnrollmentRows(data);
+    const total = data.students.length;
+    const offline = data.students.filter(student => this.courseModeBucket(student) === 'Offline').length;
+    const online = data.students.filter(student => this.courseModeBucket(student) === 'Online').length;
+    const denominator = Math.max(1, total);
+    const offlinePct = Math.round((offline / denominator) * 100);
+    const onlinePct = Math.round((online / denominator) * 100);
+    const activeCourses = courses.filter(item => item.course && item.course !== 'Course not mapped').length;
+    const iconSet = [
+      ['fa-book-open', 'blue'],
+      ['fa-shield-halved', 'green'],
+      ['fa-certificate', 'amber'],
+      ['fa-user-graduate', 'purple'],
+      ['fa-graduation-cap', 'red']
+    ];
+    this.expandedCourses ||= new Set();
 
-    const courseCounts = new Map();
-    const batchCounts = new Map();
-    const modeCounts = new Map();
-    flows.forEach(flow => {
-      courseCounts.set(flow.course, (courseCounts.get(flow.course) || 0) + flow.count);
-      const batchKey = `${flow.course}␟${flow.batch}`;
-      batchCounts.set(batchKey, {
-        id: batchKey,
-        label: flow.batch,
-        course: flow.course,
-        count: (batchCounts.get(batchKey)?.count || 0) + flow.count
-      });
-      modeCounts.set(flow.mode, (modeCounts.get(flow.mode) || 0) + flow.count);
-    });
+    const summary = [
+      ['enrollments', 'fa-users', 'Total Enrollments', total, '100% of filtered students', 'blue', 100],
+      ['offline', 'fa-building', 'Offline Students', offline, `${offlinePct}% of filtered students`, 'green', offlinePct],
+      ['online', 'fa-wifi', 'Online Students', online, `${onlinePct}% of filtered students`, 'purple', onlinePct],
+      ['courses', 'fa-graduation-cap', 'Total Courses', activeCourses, 'Active mapped courses', 'amber', null]
+    ];
 
-    const courses = [...courseCounts].map(([id, count]) => ({ id, label: id, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-    const batches = [...batchCounts.values()].sort((a, b) => a.course.localeCompare(b.course) || b.count - a.count || a.label.localeCompare(b.label));
-    const modes = [...modeCounts].map(([id, count]) => ({ id, label: id, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    return `<div class="amsd-course-enrollment-report">
+      <div class="amsd-course-summary">${summary.map(item => {
+        const clickable = item[0] !== 'courses';
+        const mode = item[0] === 'online' ? 'Online' : item[0] === 'offline' ? 'Offline' : 'all';
+        return `<article class="amsd-course-summary-card tone-${item[5]}">
+          <span class="amsd-course-summary-icon"><i class="fas ${item[1]}"></i></span>
+          <div class="amsd-course-summary-copy"><small>${item[2]}</small>${clickable ? `<button type="button" class="amsd-course-summary-value" data-amsd-course-list="${mode}" aria-label="View ${item[2]} students">${item[3]}</button>` : `<strong>${item[3]}</strong>`}<em>${item[4]}</em></div>
+          ${item[6] !== null && item[0] !== 'enrollments' ? `<span class="amsd-course-ring" style="--pct:${item[6]}" aria-label="${item[6]} percent"><b>${item[6]}%</b></span>` : ''}
+        </article>`;
+      }).join('')}</div>
 
-    const scale = Math.max(1, Math.min(18, 220 / Math.max(1, total)));
-    const gap = 18;
-    const nodeWidth = 14;
-    const courseX = 200;
-    const batchX = 500;
-    const modeX = 800;
-    const palette = ['#2674d9', '#0e4775', '#078f85', '#7544d8', '#d87a08', '#16854c', '#d94747'];
-    const courseColor = new Map(courses.map((item, index) => [item.id, palette[index % palette.length]]));
-
-    const columnHeight = entries => entries.reduce((sum, item) => sum + item.count * scale, 0) + Math.max(0, entries.length - 1) * gap;
-    const height = Math.max(320, columnHeight(courses), columnHeight(batches), columnHeight(modes)) + 70;
-    const place = (entries, x) => {
-      const contentHeight = columnHeight(entries);
-      let y = Math.max(36, (height - contentHeight) / 2);
-      return new Map(entries.map(item => {
-        const node = { ...item, x, y, height: item.count * scale, inOffset: 0, outOffset: 0 };
-        y += node.height + gap;
-        return [item.id, node];
-      }));
-    };
-
-    const courseNodes = place(courses, courseX);
-    const batchNodes = place(batches, batchX);
-    const modeNodes = place(modes, modeX);
-
-    const courseBatchLinks = new Map();
-    const batchModeLinks = new Map();
-    flows.forEach(flow => {
-      const batchKey = `${flow.course}␟${flow.batch}`;
-      const cbKey = `${flow.course}␞${batchKey}`;
-      const bmKey = `${batchKey}␞${flow.mode}`;
-      if (!courseBatchLinks.has(cbKey)) courseBatchLinks.set(cbKey, { source: flow.course, target: batchKey, course: flow.course, count: 0, sourceLabel: flow.course, targetLabel: flow.batch });
-      if (!batchModeLinks.has(bmKey)) batchModeLinks.set(bmKey, { source: batchKey, target: flow.mode, course: flow.course, count: 0, sourceLabel: flow.batch, targetLabel: flow.mode });
-      courseBatchLinks.get(cbKey).count += flow.count;
-      batchModeLinks.get(bmKey).count += flow.count;
-    });
-
-    const linkPath = (source, target, count, color, label) => {
-      const width = count * scale;
-      const sy = source.y + source.outOffset + width / 2;
-      const ty = target.y + target.inOffset + width / 2;
-      source.outOffset += width;
-      target.inOffset += width;
-      const sx = source.x + nodeWidth;
-      const tx = target.x;
-      const curve = (tx - sx) * 0.48;
-      const percent = Math.round((count / Math.max(1, total)) * 100);
-      return `<path class="amsd-sankey-link" d="M ${sx} ${sy} C ${sx + curve} ${sy}, ${tx - curve} ${ty}, ${tx} ${ty}" stroke="${color}" stroke-width="${width}" stroke-opacity=".26" fill="none"><title>${this.escape(label)}: ${count} student${count === 1 ? '' : 's'} (${percent}% of filtered students)</title></path>`;
-    };
-
-    const firstLinks = [...courseBatchLinks.values()].map(link => linkPath(
-      courseNodes.get(link.source),
-      batchNodes.get(link.target),
-      link.count,
-      courseColor.get(link.course),
-      `${link.sourceLabel} → ${link.targetLabel}`
-    )).join('');
-
-    batchNodes.forEach(node => { node.outOffset = 0; });
-    modeNodes.forEach(node => { node.inOffset = 0; });
-
-    const secondLinks = [...batchModeLinks.values()].map(link => linkPath(
-      batchNodes.get(link.source),
-      modeNodes.get(link.target),
-      link.count,
-      courseColor.get(link.course),
-      `${link.sourceLabel} → ${link.targetLabel}`
-    )).join('');
-
-    const nodeSvg = (nodes, type) => [...nodes.values()].map(node => {
-      const color = type === 'course'
-        ? courseColor.get(node.id)
-        : type === 'batch'
-          ? courseColor.get(node.course)
-          : '#078f85';
-      const percent = Math.round((node.count / Math.max(1, total)) * 100);
-      const labelX = type === 'course' ? node.x - 10 : node.x + nodeWidth + 9;
-      const anchor = type === 'course' ? 'end' : 'start';
-      const label = this.shortLabel(node.label, type === 'course' ? 24 : 20);
-      return `<g class="amsd-sankey-node amsd-sankey-${type}">
-        <rect x="${node.x}" y="${node.y}" width="${nodeWidth}" height="${Math.max(1, node.height)}" rx="5" fill="${color}"><title>${this.escape(node.label)}: ${node.count} student${node.count === 1 ? '' : 's'} (${percent}%)</title></rect>
-        <text class="amsd-sankey-label" x="${labelX}" y="${node.y + node.height / 2}" dominant-baseline="middle" text-anchor="${anchor}"><title>${this.escape(node.label)}</title>${this.escape(label)} · ${node.count}</text>
-      </g>`;
-    }).join('');
-
-    const svg = `<svg class="amsd-sankey-svg" viewBox="0 0 1000 ${height}" role="img" aria-label="Course to batch to learning mode student flow">
-      <text class="amsd-sankey-column-title" x="${courseX}" y="20" text-anchor="middle">COURSE</text>
-      <text class="amsd-sankey-column-title" x="${batchX}" y="20" text-anchor="middle">BATCH</text>
-      <text class="amsd-sankey-column-title" x="${modeX}" y="20" text-anchor="middle">LEARNING MODE</text>
-      <g class="amsd-sankey-links">${firstLinks}${secondLinks}</g>
-      <g class="amsd-sankey-nodes">${nodeSvg(courseNodes, 'course')}${nodeSvg(batchNodes, 'batch')}${nodeSvg(modeNodes, 'mode')}</g>
-    </svg>`;
-
-    return `<div class="amsd-course-report">
-      <div class="amsd-sankey-summary">
-        <span><small>Students</small><strong>${total}</strong></span>
-        <span><small>Courses</small><strong>${courses.length}</strong></span>
-        <span><small>Batches</small><strong>${batches.length}</strong></span>
-        <span><small>Learning Modes</small><strong>${modes.length}</strong></span>
+      <div class="amsd-course-section-head">
+        <div><h3>Course-wise Enrollment</h3><span title="Counts use the currently filtered AMS student data"><i class="fas fa-circle-info"></i></span></div>
+        <p><i class="fas fa-arrow-pointer"></i> Click any student count to open the filtered student list</p>
       </div>
-      <div class="amsd-sankey-scroll">${svg}</div>
-      <p class="amsd-sankey-note"><i class="fas fa-circle-info"></i> Flow width represents the actual number of filtered AMS students. Hover a node or connection for full mapping details.</p>
+
+      ${courses.length ? `<div class="amsd-course-table">
+        <div class="amsd-course-table-head"><span>Course</span><span><b>Offline Students</b><b>Online Students</b></span><span>Total Students</span><span></span></div>
+        <div class="amsd-course-table-body">${courses.map((item, index) => {
+          const expanded = this.expandedCourses.has(item.course);
+          const icon = iconSet[index % iconSet.length];
+          const details = this.courseBatchDetails(item.students);
+          return `<article class="amsd-course-row ${expanded ? 'is-expanded' : ''}">
+            <div class="amsd-course-row-main">
+              <div class="amsd-course-name"><span class="tone-${icon[1]}"><i class="fas ${icon[0]}"></i></span><strong>${this.escape(item.course)}</strong></div>
+              <div class="amsd-course-split">
+                <div class="amsd-course-split-values">
+                  <button type="button" data-amsd-course-list="Offline" data-course="${this.escape(item.course)}"><strong>${item.offline}</strong><small>${item.offlinePct}%</small></button>
+                  <button type="button" data-amsd-course-list="Online" data-course="${this.escape(item.course)}"><strong>${item.online}</strong><small>${item.onlinePct}%</small></button>
+                </div>
+                <div class="amsd-course-split-bar" title="Offline ${item.offlinePct}% · Online ${item.onlinePct}%"><span class="offline" style="width:${item.offlinePct}%"></span><span class="online" style="width:${item.onlinePct}%"></span></div>
+                <div class="amsd-course-split-legend"><span><i class="offline"></i>Offline ${item.offlinePct}%</span><span><i class="online"></i>Online ${item.onlinePct}%</span></div>
+              </div>
+              <button type="button" class="amsd-course-total" data-amsd-course-list="all" data-course="${this.escape(item.course)}"><strong>${item.total}</strong><small>Total Students</small></button>
+              <button type="button" class="amsd-course-toggle" data-amsd-course-toggle="${this.escape(item.course)}" aria-expanded="${expanded}" aria-label="${expanded ? 'Collapse' : 'Expand'} ${this.escape(item.course)} course details"><i class="fas fa-chevron-${expanded ? 'up' : 'down'}"></i></button>
+            </div>
+            <div class="amsd-course-expanded" ${expanded ? '' : 'hidden'}>
+              <div class="amsd-course-expanded-head"><span>Batch</span><span>Learning Mode</span><span>Student Count</span></div>
+              ${details.map(detail => `<div class="amsd-course-expanded-row"><strong>${this.escape(detail.batch)}</strong><span>${this.escape(detail.mode)}</span><b>${detail.count}</b></div>`).join('') || '<div class="amsd-inline-empty">No batch or learning-mode mapping is available for this course.</div>'}
+            </div>
+          </article>`;
+        }).join('')}</div>
+      </div>` : this.empty('fa-graduation-cap', 'No course enrollment data available', 'Course enrollment rows will appear when AMS student records are available.')}
+
+      <p class="amsd-course-footnote"><i class="fas fa-circle-info"></i> Enrollment data reflects the current AMS Dashboard course and date filters.</p>
     </div>`;
   },
 
-  shortLabel(value, max = 22) {
-    const text = String(value || '');
-    return text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text;
+  toggleCourseAnalytics(course) {
+    this.expandedCourses ||= new Set();
+    if (this.expandedCourses.has(course)) this.expandedCourses.delete(course);
+    else this.expandedCourses.add(course);
+    this.render();
+  },
+
+  openCourseStudentList(mode = 'all', course = '') {
+    const module = window.AMSStudentList;
+    window.AMSApp?.showScreen?.('ams-students');
+    if (!module) return;
+    const targetCourse = course || (this.courseFilter !== 'all' ? this.courseFilter : 'all');
+    module.state.stage = 'all';
+    module.state.stageStatus = 'all';
+    module.state.page = 1;
+    module.state.filtersVisible = true;
+    module.selected?.clear?.();
+    Object.assign(module.state.filters, {
+      search: '',
+      course: targetCourse,
+      mode: mode === 'all' ? 'all' : mode,
+      gender: 'all',
+      enquiry: '',
+      otr: '',
+      owner: 'all',
+      dateFrom: this.dateFrom || '',
+      dateTo: this.dateTo || ''
+    });
+    module.render?.();
   },
 
   rotatingPanel(data) {
@@ -611,10 +599,9 @@ const AMSDashboard = {
         item.status
       ]);
     } else if (key === 'courses') {
-      const flowRows = this.courseFlowRows(data);
-      const total = Math.max(1, flowRows.reduce((sum, item) => sum + item.count, 0));
-      headers = ['Course', 'Batch', 'Learning Mode', 'Student Count', 'Percentage of Filtered Students'];
-      rows = flowRows.map(item => [item.course, item.batch, item.mode, item.count, `${Math.round((item.count / total) * 100)}%`]);
+      const courseRows = this.courseEnrollmentRows(data);
+      headers = ['Course', 'Offline Students', 'Online Students', 'Total Students', 'Offline Percentage', 'Online Percentage'];
+      rows = courseRows.map(item => [item.course, item.offline, item.online, item.total, `${item.offlinePct}%`, `${item.onlinePct}%`]);
     } else if (key === 'activity') {
       headers = ['Date / Time', 'Student', 'Course', 'Activity Type', 'Activity', 'Performed By'];
       rows = this.activityRows(data).map(item => [item.date, item.student, item.course, item.type, item.action, item.user]);
@@ -766,6 +753,10 @@ const AMSDashboard = {
       document.getElementById('amsd-date-overlay')?.remove();
       return this.render();
     }
+    const courseToggle = event.target.closest('[data-amsd-course-toggle]')?.dataset.amsdCourseToggle;
+    if (courseToggle) return this.toggleCourseAnalytics(courseToggle);
+    const courseList = event.target.closest('[data-amsd-course-list]');
+    if (courseList) return this.openCourseStudentList(courseList.dataset.amsdCourseList || 'all', courseList.dataset.course || '');
     const kpi = event.target.closest('[data-amsd-kpi]')?.dataset.amsdKpi;
     if (kpi) { this.activeKpi = kpi; return this.openKpi(kpi); }
     const interviewFilter = event.target.closest('[data-amsd-interview]')?.dataset.amsdInterview;
