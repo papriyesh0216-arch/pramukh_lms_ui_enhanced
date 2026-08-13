@@ -322,8 +322,15 @@ const AMSDashboard = {
 
   courseEnrollmentRows(data) {
     const grouped = new Map();
+    const visibleCourses = this.courseFilter === 'all'
+      ? [...new Set(data.students.map(student => String(student.course || '')).filter(Boolean))]
+      : [this.courseFilter];
+    visibleCourses
+      .filter(course => course && course !== 'Course not mapped')
+      .forEach(course => grouped.set(String(course), []));
     data.students.forEach(student => {
       const course = String(student.course || 'Course not mapped');
+      if (course === 'Course not mapped' || this.courseModeBucket(student) === 'Unmapped') return;
       if (!grouped.has(course)) grouped.set(course, []);
       grouped.get(course).push(student);
     });
@@ -343,27 +350,15 @@ const AMSDashboard = {
     }).sort((a, b) => b.total - a.total || a.course.localeCompare(b.course, undefined, { numeric: true }));
   },
 
-  courseBatchDetails(students) {
-    const groups = new Map();
-    students.forEach(student => {
-      const batch = String(student.batch || 'Batch not mapped');
-      const mode = String(student.mode || student.learningMode || student.modeOfLearning || 'Mode not mapped');
-      const key = `${batch}␟${mode}`;
-      if (!groups.has(key)) groups.set(key, { batch, mode, count: 0 });
-      groups.get(key).count += 1;
-    });
-    return [...groups.values()].sort((a, b) => b.count - a.count || a.batch.localeCompare(b.batch, undefined, { numeric: true }) || a.mode.localeCompare(b.mode));
-  },
-
   courseAnalytics(data) {
     const courses = this.courseEnrollmentRows(data);
-    const total = data.students.length;
-    const offline = data.students.filter(student => this.courseModeBucket(student) === 'Offline').length;
-    const online = data.students.filter(student => this.courseModeBucket(student) === 'Online').length;
+    const offline = courses.reduce((sum, course) => sum + course.offline, 0);
+    const online = courses.reduce((sum, course) => sum + course.online, 0);
+    const total = offline + online;
     const denominator = Math.max(1, total);
     const offlinePct = Math.round((offline / denominator) * 100);
     const onlinePct = Math.round((online / denominator) * 100);
-    const activeCourses = courses.filter(item => item.course && item.course !== 'Course not mapped').length;
+    const activeCourses = courses.length;
     const iconSet = [
       ['fa-book-open', 'blue'],
       ['fa-shield-halved', 'green'],
@@ -371,13 +366,11 @@ const AMSDashboard = {
       ['fa-user-graduate', 'purple'],
       ['fa-graduation-cap', 'red']
     ];
-    this.expandedCourses ||= new Set();
-
     const summary = [
-      ['enrollments', 'fa-users', 'Total Enrollments', total, '100% of filtered students', 'blue', 100],
-      ['offline', 'fa-building', 'Offline Students', offline, `${offlinePct}% of filtered students`, 'green', offlinePct],
-      ['online', 'fa-wifi', 'Online Students', online, `${onlinePct}% of filtered students`, 'purple', onlinePct],
-      ['courses', 'fa-graduation-cap', 'Total Courses', activeCourses, 'Active mapped courses', 'amber', null]
+      ['enrollments', 'fa-users', 'Total Enrollments', total, '100% of total students', 'blue', 100],
+      ['offline', 'fa-building', 'Offline Students', offline, `${offlinePct}% of total students`, 'green', offlinePct],
+      ['online', 'fa-wifi', 'Online Students', online, `${onlinePct}% of total students`, 'purple', onlinePct],
+      ['courses', 'fa-graduation-cap', 'Total Courses', activeCourses, 'Active courses', 'amber', null]
     ];
 
     return `<div class="amsd-course-enrollment-report">
@@ -391,48 +384,30 @@ const AMSDashboard = {
         </article>`;
       }).join('')}</div>
 
-      <div class="amsd-course-section-head">
-        <div><h3>Course-wise Enrollment</h3><span title="Counts use the currently filtered AMS student data"><i class="fas fa-circle-info"></i></span></div>
-        <p><i class="fas fa-arrow-pointer"></i> Click any student count to open the filtered student list</p>
-      </div>
-
       ${courses.length ? `<div class="amsd-course-table">
-        <div class="amsd-course-table-head"><span>Course</span><span><b>Offline Students</b><b>Online Students</b></span><span>Total Students</span><span></span></div>
+        <div class="amsd-course-table-head"><span class="amsd-course-col-course">Course</span><span class="amsd-course-col-offline"><i class="offline"></i>Offline Students</span><span class="amsd-course-col-online"><i class="online"></i>Online Students</span><span class="amsd-course-col-total">Total Students</span></div>
         <div class="amsd-course-table-body">${courses.map((item, index) => {
-          const expanded = this.expandedCourses.has(item.course);
           const icon = iconSet[index % iconSet.length];
-          const details = this.courseBatchDetails(item.students);
-          return `<article class="amsd-course-row ${expanded ? 'is-expanded' : ''}">
+          const offlineActive = Math.round(item.offlinePct / 12.5);
+          const onlineActive = Math.round(item.onlinePct / 12.5);
+          const people = active => Array.from({ length: 8 }, (_, personIndex) => `<i class="fas fa-user ${personIndex < active ? 'active' : ''}"></i>`).join('');
+          return `<article class="amsd-course-row">
             <div class="amsd-course-row-main">
               <div class="amsd-course-name"><span class="tone-${icon[1]}"><i class="fas ${icon[0]}"></i></span><strong>${this.escape(item.course)}</strong></div>
-              <div class="amsd-course-split">
-                <div class="amsd-course-split-values">
-                  <button type="button" data-amsd-course-list="Offline" data-course="${this.escape(item.course)}"><strong>${item.offline}</strong><small>${item.offlinePct}%</small></button>
-                  <button type="button" data-amsd-course-list="Online" data-course="${this.escape(item.course)}"><strong>${item.online}</strong><small>${item.onlinePct}%</small></button>
-                </div>
-                <div class="amsd-course-split-bar" title="Offline ${item.offlinePct}% · Online ${item.onlinePct}%"><span class="offline" style="width:${item.offlinePct}%"></span><span class="online" style="width:${item.onlinePct}%"></span></div>
-                <div class="amsd-course-split-legend"><span><i class="offline"></i>Offline ${item.offlinePct}%</span><span><i class="online"></i>Online ${item.onlinePct}%</span></div>
-              </div>
+              <button type="button" class="amsd-course-mode-card offline" data-amsd-course-list="Offline" data-course="${this.escape(item.course)}" aria-label="View ${item.offline} offline students in ${this.escape(item.course)}">
+                <span class="amsd-course-mode-metric"><i class="fas fa-user-group"></i><strong>${item.offline}</strong><small>(${item.offlinePct}%)</small></span>
+                <span class="amsd-course-people" aria-hidden="true">${people(offlineActive)}</span>
+              </button>
+              <button type="button" class="amsd-course-mode-card online" data-amsd-course-list="Online" data-course="${this.escape(item.course)}" aria-label="View ${item.online} online students in ${this.escape(item.course)}">
+                <span class="amsd-course-mode-metric"><i class="fas fa-user-group"></i><strong>${item.online}</strong><small>(${item.onlinePct}%)</small></span>
+                <span class="amsd-course-people" aria-hidden="true">${people(onlineActive)}</span>
+              </button>
               <button type="button" class="amsd-course-total" data-amsd-course-list="all" data-course="${this.escape(item.course)}"><strong>${item.total}</strong><small>Total Students</small></button>
-              <button type="button" class="amsd-course-toggle" data-amsd-course-toggle="${this.escape(item.course)}" aria-expanded="${expanded}" aria-label="${expanded ? 'Collapse' : 'Expand'} ${this.escape(item.course)} course details"><i class="fas fa-chevron-${expanded ? 'up' : 'down'}"></i></button>
-            </div>
-            <div class="amsd-course-expanded" ${expanded ? '' : 'hidden'}>
-              <div class="amsd-course-expanded-head"><span>Batch</span><span>Learning Mode</span><span>Student Count</span></div>
-              ${details.map(detail => `<div class="amsd-course-expanded-row"><strong>${this.escape(detail.batch)}</strong><span>${this.escape(detail.mode)}</span><b>${detail.count}</b></div>`).join('') || '<div class="amsd-inline-empty">No batch or learning-mode mapping is available for this course.</div>'}
             </div>
           </article>`;
         }).join('')}</div>
       </div>` : this.empty('fa-graduation-cap', 'No course enrollment data available', 'Course enrollment rows will appear when AMS student records are available.')}
-
-      <p class="amsd-course-footnote"><i class="fas fa-circle-info"></i> Enrollment data reflects the current AMS Dashboard course and date filters.</p>
     </div>`;
-  },
-
-  toggleCourseAnalytics(course) {
-    this.expandedCourses ||= new Set();
-    if (this.expandedCourses.has(course)) this.expandedCourses.delete(course);
-    else this.expandedCourses.add(course);
-    this.render();
   },
 
   openCourseStudentList(mode = 'all', course = '') {
@@ -600,8 +575,8 @@ const AMSDashboard = {
       ]);
     } else if (key === 'courses') {
       const courseRows = this.courseEnrollmentRows(data);
-      headers = ['Course', 'Offline Students', 'Online Students', 'Total Students', 'Offline Percentage', 'Online Percentage'];
-      rows = courseRows.map(item => [item.course, item.offline, item.online, item.total, `${item.offlinePct}%`, `${item.onlinePct}%`]);
+      headers = ['Course', 'Offline Students', 'Offline %', 'Online Students', 'Online %', 'Total Students'];
+      rows = courseRows.map(item => [item.course, item.offline, `${item.offlinePct}%`, item.online, `${item.onlinePct}%`, item.total]);
     } else if (key === 'activity') {
       headers = ['Date / Time', 'Student', 'Course', 'Activity Type', 'Activity', 'Performed By'];
       rows = this.activityRows(data).map(item => [item.date, item.student, item.course, item.type, item.action, item.user]);
@@ -753,8 +728,6 @@ const AMSDashboard = {
       document.getElementById('amsd-date-overlay')?.remove();
       return this.render();
     }
-    const courseToggle = event.target.closest('[data-amsd-course-toggle]')?.dataset.amsdCourseToggle;
-    if (courseToggle) return this.toggleCourseAnalytics(courseToggle);
     const courseList = event.target.closest('[data-amsd-course-list]');
     if (courseList) return this.openCourseStudentList(courseList.dataset.amsdCourseList || 'all', courseList.dataset.course || '');
     const kpi = event.target.closest('[data-amsd-kpi]')?.dataset.amsdKpi;
