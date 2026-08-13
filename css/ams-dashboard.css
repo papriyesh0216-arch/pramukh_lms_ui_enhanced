@@ -12,3 +12,53 @@
 @media(max-width:1120px){.amsd-course-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.amsd-course-table-head,.amsd-course-row-main{grid-template-columns:minmax(190px,.9fr) minmax(330px,1.6fr) 120px 34px}.amsd-course-expanded{padding-left:210px}}
 @media(max-width:820px){.amsd-course-section-head{align-items:flex-start;flex-direction:column}.amsd-course-table{overflow-x:auto}.amsd-course-table-head,.amsd-course-row-main{min-width:760px}.amsd-course-expanded{min-width:760px;padding-left:210px}.amsd-course-summary-card{grid-template-columns:50px minmax(0,1fr) auto}.amsd-course-summary-icon{width:50px;height:50px}}
 @media(max-width:560px){.amsd-course-summary{grid-template-columns:1fr}.amsd-course-summary-card{min-height:104px}.amsd-course-summary-copy strong,.amsd-course-summary-value{font-size:25px}.amsd-course-section-head{padding-inline:2px}}
+
+/* Reference-structured Course Analytics report */
+.amsd-report-course .amsd-panel-body{padding:22px}
+.amsd-course-table-head,.amsd-course-row-main{grid-template-columns:minmax(220px,1.15fr) minmax(240px,1fr) minmax(240px,1fr) minmax(130px,.62fr);gap:22px}
+.amsd-course-table-head{min-height:52px;padding:0 22px}
+.amsd-course-table-head>span{display:flex;align-items:center;justify-content:center;gap:8px}
+.amsd-course-table-head>span:first-child{justify-content:flex-start}
+.amsd-course-table-head>span.amsd-course-col-offline{display:flex;grid-template-columns:none;gap:8px}
+.amsd-course-table-head i{width:8px;height:8px;border-radius:50%}
+.amsd-course-table-head i.offline{background:var(--report-green)}
+.amsd-course-table-head i.online{background:var(--report-purple)}
+.amsd-course-row-main{min-height:132px;padding:20px 22px}
+.amsd-course-row:hover{background:color-mix(in srgb,var(--primary) 2.5%,var(--bg-card))}
+.amsd-course-mode-card{--mode-tone:var(--primary);display:grid;gap:12px;width:100%;min-width:0;padding:15px 18px;border:1px solid transparent;border-radius:14px;background:color-mix(in srgb,var(--mode-tone) 5%,var(--bg-card));color:var(--text-primary);text-align:left;cursor:pointer;transition:var(--transition)}
+.amsd-course-mode-card.offline{--mode-tone:var(--report-green)}
+.amsd-course-mode-card.online{--mode-tone:var(--report-purple)}
+.amsd-course-mode-card:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--mode-tone) 28%,var(--border));box-shadow:var(--shadow-xs)}
+.amsd-course-mode-metric{display:flex;align-items:center;gap:12px;min-width:0}
+.amsd-course-mode-metric>i{color:var(--mode-tone);font-size:18px}
+.amsd-course-mode-metric strong{color:var(--mode-tone);font-size:22px;line-height:1}
+.amsd-course-mode-metric small{color:var(--text-secondary);font-size:11px}
+.amsd-course-people{display:grid;grid-template-columns:repeat(8,12px);gap:5px;padding-left:31px;color:color-mix(in srgb,var(--text-muted) 36%,transparent)}
+.amsd-course-people i{font-size:10px}
+.amsd-course-people i.active{color:var(--mode-tone)}
+.amsd-course-total{min-height:76px;border-radius:13px;transition:var(--transition)}
+.amsd-course-total:hover{background:var(--bg-subtle)}
+.amsd-course-total strong{font-size:22px}
+
+@media(max-width:1120px){
+  .amsd-course-table-head,.amsd-course-row-main{grid-template-columns:minmax(180px,.9fr) minmax(210px,1fr) minmax(210px,1fr) 120px;gap:14px}
+  .amsd-course-mode-card{padding:14px}
+  .amsd-course-people{gap:4px;padding-left:30px}
+}
+
+@media(max-width:820px){
+  .amsd-course-table{overflow:visible}
+  .amsd-course-table-head{display:none}
+  .amsd-course-row-main{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;gap:14px;padding:18px}
+  .amsd-course-name{grid-column:1/-1;padding-bottom:12px;border-bottom:1px solid var(--border-light)}
+  .amsd-course-total{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:10px 14px;background:var(--bg-subtle)}
+}
+
+@media(max-width:560px){
+  .amsd-report-course .amsd-panel-body{padding:14px}
+  .amsd-course-summary-card{grid-template-columns:50px minmax(0,1fr) auto;padding:15px}
+  .amsd-course-row-main{grid-template-columns:1fr;padding:15px}
+  .amsd-course-mode-card,.amsd-course-total{grid-column:1}
+  .amsd-course-section-head p{display:none}
+  .amsd-course-people{grid-template-columns:repeat(8,11px);gap:4px}
+}
