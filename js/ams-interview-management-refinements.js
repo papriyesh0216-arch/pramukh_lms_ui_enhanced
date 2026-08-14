@@ -17,9 +17,61 @@
     return normalize(value).replace(/\D/g, '');
   }
 
+  function normalizeInterviewType(value) {
+    const source = value && typeof value === 'object'
+      ? (value.value ?? value.label ?? value.name ?? '')
+      : value;
+    const compact = normalize(source)
+      .toLowerCase()
+      .replace(/[–—_]/g, '-')
+      .replace(/\s*-\s*/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!compact) return '';
+    if (compact === 'academic' || compact === 'academic interview') return 'Academic';
+    if (['non-academic', 'nonacademic', 'non academic', 'non-academic interview', 'nonacademic interview', 'non academic interview'].includes(compact)) return 'Non-Academic';
+    if (['both', 'academic/non-academic', 'academic/non academic', 'academic & non-academic', 'academic & non academic', 'academic and non-academic', 'academic and non academic', 'academic + non-academic', 'academic + non academic'].includes(compact)) return 'Both';
+    return '';
+  }
+
   function storedInterviewType(item) {
-    const value = normalize(item?.interviewType);
-    return INTERVIEW_TYPES.includes(value) ? value : '';
+    if (!item) return '';
+    const candidates = [
+      item.interviewType,
+      item.interview_type,
+      item.interviewTypeValue,
+      item.typeOfInterview,
+      item.type_of_interview,
+      item.interviewCategory,
+      item.interview_category,
+      item.schedule?.interviewType,
+      item.schedule?.interview_type,
+      item.scheduling?.interviewType,
+      item.scheduling?.interview_type,
+      item.assignment?.interviewType,
+      item.assignment?.interview_type,
+      item.assignmentDetails?.interviewType,
+      item.metadata?.interviewType,
+      item.details?.interviewType
+    ];
+    for (const candidate of candidates) {
+      const type = normalizeInterviewType(candidate);
+      if (type) return type;
+    }
+    return '';
+  }
+
+  function canonicalizePersistedInterviewTypes(interviews) {
+    let changed = false;
+    interviews.interviews.forEach(item => {
+      const type = storedInterviewType(item);
+      if (type && item.interviewType !== type) {
+        item.interviewType = type;
+        changed = true;
+      }
+    });
+    if (changed) interviews.saveInterviews();
+    return changed;
   }
 
   function sameStudent(left, right) {
@@ -122,6 +174,8 @@
       handleRowAction: interviews.handleRowAction?.bind(interviews),
       handleBulkAction: interviews.handleBulkAction?.bind(interviews)
     };
+
+    canonicalizePersistedInterviewTypes(interviews);
 
     interviews.interviewHistoryFor = function interviewHistoryFor(item) {
       return this.interviews.filter(candidate => sameStudent(item, candidate));
