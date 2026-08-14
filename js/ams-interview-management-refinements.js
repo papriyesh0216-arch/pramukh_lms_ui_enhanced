@@ -17,15 +17,23 @@
     document.head.appendChild(script);
   }
 
+  function scheduleRuntime() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => window.setTimeout(loadRuntime, 0), { once: true });
+    } else {
+      window.setTimeout(loadRuntime, 0);
+    }
+  }
+
   if (window.AMSInterviews?.__amsInterviewStructureLiveMappingInstalled) {
-    loadRuntime();
+    scheduleRuntime();
     return;
   }
 
   const existing = document.querySelector(MAPPING_SELECTOR);
   if (existing) {
-    existing.addEventListener('load', loadRuntime, { once: true });
-    existing.addEventListener('error', loadRuntime, { once: true });
+    existing.addEventListener('load', scheduleRuntime, { once: true });
+    existing.addEventListener('error', scheduleRuntime, { once: true });
     return;
   }
 
@@ -33,7 +41,7 @@
   script.src = 'js/ams-interview-structure-live-mapping.js';
   script.async = false;
   script.dataset.amsInterviewStructureLiveMapping = 'true';
-  script.addEventListener('load', loadRuntime, { once: true });
-  script.addEventListener('error', loadRuntime, { once: true });
+  script.addEventListener('load', scheduleRuntime, { once: true });
+  script.addEventListener('error', scheduleRuntime, { once: true });
   document.head.appendChild(script);
 })();
