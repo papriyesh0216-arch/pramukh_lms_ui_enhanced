@@ -117,9 +117,9 @@
       if (historical && item.evaluationStructureSnapshot) {
         const snapshot = activeStructureView(item.evaluationStructureSnapshot);
         if (!snapshot) return live || archived;
-        snapshot.name = live?.name || snapshot.name;
-        snapshot.course = live?.course || snapshot.course;
-        snapshot.mode = live?.mode || snapshot.mode;
+        snapshot.name = live?.name || archived?.name || snapshot.name;
+        snapshot.course = live?.course || archived?.course || snapshot.course;
+        snapshot.mode = live?.mode || archived?.mode || snapshot.mode;
         return snapshot;
       }
       return activeStructureView(live || archived);
@@ -407,6 +407,7 @@
     }, 25);
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
-  else boot();
+  // AMSInterviews is defined by the static interview engine before this integration is loaded.
+  // Install immediately so loadData() consumes only the canonical structure source.
+  boot();
 })();
