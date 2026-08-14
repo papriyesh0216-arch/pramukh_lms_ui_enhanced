@@ -10,8 +10,8 @@ const AMSInterviewStructures = {
   draggingId: '',
   dragBlocked: false,
   suppressClickUntil: 0,
-  modelVersionKey: 'paAMSInterviewStructureModelV2',
-  requiredStructureNames: ['Overall Result', 'Non-Academic Evaluation', 'Academic Evaluation', 'Written Test'],
+  modelVersionKey: 'paAMSInterviewStructureModelV3',
+  archiveStorageKey: 'paAMSInterviewStructureArchive',
 
   messageConfigurations: [
     {
@@ -77,111 +77,32 @@ const AMSInterviewStructures = {
 
   ensureData() {
     if (!this.app) return;
-    const needsMigration = localStorage.getItem(this.modelVersionKey) !== '2';
-    if (needsMigration) {
-      this.migrateRequiredStructures();
-      localStorage.setItem(this.modelVersionKey, '2');
-      this.save();
-      return;
-    }
     let changed = false;
-    this.app.structures = this.app.structures.map((structure, index) => {
-      const groups = Array.isArray(structure.groups) ? structure.groups : this.defaultGroups(structure.id, index);
-      if (!Array.isArray(structure.groups)) changed = true;
-      const messageId = structure.messageId || this.defaultMessageId(structure.message);
-      if (!structure.messageId) changed = true;
-      return this.withCounts({ ...structure, messageId, groups });
-    });
-    if (changed) this.save();
-  },
-
-  migrateRequiredStructures() {
-    const previous = Array.isArray(this.app.structures) ? this.app.structures : [];
-    const allGroups = previous.flatMap(structure => Array.isArray(structure.groups) ? structure.groups : this.defaultGroups(structure.id, 0));
-    this.app.structures = this.requiredStructureNames.map((name, index) => {
-      const source = previous[index] || previous[0] || {};
-      const sourceGroup = allGroups.find(group => group.name === name) || this.defaultGroups(`STR-${String(index + 1).padStart(3, '0')}`, index)[index];
-      const id = `STR-${String(index + 1).padStart(3, '0')}`;
-      const groupId = `${id}-G1`;
-      const group = {
-        ...sourceGroup,
-        id: groupId,
-        name,
-        sequence: 1,
-        attributes: (sourceGroup?.attributes || []).map((attribute, attributeIndex) => ({
-          ...attribute,
-          id: `${groupId}-A${attributeIndex + 1}`,
-          groupId,
-          sequence: attributeIndex + 1
-        }))
-      };
-      return this.withCounts({
-        ...source,
-        id,
-        name,
-        description: sourceGroup?.description || source.description || '',
-        messageId: source.messageId || this.defaultMessageId(source.message),
-        course: source.course || this.app.courses[0],
-        mode: source.mode || 'In-Person',
-        active: source.active !== false,
-        groups: [group]
+    const structures = Array.isArray(this.app.structures) ? this.app.structures : [];
+    this.app.structures = structures
+      .filter(structure => structure && structure.id && structure.name)
+      .map(structure => {
+        const groups = Array.isArray(structure.groups) ? structure.groups : [];
+        const messageId = structure.messageId || this.defaultMessageId(structure.message);
+        if (!Array.isArray(structure.groups) || !structure.messageId) changed = true;
+        return this.withCounts({
+          ...structure,
+          messageId,
+          active: structure.active !== false,
+          groups
+        });
       });
-    });
-    const validIds = new Set(this.app.structures.map(structure => structure.id));
-    this.app.interviews.forEach(interview => {
-      if (interview.structureId && !validIds.has(interview.structureId)) interview.structureId = this.app.structures[3].id;
-    });
-    this.app.saveInterviews();
+    if (localStorage.getItem(this.modelVersionKey) !== '3') {
+      localStorage.setItem(this.modelVersionKey, '3');
+      changed = true;
+    }
+    if (changed) this.save();
   },
 
   defaultMessageId(message = '') {
     if (/sms only/i.test(message)) return 'sms-schedule';
     if (/whatsapp/i.test(message)) return 'whatsapp-reminder';
     return 'email-schedule';
-  },
-
-  defaultGroups(structureId, variant = 0) {
-    const group = (suffix, name, description, sequence, attributes) => ({
-      id: `${structureId}-${suffix}`,
-      name,
-      description,
-      sequence,
-      active: true,
-      attributes: attributes.map((attribute, index) => ({
-        id: `${structureId}-${suffix}-A${index + 1}`,
-        groupId: `${structureId}-${suffix}`,
-        type: attribute.type || 'Text',
-        maxPoints: attribute.maxPoints ?? 0,
-        defaultPoints: attribute.defaultPoints ?? 0,
-        required: Boolean(attribute.required),
-        options: attribute.options || '',
-        active: true,
-        sequence: index + 1,
-        name: attribute.name
-      }))
-    });
-    const academic = [
-      ['Reasoning / Logical Skills', 10], ['Subject Knowledge', 10], ['Listening Skills', 10],
-      ['Reading Skills', 10], ['Writing Skills', 10], ['General Awareness / Aptitude', 10], ['Academic Calibre', 10]
-    ].map(([name, maxPoints]) => ({ name, type: 'Rating', maxPoints, required: true }));
-    const groups = [
-      group('G1', 'Overall Result', 'Final admission recommendation and programme mapping.', 1, [
-        { name: 'Admission Approval', type: 'Select', options: 'Approved,Hold,Rejected', required: true },
-        { name: 'Enroll For', type: 'Select', options: 'Current Course,Alternate Course', required: true },
-        { name: 'Learning Mode', type: 'Select', options: 'Online,In-Person', required: true }
-      ]),
-      group('G2', 'Non-Academic Evaluation', 'Personal background, values, communication, and community engagement.', 2, [
-        { name: 'Family Background', type: 'Long Text' },
-        { name: 'Satsang Background', type: 'Long Text' },
-        { name: 'Grade', type: 'Select', options: 'A,B,C,D', required: true }
-      ]),
-      group('G3', 'Academic Evaluation', 'Academic readiness and subject-level evaluation.', 3, academic),
-      group('G4', 'Written Test', 'Written assessment marks and evaluator notes.', 4, [
-        { name: 'Paper Marks', type: 'Number', maxPoints: variant % 2 ? 50 : 100, required: true },
-        { name: 'Evaluator Remark', type: 'Long Text' }
-      ])
-    ];
-    return groups;
   },
 
   withCounts(structure) {
@@ -196,6 +117,22 @@ const AMSInterviewStructures = {
   save() {
     this.app.structures = this.app.structures.map(structure => this.withCounts(structure));
     this.app.saveStructures();
+  },
+
+  archiveStructure(structure) {
+    if (!structure?.id) return;
+    let archive = {};
+    try {
+      archive = JSON.parse(localStorage.getItem(this.archiveStorageKey) || '{}') || {};
+    } catch (error) {
+      archive = {};
+    }
+    const snapshot = JSON.parse(JSON.stringify({ ...structure, archivedAt: new Date().toISOString() }));
+    archive[structure.id] = snapshot;
+    try { localStorage.setItem(this.archiveStorageKey, JSON.stringify(archive)); } catch (error) {}
+    if (this.app) {
+      this.app.structureArchive = { ...(this.app.structureArchive || {}), [structure.id]: snapshot };
+    }
   },
 
   renderSection() {
@@ -264,7 +201,7 @@ const AMSInterviewStructures = {
 
   previewHtml(messageId) {
     const template = this.messageConfigurations.find(item => item.id === messageId) || this.messageConfigurations[0];
-    return `<section class="ims-message-preview"><header><div><i class="fas fa-envelope-open-text"></i><strong>${this.escape(template.name)}</strong><span>${this.escape(template.channel)}</span></div><b class="${template.status.toLowerCase()}">${template.status}</b></header><div><label>Subject</label><strong>${this.escape(template.subject)}</strong><label>Message Body</label><p>${this.escape(template.body).replace(/\n/g, '<br>')}</p><label>Available Placeholders</label><div class="ims-placeholder-list">${template.placeholders.map(item => `<code>{{${this.escape(item)}}}</code>`).join('')}</div></div></section>`;
+    return `<section class="ims-message-preview"><header><div><i class="fas fa-envelope-open-text"></i><strong>${this.escape(template.name)}</strong><span>${this.escape(template.channel)}</span></div><b class="${template.status.toLowerCase()}">${template.status}</b></header><div><label>Subject</label><strong>${this.escape(template.subject)}</strong><label>Message Body</label><p>${this.escape(template.body).replace(/\n/g, '<br>')}</p><label>Available Placeholders</label><div class="ims-placeholder-list">${template.placeholders.map(item => `<code>{{${this.escape(item)}}</code>`).join('')}</div></div></section>`;
   },
 
   openStructureForm(id = '') {
@@ -294,8 +231,6 @@ const AMSInterviewStructures = {
       const template = this.messageConfigurations.find(item => item.id === data.messageId);
       if (existing) {
         Object.assign(existing, { ...data, message: template?.name || '', active: data.active === 'on' });
-        this.app.interviews.filter(item => item.structureId === existing.id).forEach(item => { item.course = existing.course; });
-        this.app.saveInterviews();
       } else {
         const newStructure = this.withCounts({ id: `STR-${String(Date.now()).slice(-7)}`, ...data, message: template?.name || '', active: data.active === 'on', groups: [] });
         this.app.structures.push(newStructure);
@@ -384,7 +319,7 @@ const AMSInterviewStructures = {
     const group = this.group(structure, groupId);
     const attribute = this.attribute(group, attributeId);
     if (!attribute) return;
-    this.app.confirmAction('Delete attribute?', `Delete “${attribute.name}” from ${group.name}? Connected dummy mappings and the structure count will be updated.`, () => {
+    this.app.confirmAction('Delete attribute?', `Delete “${attribute.name}” from ${group.name}? Connected mappings and the structure count will be updated.`, () => {
       group.attributes = group.attributes.filter(item => item.id !== attributeId);
       this.persistAndOpen(structureId);
     });
@@ -417,10 +352,13 @@ const AMSInterviewStructures = {
     const structure = this.structure(structureId);
     if (!structure) return;
     const mapped = this.app.interviews.filter(item => item.structureId === structureId).length;
-    const warning = mapped ? ` It is mapped to ${mapped} scheduled interview${mapped === 1 ? '' : 's'}; those schedules will be marked as not mapped.` : ' It has no scheduled interview mappings.';
+    const warning = mapped
+      ? ` It is mapped to ${mapped} interview${mapped === 1 ? '' : 's'}; those historical mappings will be preserved but the structure will no longer be selectable.`
+      : ' It has no interview mappings.';
     this.app.confirmAction('Delete interview structure?', `Delete “${structure.name}”?${warning}`, () => {
+      this.archiveStructure(structure);
       this.app.structures = this.app.structures.filter(item => item.id !== structureId);
-      this.app.interviews.forEach(item => { if (item.structureId === structureId) item.structureId = ''; });
+      if (this.app.state?.filters?.structure === structureId) this.app.state.filters.structure = 'all';
       this.app.saveInterviews();
       this.save();
       this.app.render();
