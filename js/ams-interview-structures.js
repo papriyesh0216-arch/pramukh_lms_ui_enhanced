@@ -1,6 +1,5 @@
 // ============================================================
 // AMS INTERVIEW STRUCTURES - Structure cards and connected attributes
-// Canonical live source for all Interview Management structure mappings.
 // ============================================================
 
 const AMSInterviewStructures = {
@@ -11,8 +10,8 @@ const AMSInterviewStructures = {
   draggingId: '',
   dragBlocked: false,
   suppressClickUntil: 0,
-  modelVersionKey: 'paAMSInterviewStructureModelV3',
-  archiveStorageKey: 'paAMSInterviewStructureArchive',
+  modelVersionKey: 'paAMSInterviewStructureModelV2',
+  requiredStructureNames: ['Overall Result', 'Non-Academic Evaluation', 'Academic Evaluation', 'Written Test'],
 
   messageConfigurations: [
     {
@@ -56,7 +55,6 @@ const AMSInterviewStructures = {
   init(app) {
     this.app = app;
     this.ensureData();
-    this.installLiveMapping(app);
     if (this.bound) return;
     this.bound = true;
     document.addEventListener('click', event => this.handleClick(event));
@@ -79,32 +77,111 @@ const AMSInterviewStructures = {
 
   ensureData() {
     if (!this.app) return;
-    let changed = false;
-    const structures = Array.isArray(this.app.structures) ? this.app.structures : [];
-    this.app.structures = structures
-      .filter(structure => structure && structure.id && structure.name)
-      .map(structure => {
-        const groups = Array.isArray(structure.groups) ? structure.groups : [];
-        const messageId = structure.messageId || this.defaultMessageId(structure.message);
-        if (!Array.isArray(structure.groups) || !structure.messageId) changed = true;
-        return this.withCounts({
-          ...structure,
-          messageId,
-          active: structure.active !== false,
-          groups
-        });
-      });
-    if (localStorage.getItem(this.modelVersionKey) !== '3') {
-      localStorage.setItem(this.modelVersionKey, '3');
-      changed = true;
+    const needsMigration = localStorage.getItem(this.modelVersionKey) !== '2';
+    if (needsMigration) {
+      this.migrateRequiredStructures();
+      localStorage.setItem(this.modelVersionKey, '2');
+      this.save();
+      return;
     }
+    let changed = false;
+    this.app.structures = this.app.structures.map((structure, index) => {
+      const groups = Array.isArray(structure.groups) ? structure.groups : this.defaultGroups(structure.id, index);
+      if (!Array.isArray(structure.groups)) changed = true;
+      const messageId = structure.messageId || this.defaultMessageId(structure.message);
+      if (!structure.messageId) changed = true;
+      return this.withCounts({ ...structure, messageId, groups });
+    });
     if (changed) this.save();
+  },
+
+  migrateRequiredStructures() {
+    const previous = Array.isArray(this.app.structures) ? this.app.structures : [];
+    const allGroups = previous.flatMap(structure => Array.isArray(structure.groups) ? structure.groups : this.defaultGroups(structure.id, 0));
+    this.app.structures = this.requiredStructureNames.map((name, index) => {
+      const source = previous[index] || previous[0] || {};
+      const sourceGroup = allGroups.find(group => group.name === name) || this.defaultGroups(`STR-${String(index + 1).padStart(3, '0')}`, index)[index];
+      const id = `STR-${String(index + 1).padStart(3, '0')}`;
+      const groupId = `${id}-G1`;
+      const group = {
+        ...sourceGroup,
+        id: groupId,
+        name,
+        sequence: 1,
+        attributes: (sourceGroup?.attributes || []).map((attribute, attributeIndex) => ({
+          ...attribute,
+          id: `${groupId}-A${attributeIndex + 1}`,
+          groupId,
+          sequence: attributeIndex + 1
+        }))
+      };
+      return this.withCounts({
+        ...source,
+        id,
+        name,
+        description: sourceGroup?.description || source.description || '',
+        messageId: source.messageId || this.defaultMessageId(source.message),
+        course: source.course || this.app.courses[0],
+        mode: source.mode || 'In-Person',
+        active: source.active !== false,
+        groups: [group]
+      });
+    });
+    const validIds = new Set(this.app.structures.map(structure => structure.id));
+    this.app.interviews.forEach(interview => {
+      if (interview.structureId && !validIds.has(interview.structureId)) interview.structureId = this.app.structures[3].id;
+    });
+    this.app.saveInterviews();
   },
 
   defaultMessageId(message = '') {
     if (/sms only/i.test(message)) return 'sms-schedule';
     if (/whatsapp/i.test(message)) return 'whatsapp-reminder';
     return 'email-schedule';
+  },
+
+  defaultGroups(structureId, variant = 0) {
+    const group = (suffix, name, description, sequence, attributes) => ({
+      id: `${structureId}-${suffix}`,
+      name,
+      description,
+      sequence,
+      active: true,
+      attributes: attributes.map((attribute, index) => ({
+        id: `${structureId}-${suffix}-A${index + 1}`,
+        groupId: `${structureId}-${suffix}`,
+        type: attribute.type || 'Text',
+        maxPoints: attribute.maxPoints ?? 0,
+        defaultPoints: attribute.defaultPoints ?? 0,
+        required: Boolean(attribute.required),
+        options: attribute.options || '',
+        active: true,
+        sequence: index + 1,
+        name: attribute.name
+      }))
+    });
+    const academic = [
+      ['Reasoning / Logical Skills', 10], ['Subject Knowledge', 10], ['Listening Skills', 10],
+      ['Reading Skills', 10], ['Writing Skills', 10], ['General Awareness / Aptitude', 10], ['Academic Calibre', 10]
+    ].map(([name, maxPoints]) => ({ name, type: 'Rating', maxPoints, required: true }));
+    const groups = [
+      group('G1', 'Overall Result', 'Final admission recommendation and programme mapping.', 1, [
+        { name: 'Admission Approval', type: 'Select', options: 'Approved,Hold,Rejected', required: true },
+        { name: 'Enroll For', type: 'Select', options: 'Current Course,Alternate Course', required: true },
+        { name: 'Learning Mode', type: 'Select', options: 'Online,In-Person', required: true }
+      ]),
+      group('G2', 'Non-Academic Evaluation', 'Personal background, values, communication, and community engagement.', 2, [
+        { name: 'Family Background', type: 'Long Text' },
+        { name: 'Satsang Background', type: 'Long Text' },
+        { name: 'Grade', type: 'Select', options: 'A,B,C,D', required: true }
+      ]),
+      group('G3', 'Academic Evaluation', 'Academic readiness and subject-level evaluation.', 3, academic),
+      group('G4', 'Written Test', 'Written assessment marks and evaluator notes.', 4, [
+        { name: 'Paper Marks', type: 'Number', maxPoints: variant % 2 ? 50 : 100, required: true },
+        { name: 'Evaluator Remark', type: 'Long Text' }
+      ])
+    ];
+    return groups;
   },
 
   withCounts(structure) {
@@ -119,266 +196,6 @@ const AMSInterviewStructures = {
   save() {
     this.app.structures = this.app.structures.map(structure => this.withCounts(structure));
     this.app.saveStructures();
-  },
-
-  clone(value) {
-    if (!value) return value;
-    try { return JSON.parse(JSON.stringify(value)); } catch (error) { return value; }
-  },
-
-  readArchive() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(this.archiveStorageKey) || '{}');
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-    } catch (error) {
-      return {};
-    }
-  },
-
-  archivedStructure(id) {
-    if (!id) return null;
-    const archive = this.app?.structureArchive || this.readArchive();
-    return archive[id] || null;
-  },
-
-  archiveStructure(structure) {
-    if (!structure?.id) return;
-    const archive = this.readArchive();
-    const snapshot = this.clone({ ...structure, archivedAt: new Date().toISOString() });
-    archive[structure.id] = snapshot;
-    try { localStorage.setItem(this.archiveStorageKey, JSON.stringify(archive)); } catch (error) {}
-    if (this.app) this.app.structureArchive = { ...(this.app.structureArchive || {}), [structure.id]: snapshot };
-  },
-
-  selectableStructures(course = '', currentId = '') {
-    const normalizedCourse = String(course || '').trim();
-    return (this.app?.structures || []).filter(structure => {
-      if (structure.id === currentId) return true;
-      if (structure.active === false) return false;
-      return !normalizedCourse || !structure.course || structure.course === normalizedCourse;
-    });
-  },
-
-  isSelectableStructure(structureId, course = '', currentId = '') {
-    const structure = this.app?.structures?.find(item => item.id === structureId);
-    if (!structure) return false;
-    if (structure.id === currentId) return true;
-    if (structure.active === false) return false;
-    return !course || !structure.course || structure.course === course;
-  },
-
-  evaluationStructureFor(item) {
-    if (!item) return null;
-    const live = this.app?.structures?.find(structure => structure.id === item.structureId) || null;
-    const archived = this.archivedStructure(item.structureId);
-    const historical = item.status === 'Completed' || Boolean(item.evaluation && Object.keys(item.evaluation).length);
-    const snapshot = historical ? item.evaluationStructureSnapshot : null;
-    if (snapshot) {
-      return {
-        ...this.clone(snapshot),
-        name: live?.name || snapshot.name,
-        course: live?.course || snapshot.course,
-        mode: live?.mode || snapshot.mode,
-        active: live ? live.active : snapshot.active
-      };
-    }
-    return live || archived || null;
-  },
-
-  installLiveMapping(app) {
-    if (!app || app.__amsInterviewStructureLiveMappingInstalled) return;
-    app.__amsInterviewStructureLiveMappingInstalled = true;
-    app.structureArchive = this.readArchive();
-
-    // Neutralize the legacy fallback list for any subsequent structure initialization.
-    app.defaultStructures = () => [];
-
-    app.structureById = id => {
-      if (!id) return null;
-      return app.structures.find(structure => structure.id === id) || this.archivedStructure(id) || null;
-    };
-
-    app.selectableInterviewStructures = (course = '', currentId = '') => this.selectableStructures(course, currentId);
-    app.evaluationStructureFor = item => this.evaluationStructureFor(item);
-
-    let snapshotsChanged = false;
-    app.interviews.forEach(item => {
-      const historical = item.status === 'Completed' || Boolean(item.evaluation && Object.keys(item.evaluation).length);
-      if (!historical || item.evaluationStructureSnapshot) return;
-      const source = app.structures.find(structure => structure.id === item.structureId) || this.archivedStructure(item.structureId);
-      if (!source) return;
-      item.evaluationStructureSnapshot = this.clone(source);
-      snapshotsChanged = true;
-    });
-    if (snapshotsChanged) app.saveInterviews();
-
-    const originalSaveEvaluation = app.saveEvaluation?.bind(app);
-    if (originalSaveEvaluation) {
-      app.saveEvaluation = (id, complete = false) => {
-        const item = app.interviews.find(interview => interview.id === id);
-        if (item && complete && !item.evaluationStructureSnapshot) {
-          const structure = app.structures.find(entry => entry.id === item.structureId) || this.archivedStructure(item.structureId);
-          if (structure) item.evaluationStructureSnapshot = this.clone(structure);
-        }
-        return originalSaveEvaluation(id, complete);
-      };
-    }
-
-    const originalOpenInterviewDetail = app.openInterviewDetail?.bind(app);
-    if (originalOpenInterviewDetail) {
-      app.openInterviewDetail = (id, ...args) => {
-        const item = app.interviews.find(interview => interview.id === id);
-        const evaluationStructure = this.evaluationStructureFor(item);
-        if (!item || !evaluationStructure) return originalOpenInterviewDetail(id, ...args);
-        const liveResolver = app.structureById;
-        app.structureById = queryId => queryId === item.structureId ? evaluationStructure : liveResolver(queryId);
-        try { return originalOpenInterviewDetail(id, ...args); }
-        finally { app.structureById = liveResolver; }
-      };
-    }
-
-    app.openStudentOverallReport = row => {
-      const interviews = app.interviewsForStudent(row)
-        .filter(item => item.status === 'Completed' || Object.keys(item.evaluation || {}).length);
-      if (!interviews.length) return;
-      const sections = interviews.map(item => {
-        const structure = this.evaluationStructureFor(item);
-        const interviewer = app.interviewerById(item.interviewerId);
-        const attributes = (structure?.groups || []).flatMap(group => group.attributes || []);
-        return `<section class="ams-overall-report-section">
-          <header><div><i class="far fa-hand-point-right"></i><strong>${app.escape(structure?.name || 'Interview Result')}</strong></div></header>
-          <div class="ams-report-meta"><span><i class="fas fa-user"></i><b>Interviewer:</b> ${app.escape(interviewer?.name || 'Not Assigned')}</span><span><i class="fas fa-user"></i><b>Interview Date:</b> ${app.formatDate(item.datetime)}</span></div>
-          <dl>${attributes.map(attribute => `<div><dt>${app.escape(attribute.name)}</dt><dd>${app.escape(item.evaluation?.[attribute.id] || '—')}</dd></div>`).join('')}
-            <div><dt>Total</dt><dd>${app.escape(item.score || '0')}</dd></div>
-            <div class="wide"><dt>Remarks</dt><dd>${app.escape(item.remarks || '—')}</dd></div>
-          </dl>
-        </section>`;
-      }).join('');
-      app.openWideModal(`Overall Interview Report · ${row.name}`, `<div class="ams-overall-report">${sections}</div>`);
-    };
-
-    app.studentScheduleForm = (row, existing) => {
-      const date = existing?.datetime?.slice(0, 10) || app.state.selectedDate || app.dateKey(new Date());
-      const startTime = existing?.datetime?.slice(11, 16) || '10:00';
-      const endTime = existing?.endTime || '11:00';
-      const options = this.selectableStructures(row?.course || existing?.course || '', existing?.structureId || '');
-      const currentExists = existing?.structureId && app.structures.some(item => item.id === existing.structureId);
-      const historical = existing?.structureId && !currentExists ? app.structureById(existing.structureId) : null;
-      return `<section class="ams-student-schedule-panel">
-        <header><i class="fas fa-hourglass-half"></i><strong>${existing ? 'Edit Scheduled Interview' : 'Schedule Interview'}</strong></header>
-        <form id="ams-student-schedule-form">
-          <label><span>Interview Date<b>*</b></span><input type="date" name="date" value="${date}" required></label>
-          <label><span>Start Time<b>*</b></span><input type="time" name="startTime" value="${startTime}" required></label>
-          <label><span>End Time<b>*</b></span><input type="time" name="endTime" value="${endTime}" required></label>
-          <label><span>Interview Structure<b>*</b></span><select name="structureId" required><option value="">${historical ? `${app.escape(historical.name)} was removed — select a current structure` : 'Select'}</option>${options.map(item => `<option value="${app.escape(item.id)}" ${item.id === existing?.structureId ? 'selected' : ''}>${app.escape(item.name)}${item.active === false ? ' (Inactive)' : ''}</option>`).join('')}</select></label>
-          <label><span>Interviewer Name<b>*</b></span><select name="interviewerId" required><option value="">Select Interviewer</option>${app.interviewers.map(item => `<option value="${app.escape(item.id)}" ${item.id === existing?.interviewerId ? 'selected' : ''}>${app.escape(item.name)}</option>`).join('')}</select></label>
-          <div class="ams-student-schedule-actions"><button type="submit" class="btn btn-primary">Save &amp; Next</button><button type="button" class="btn btn-danger" id="ams-student-schedule-cancel">Cancel</button></div>
-        </form>
-      </section>`;
-    };
-
-    const originalOpenStudentSchedule = app.openStudentSchedule?.bind(app);
-    if (originalOpenStudentSchedule) {
-      app.openStudentSchedule = (...args) => {
-        const result = originalOpenStudentSchedule(...args);
-        const row = args[0];
-        const editId = args[2] || '';
-        const existing = editId ? app.interviews.find(item => item.id === editId) : null;
-        const form = document.getElementById('ams-student-schedule-form');
-        form?.addEventListener('submit', event => {
-          const structureId = String(new FormData(event.currentTarget).get('structureId') || '');
-          const valid = this.isSelectableStructure(structureId, row?.course || existing?.course || '', existing?.structureId || '');
-          if (valid) return;
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          event.currentTarget.elements.structureId.setCustomValidity('Select an active Interview Structure mapped to this course.');
-          event.currentTarget.elements.structureId.reportValidity();
-        }, true);
-        return result;
-      };
-    }
-
-    app.openScheduleForm = (id = '', markRescheduled = false, nested = false) => {
-      const existing = app.interviews.find(item => item.id === id);
-      const candidates = app.uniqueCandidates();
-      const defaultCandidate = existing || candidates[0];
-      if (!defaultCandidate) return;
-      const renderStructureOptions = candidate => {
-        const options = this.selectableStructures(candidate?.course || existing?.course || '', existing?.structureId || '');
-        const currentExists = existing?.structureId && app.structures.some(item => item.id === existing.structureId);
-        const historical = existing?.structureId && !currentExists ? app.structureById(existing.structureId) : null;
-        const missing = historical ? `<option value="">${app.escape(historical.name)} was removed — select a current structure</option>` : '<option value="">Select Interview Structure</option>';
-        return `${missing}${options.map(item => `<option value="${app.escape(item.id)}" ${item.id === (existing?.structureId || candidate?.structureId) ? 'selected' : ''}>${app.escape(item.name)}</option>`).join('')}`;
-      };
-      const date = existing?.datetime?.slice(0, 10) || app.state.selectedDate || app.dateKey(new Date());
-      const time = existing?.datetime?.slice(11, 16) || '10:00';
-      app.openModal(existing ? (markRescheduled ? 'Reschedule Interview' : 'Edit Interview') : 'Schedule Interview', `
-        <form class="im-form" id="im-schedule-form">
-          <div class="im-form-grid">
-            <label><span>Student <b>*</b></span><select name="studentId" required ${existing ? 'disabled' : ''}>${candidates.map(item => `<option value="${app.escape(item.studentId)}" ${(existing?.studentId || defaultCandidate.studentId) === item.studentId ? 'selected' : ''}>${app.escape(item.name)} · ${app.escape(item.course)}</option>`).join('')}</select></label>
-            <label><span>Interview Structure <b>*</b></span><select name="structureId" required>${renderStructureOptions(defaultCandidate)}</select></label>
-            <label><span>Date <b>*</b></span><input type="date" name="date" value="${date}" required /></label>
-            <label><span>Time <b>*</b></span><input type="time" name="time" value="${time}" required /></label>
-            <label><span>Interviewer</span><select name="interviewerId"><option value="">Awaiting Assignment</option>${app.interviewers.map(item => `<option value="${app.escape(item.id)}" ${item.id === existing?.interviewerId ? 'selected' : ''}>${app.escape(item.name)} · ${app.escape(item.department)}</option>`).join('')}</select></label>
-            <label><span>Interview Mode <b>*</b></span><select name="mode" required>${['Online', 'In-Person'].map(mode => `<option ${mode === (existing?.mode || 'In-Person') ? 'selected' : ''}>${mode}</option>`).join('')}</select></label>
-          </div>
-          <div class="im-form-actions"><button type="button" class="btn btn-outline" data-im-close>Cancel</button><button class="btn btn-primary" type="submit"><i class="fas fa-calendar-check"></i>${existing ? 'Save Changes' : 'Schedule Interview'}</button></div>
-        </form>
-      `, markRescheduled ? 'md' : 'lg', { nested });
-      const scheduleForm = document.getElementById('im-schedule-form');
-      scheduleForm?.elements.studentId?.addEventListener('change', event => {
-        const candidate = candidates.find(item => item.studentId === event.target.value);
-        if (candidate) scheduleForm.elements.structureId.innerHTML = renderStructureOptions(candidate);
-      });
-      scheduleForm?.addEventListener('submit', event => {
-        event.preventDefault();
-        if (!event.currentTarget.reportValidity()) return;
-        const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-        const candidate = existing || candidates.find(item => item.studentId === data.studentId);
-        const valid = this.isSelectableStructure(data.structureId, candidate?.course || '', existing?.structureId || '');
-        if (!valid) {
-          event.currentTarget.elements.structureId.setCustomValidity('Select an active Interview Structure mapped to this course.');
-          event.currentTarget.elements.structureId.reportValidity();
-          return;
-        }
-        event.currentTarget.elements.structureId.setCustomValidity('');
-        if (existing) {
-          Object.assign(existing, {
-            structureId: data.structureId,
-            datetime: `${data.date}T${data.time}`,
-            interviewerId: data.interviewerId,
-            mode: data.mode,
-            status: existing.status === 'Completed' ? 'Completed' : markRescheduled ? 'Rescheduled' : (data.interviewerId ? 'Scheduled' : 'Awaiting Assignment')
-          });
-        } else {
-          const nextNumber = String(Date.now()).slice(-6);
-          app.interviews.push({ ...candidate, id: `IV-${nextNumber}`, structureId: data.structureId, datetime: `${data.date}T${data.time}`, interviewerId: data.interviewerId, mode: data.mode, status: data.interviewerId ? 'Scheduled' : 'Awaiting Assignment', score: '', evaluation: {}, remarks: '' });
-        }
-        app.state.selectedDate = data.date;
-        app.state.calendarDate = data.date;
-        app.saveInterviews();
-        app.render();
-        if (nested && existing) {
-          app.modalStack = [];
-          app.openInterviewDetail(existing.id);
-        } else app.closeModal();
-      });
-    };
-
-    app.openStructureForm = id => this.openStructureForm(id);
-    app.handleStructureAction = (action, id) => {
-      if (action === 'edit') return this.openStructureForm(id);
-      if (action === 'toggle') return this.toggleStructure(id);
-      if (action === 'delete') return this.deleteStructure(id);
-    };
-
-    window.addEventListener('ams:data-change', event => {
-      if (event.detail?.source !== 'structures') return;
-      app.structureArchive = this.readArchive();
-      if (app.state?.filters?.structure !== 'all' && !app.structures.some(item => item.id === app.state.filters.structure)) {
-        app.state.filters.structure = 'all';
-      }
-    });
   },
 
   renderSection() {
@@ -477,6 +294,8 @@ const AMSInterviewStructures = {
       const template = this.messageConfigurations.find(item => item.id === data.messageId);
       if (existing) {
         Object.assign(existing, { ...data, message: template?.name || '', active: data.active === 'on' });
+        this.app.interviews.filter(item => item.structureId === existing.id).forEach(item => { item.course = existing.course; });
+        this.app.saveInterviews();
       } else {
         const newStructure = this.withCounts({ id: `STR-${String(Date.now()).slice(-7)}`, ...data, message: template?.name || '', active: data.active === 'on', groups: [] });
         this.app.structures.push(newStructure);
@@ -502,7 +321,7 @@ const AMSInterviewStructures = {
     this.open('Manage Interview Structures', `<div class="ims-management">
       <div class="ims-manager-toolbar"><div><strong>${this.app.structures.length} Interview Structures</strong><span>Drag cards to reorder. Select a card to manage only its connected attributes.</span></div><div><button class="btn btn-outline" type="button" data-ims-action="copy-attribute"><i class="fas fa-copy"></i> Copy Attribute</button><button class="btn btn-primary" type="button" data-ims-action="add-structure"><i class="fas fa-plus"></i> Add Interview Structure</button></div></div>
       <div class="ims-manager-card-grid">${this.app.structures.map((item, index) => this.cardHtml(item, index, true)).join('')}</div>
-      <div class="ims-management-head"><div><strong>${this.escape(structure.name)}</strong><span>${this.escape(structure.course)} · ${this.escape(structure.mode)} · ${structure.active ? 'Active' : 'Inactive'} · ${mapped} interview mapping${mapped === 1 ? '' : 's'}</span></div><div><button type="button" class="btn btn-outline" data-ims-action="edit-structure" data-structure-id="${structure.id}"><i class="fas fa-pen"></i> Edit</button><button type="button" class="btn btn-primary" data-ims-action="add-group" data-structure-id="${structure.id}"><i class="fas fa-plus"></i> Create Attribute Group</button></div></div>
+      <div class="ims-management-head"><div><strong>${this.escape(structure.name)}</strong><span>${this.escape(structure.course)} · ${this.escape(structure.mode)} · ${structure.active ? 'Active' : 'Inactive'} · ${mapped} scheduled mappings</span></div><div><button type="button" class="btn btn-outline" data-ims-action="edit-structure" data-structure-id="${structure.id}"><i class="fas fa-pen"></i> Edit</button><button type="button" class="btn btn-primary" data-ims-action="add-group" data-structure-id="${structure.id}"><i class="fas fa-plus"></i> Create Attribute Group</button></div></div>
       <div class="ims-group-stack">${structure.groups.length ? structure.groups.map(group => this.groupHtml(structure, group)).join('') : `<div class="ims-empty"><i class="fas fa-layer-group"></i><strong>No attribute groups yet</strong><span>Create the first group to start defining this interview structure.</span><button type="button" class="btn btn-primary" data-ims-action="add-group" data-structure-id="${structure.id}">Create Attribute Group</button></div>`}</div>
     </div>`, 'xl');
   },
@@ -565,7 +384,7 @@ const AMSInterviewStructures = {
     const group = this.group(structure, groupId);
     const attribute = this.attribute(group, attributeId);
     if (!attribute) return;
-    this.app.confirmAction('Delete attribute?', `Delete “${attribute.name}” from ${group.name}? Connected mappings and the structure count will be updated.`, () => {
+    this.app.confirmAction('Delete attribute?', `Delete “${attribute.name}” from ${group.name}? Connected dummy mappings and the structure count will be updated.`, () => {
       group.attributes = group.attributes.filter(item => item.id !== attributeId);
       this.persistAndOpen(structureId);
     });
@@ -598,13 +417,10 @@ const AMSInterviewStructures = {
     const structure = this.structure(structureId);
     if (!structure) return;
     const mapped = this.app.interviews.filter(item => item.structureId === structureId).length;
-    const warning = mapped
-      ? ` It is mapped to ${mapped} interview${mapped === 1 ? '' : 's'}; those historical mappings will be preserved but the structure will no longer be selectable.`
-      : ' It has no interview mappings.';
+    const warning = mapped ? ` It is mapped to ${mapped} scheduled interview${mapped === 1 ? '' : 's'}; those schedules will be marked as not mapped.` : ' It has no scheduled interview mappings.';
     this.app.confirmAction('Delete interview structure?', `Delete “${structure.name}”?${warning}`, () => {
-      this.archiveStructure(structure);
       this.app.structures = this.app.structures.filter(item => item.id !== structureId);
-      if (this.app.state?.filters?.structure === structureId) this.app.state.filters.structure = 'all';
+      this.app.interviews.forEach(item => { if (item.structureId === structureId) item.structureId = ''; });
       this.app.saveInterviews();
       this.save();
       this.app.render();
