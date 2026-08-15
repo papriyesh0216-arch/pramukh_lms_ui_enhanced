@@ -10,8 +10,7 @@ const AMSInterviewStructures = {
   draggingId: '',
   dragBlocked: false,
   suppressClickUntil: 0,
-  modelVersionKey: 'paAMSInterviewStructureModelV2',
-  requiredStructureNames: ['Overall Result', 'Non-Academic Evaluation', 'Academic Evaluation', 'Written Test'],
+  modelVersionKey: 'paAMSInterviewStructureModelV3',
 
   messageConfigurations: [
     {
@@ -77,10 +76,10 @@ const AMSInterviewStructures = {
 
   ensureData() {
     if (!this.app) return;
-    const needsMigration = localStorage.getItem(this.modelVersionKey) !== '2';
+    const needsMigration = localStorage.getItem(this.modelVersionKey) !== '3';
     if (needsMigration) {
-      this.migrateRequiredStructures();
-      localStorage.setItem(this.modelVersionKey, '2');
+      this.migrateStructureSchema();
+      localStorage.setItem(this.modelVersionKey, '3');
       this.save();
       return;
     }
@@ -95,43 +94,17 @@ const AMSInterviewStructures = {
     if (changed) this.save();
   },
 
-  migrateRequiredStructures() {
+  migrateStructureSchema() {
     const previous = Array.isArray(this.app.structures) ? this.app.structures : [];
-    const allGroups = previous.flatMap(structure => Array.isArray(structure.groups) ? structure.groups : this.defaultGroups(structure.id, 0));
-    this.app.structures = this.requiredStructureNames.map((name, index) => {
-      const source = previous[index] || previous[0] || {};
-      const sourceGroup = allGroups.find(group => group.name === name) || this.defaultGroups(`STR-${String(index + 1).padStart(3, '0')}`, index)[index];
-      const id = `STR-${String(index + 1).padStart(3, '0')}`;
-      const groupId = `${id}-G1`;
-      const group = {
-        ...sourceGroup,
-        id: groupId,
-        name,
-        sequence: 1,
-        attributes: (sourceGroup?.attributes || []).map((attribute, attributeIndex) => ({
-          ...attribute,
-          id: `${groupId}-A${attributeIndex + 1}`,
-          groupId,
-          sequence: attributeIndex + 1
-        }))
-      };
+    this.app.structures = previous.map((structure, index) => {
+      const groups = Array.isArray(structure.groups) ? structure.groups : this.defaultGroups(structure.id, index);
       return this.withCounts({
-        ...source,
-        id,
-        name,
-        description: sourceGroup?.description || source.description || '',
-        messageId: source.messageId || this.defaultMessageId(source.message),
-        course: source.course || this.app.courses[0],
-        mode: source.mode || 'In-Person',
-        active: source.active !== false,
-        groups: [group]
+        ...structure,
+        messageId: structure.messageId || this.defaultMessageId(structure.message),
+        active: structure.active !== false,
+        groups
       });
     });
-    const validIds = new Set(this.app.structures.map(structure => structure.id));
-    this.app.interviews.forEach(interview => {
-      if (interview.structureId && !validIds.has(interview.structureId)) interview.structureId = this.app.structures[3].id;
-    });
-    this.app.saveInterviews();
   },
 
   defaultMessageId(message = '') {
@@ -294,8 +267,6 @@ const AMSInterviewStructures = {
       const template = this.messageConfigurations.find(item => item.id === data.messageId);
       if (existing) {
         Object.assign(existing, { ...data, message: template?.name || '', active: data.active === 'on' });
-        this.app.interviews.filter(item => item.structureId === existing.id).forEach(item => { item.course = existing.course; });
-        this.app.saveInterviews();
       } else {
         const newStructure = this.withCounts({ id: `STR-${String(Date.now()).slice(-7)}`, ...data, message: template?.name || '', active: data.active === 'on', groups: [] });
         this.app.structures.push(newStructure);
@@ -417,12 +388,12 @@ const AMSInterviewStructures = {
     const structure = this.structure(structureId);
     if (!structure) return;
     const mapped = this.app.interviews.filter(item => item.structureId === structureId).length;
-    const warning = mapped ? ` It is mapped to ${mapped} scheduled interview${mapped === 1 ? '' : 's'}; those schedules will be marked as not mapped.` : ' It has no scheduled interview mappings.';
+    const warning = mapped ? ` It is mapped to ${mapped} interview${mapped === 1 ? '' : 's'}; those historical assignments will be preserved.` : ' It has no interview mappings.';
     this.app.confirmAction('Delete interview structure?', `Delete “${structure.name}”?${warning}`, () => {
+      this.app.preserveStructureSnapshot?.(structureId);
       this.app.structures = this.app.structures.filter(item => item.id !== structureId);
-      this.app.interviews.forEach(item => { if (item.structureId === structureId) item.structureId = ''; });
-      this.app.saveInterviews();
       this.save();
+      this.app.saveInterviews();
       this.app.render();
       const next = this.structure(this.currentStructureId) || this.app.structures[0];
       if (next) this.openManagement(next.id);
