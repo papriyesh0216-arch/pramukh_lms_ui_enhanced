@@ -59,8 +59,15 @@
     return '';
   }
 
-  function structureRecord(interviews, id) {
-    return interviews.structureById?.(id) || interviews.structures.find(structure => structure.id === id) || null;
+  function structureRecord(interviews, recordOrId) {
+    if (recordOrId && typeof recordOrId === 'object') {
+      return interviews.structureForInterview?.(recordOrId)
+        || interviews.structures.find(structure => structure.id === recordOrId.structureId)
+        || recordOrId.structureSnapshot
+        || recordOrId.evaluationStructureSnapshot
+        || null;
+    }
+    return interviews.structureById?.(recordOrId) || interviews.structures.find(structure => structure.id === recordOrId) || null;
   }
 
   function structureOptionsFor(interviews, course = '', currentId = '') {
@@ -77,7 +84,7 @@
   }
 
   function structureChip(interviews, item) {
-    const structure = structureRecord(interviews, item?.structureId);
+    const structure = structureRecord(interviews, item);
     if (!structure) return '—';
     return `<span class="imia-structure-chip"><i class="fas fa-layer-group"></i>${interviews.escape(structure.name)}</span>`;
   }
@@ -132,76 +139,6 @@
 
   function isCanceled(item) {
     return ['cancelled', 'canceled'].includes(normalize(item?.status).toLowerCase());
-  }
-
-  function normalizeStructureLabel(value) {
-    return normalize(value)
-      .toLowerCase()
-      .replace(/[–—_-]+/g, ' ')
-      .replace(/\b(interview|evaluation)\b/g, ' ')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  function isLegacyClassificationKey(key) {
-    const token = normalize(key).toLowerCase().replace(/[^a-z0-9]/g, '');
-    return token.includes('interview')
-      && (token.includes('type') || token.includes('category') || token.includes('classification'));
-  }
-
-  function legacyClassificationValue(item) {
-    const containers = [item, item?.schedule, item?.scheduling, item?.assignment, item?.assignmentDetails, item?.metadata, item?.details]
-      .filter(value => value && typeof value === 'object' && !Array.isArray(value));
-    for (const container of containers) {
-      for (const [key, raw] of Object.entries(container)) {
-        if (!isLegacyClassificationKey(key)) continue;
-        const value = raw && typeof raw === 'object' ? (raw.value ?? raw.label ?? raw.name ?? '') : raw;
-        if (normalize(value)) return normalize(value);
-      }
-    }
-    return '';
-  }
-
-  function stripLegacyClassificationFields(item) {
-    let changed = false;
-    const containers = [item, item?.schedule, item?.scheduling, item?.assignment, item?.assignmentDetails, item?.metadata, item?.details]
-      .filter(value => value && typeof value === 'object' && !Array.isArray(value));
-    containers.forEach(container => {
-      Object.keys(container).forEach(key => {
-        if (!isLegacyClassificationKey(key)) return;
-        delete container[key];
-        changed = true;
-      });
-    });
-    return changed;
-  }
-
-  function migrateLegacyInterviewRecords(interviews) {
-    let changed = false;
-    interviews.interviews.forEach(item => {
-      const current = structureRecord(interviews, item.structureId);
-      if (!current) {
-        const legacyLabel = legacyClassificationValue(item);
-        if (legacyLabel) {
-          const wanted = normalizeStructureLabel(legacyLabel);
-          const matches = interviews.structures.filter(structure => {
-            const labels = [structure.name, ...(structure.groups || []).map(group => group.name)];
-            return labels.some(label => normalizeStructureLabel(label) === wanted);
-          });
-          if (matches.length === 1) {
-            item.structureId = matches[0].id;
-            changed = true;
-          }
-        }
-        if (item.structureId && !structureRecord(interviews, item.structureId)) {
-          item.structureId = '';
-          changed = true;
-        }
-      }
-      if (stripLegacyClassificationFields(item)) changed = true;
-    });
-    if (changed) interviews.saveInterviews();
   }
 
   function currentStageIds(interviews) {
@@ -321,8 +258,6 @@
     interviews.state.filters.structure = interviews.state.filters.structure || 'all';
     delete interviews.state.filters.examScore;
 
-    migrateLegacyInterviewRecords(interviews);
-
     interviews.renderHeader = function renderInterviewHeaderWithoutGlobalSchedule() {
       return `<header class="im-page-header"><h1>Interview Management</h1><div class="im-page-actions"><button class="btn btn-outline" type="button" data-im-action="create-structure"><i class="fas fa-plus"></i> Add Interview Structure</button><button class="btn btn-outline" type="button" data-im-action="export"><i class="fas fa-arrow-up-from-bracket"></i> Export</button></div></header>`;
     };
@@ -367,7 +302,7 @@
         const date = normalize(item.datetime).slice(0,10);
         const gender = genderFor(item);
         const satsangi = satsangiFor(item);
-        const structure = structureRecord(this, item.structureId);
+        const structure = structureRecord(this, item);
         const searchText = `${item.name || ''} ${otrId} ${item.course || ''} ${item.batch || ''} ${item.email || ''} ${item.phone || ''} ${structure?.name || ''}`.toLowerCase();
         return (!f.search || searchText.includes(normalize(f.search).toLowerCase()))
           && (!f.otr || normalize(otrId).toLowerCase().includes(normalize(f.otr).toLowerCase()))
@@ -480,11 +415,16 @@
       const item = this.interviews.find(row => row.id === id);
       if (!item) return;
       const structures = structureOptionsFor(this,item.course,item.structureId);
+      const assignedStructure = structureRecord(this, item);
+      const assignedWasRemoved = Boolean(item.structureId && !this.structures.some(structure => structure.id === item.structureId));
+      const structurePlaceholder = assignedWasRemoved && assignedStructure
+        ? `${assignedStructure.name} was removed — select a current structure`
+        : 'Select interview structure';
       const date = normalize(item.datetime).slice(0,10) || this.dateKey(new Date());
       const start = normalize(item.datetime).slice(11,16) || '';
       const end = normalize(item.endTime) || (start ? addMinutes(start,30) : '');
       this.openModal(`Interview Schedule for ${item.name}`,`<p class="imia-modal-subtitle">Schedule and assign the interview details below.</p><form class="imia-form imia-single-form" id="imia-single-assign-form"><div class="imia-single-grid">
-        <label class="imia-span-3"><span>Interview Structure <b>*</b></span><select name="structureId" required><option value="">Select interview structure</option>${structures.map(structure => `<option value="${this.escape(structure.id)}" ${structure.id === item.structureId ? 'selected' : ''}>${this.escape(structure.name)}</option>`).join('')}</select></label>
+        <label class="imia-span-3"><span>Interview Structure <b>*</b></span><select name="structureId" required><option value="">${this.escape(structurePlaceholder)}</option>${structures.map(structure => `<option value="${this.escape(structure.id)}" ${structure.id === item.structureId ? 'selected' : ''}>${this.escape(structure.name)}${structure.active === false ? ' (Inactive)' : ''}</option>`).join('')}</select></label>
         <label class="imia-span-3"><span>Interview Date <b>*</b></span><input type="date" name="date" value="${this.escape(date)}" required /></label>
         <label class="imia-span-3"><span>Start Time <b>*</b></span><input type="time" name="startTime" value="${this.escape(start)}" required /></label>
         <label class="imia-span-3"><span>End Time <b>*</b></span><input type="time" name="endTime" value="${this.escape(end)}" required /></label>
@@ -495,6 +435,12 @@
         event.preventDefault();
         if(!event.currentTarget.reportValidity())return;
         const data=Object.fromEntries(new FormData(event.currentTarget).entries());
+        if(!structureOptionsFor(this,item.course,item.structureId).some(structure=>structure.id===data.structureId)){
+          event.currentTarget.elements.structureId.setCustomValidity('Select an active Interview Structure mapped to this course.');
+          event.currentTarget.elements.structureId.reportValidity();
+          return;
+        }
+        event.currentTarget.elements.structureId.setCustomValidity('');
         if(data.endTime<=data.startTime){event.currentTarget.elements.endTime.setCustomValidity('End Time must be later than Start Time.');event.currentTarget.elements.endTime.reportValidity();return;}
         event.currentTarget.elements.endTime.setCustomValidity('');
         item.structureId=data.structureId;
@@ -548,6 +494,12 @@
         if(data.breakTo<=data.breakFrom){event.currentTarget.elements.breakTo.setCustomValidity('Break (To) must be later than Break (From).');event.currentTarget.elements.breakTo.reportValidity();return;}
         event.currentTarget.elements.breakTo.setCustomValidity('');
         const structure=structureRecord(this,data.structureId);
+        if(!structure||structure.active===false||Boolean(data.course&&structure.course&&structure.course!==data.course)){
+          event.currentTarget.elements.structureId.setCustomValidity('Select an active Interview Structure mapped to this course.');
+          event.currentTarget.elements.structureId.reportValidity();
+          return;
+        }
+        event.currentTarget.elements.structureId.setCustomValidity('');
         selected.forEach(item=>{
           item.course=data.course;
           item.program=data.program;
@@ -579,11 +531,20 @@
       const time=normalize(item.datetime).slice(11,16)||'10:00';
       const wasCanceled=this.stageKeyForInterview(item)==='canceled';
       const options=structureOptionsFor(this,item.course,item.structureId);
-      this.openModal('Reschedule Interview',`<div class="im-reschedule-context"><strong>${this.escape(item.name)}</strong> · ${this.escape(this.otrIdForInterview(item))}</div><form class="im-form" id="im-stage-reschedule-form"><div class="im-form-grid"><label><span>Date <b>*</b></span><input type="date" name="date" value="${date}" required /></label><label><span>Time <b>*</b></span><input type="time" name="time" value="${time}" required /></label><label><span>Interview Structure <b>*</b></span><select name="structureId" required><option value="">Select Interview Structure</option>${options.map(structure=>`<option value="${this.escape(structure.id)}" ${structure.id===item.structureId?'selected':''}>${this.escape(structure.name)}</option>`).join('')}</select></label><label><span>Interviewer <b>*</b></span><select name="interviewerId" required><option value="">Select Interviewer</option>${this.interviewers.map(person=>`<option value="${this.escape(person.id)}" ${person.id===item.interviewerId?'selected':''}>${this.escape(person.name)} · ${this.escape(person.department)}</option>`).join('')}</select></label><label><span>Mode of Interview <b>*</b></span><select name="mode" required>${['Online','In-Person'].map(mode=>`<option value="${mode}" ${mode===item.mode?'selected':''}>${mode}</option>`).join('')}</select></label></div><div class="im-form-actions"><button type="button" class="btn btn-outline" data-im-close>Cancel</button><button type="submit" class="btn btn-primary">Save Reschedule</button></div></form>`,'md');
+      const assignedStructure=structureRecord(this,item);
+      const assignedWasRemoved=Boolean(item.structureId&&!this.structures.some(structure=>structure.id===item.structureId));
+      const structurePlaceholder=assignedWasRemoved&&assignedStructure?`${assignedStructure.name} was removed — select a current structure`:'Select Interview Structure';
+      this.openModal('Reschedule Interview',`<div class="im-reschedule-context"><strong>${this.escape(item.name)}</strong> · ${this.escape(this.otrIdForInterview(item))}</div><form class="im-form" id="im-stage-reschedule-form"><div class="im-form-grid"><label><span>Date <b>*</b></span><input type="date" name="date" value="${date}" required /></label><label><span>Time <b>*</b></span><input type="time" name="time" value="${time}" required /></label><label><span>Interview Structure <b>*</b></span><select name="structureId" required><option value="">${this.escape(structurePlaceholder)}</option>${options.map(structure=>`<option value="${this.escape(structure.id)}" ${structure.id===item.structureId?'selected':''}>${this.escape(structure.name)}${structure.active===false?' (Inactive)':''}</option>`).join('')}</select></label><label><span>Interviewer <b>*</b></span><select name="interviewerId" required><option value="">Select Interviewer</option>${this.interviewers.map(person=>`<option value="${this.escape(person.id)}" ${person.id===item.interviewerId?'selected':''}>${this.escape(person.name)} · ${this.escape(person.department)}</option>`).join('')}</select></label><label><span>Mode of Interview <b>*</b></span><select name="mode" required>${['Online','In-Person'].map(mode=>`<option value="${mode}" ${mode===item.mode?'selected':''}>${mode}</option>`).join('')}</select></label></div><div class="im-form-actions"><button type="button" class="btn btn-outline" data-im-close>Cancel</button><button type="submit" class="btn btn-primary">Save Reschedule</button></div></form>`,'md');
       document.getElementById('im-stage-reschedule-form')?.addEventListener('submit',event=>{
         event.preventDefault();
         if(!event.currentTarget.reportValidity())return;
         const data=Object.fromEntries(new FormData(event.currentTarget).entries());
+        if(!structureOptionsFor(this,item.course,item.structureId).some(structure=>structure.id===data.structureId)){
+          event.currentTarget.elements.structureId.setCustomValidity('Select an active Interview Structure mapped to this course.');
+          event.currentTarget.elements.structureId.reportValidity();
+          return;
+        }
+        event.currentTarget.elements.structureId.setCustomValidity('');
         item.datetime=`${data.date}T${data.time}`;
         item.structureId=data.structureId;
         item.interviewerId=data.interviewerId;
@@ -666,7 +627,7 @@
       const rows=ids.map(id=>this.interviews.find(item=>item.id===id)).filter(Boolean);
       if(!rows.length)return;
       if(rows.length===1)return this.openInterviewResultView(rows[0].id);
-      this.openModal('Interview Results',`<div class="imia-result-summary"><div class="imia-result-summary-head"><div><strong>${rows.length} selected interview results</strong><span>Open any result for complete student, course, structure, evaluation, score and remarks details.</span></div></div><div class="im-table-wrap"><table class="im-table imia-result-table"><thead><tr><th>Student</th><th>Course</th><th>Interview Structure</th><th>Status</th><th>Score / Outcome</th><th>Remarks</th><th>Action</th></tr></thead><tbody>${rows.map(item=>{const structure=structureRecord(this,item.structureId);return `<tr><td><strong>${this.escape(item.name||'—')}</strong><small>${this.escape(this.otrIdForInterview(item)||item.studentId||'—')}</small></td><td>${this.escape(item.course||'—')}</td><td>${this.escape(structure?.name||'Not mapped')}</td><td><span class="im-status ${this.statusClass(item.status)}">${this.escape(item.status||'—')}</span></td><td class="imia-result-score">${item.score?`${this.escape(item.score)}/100`:'—'}</td><td class="imia-result-remarks">${this.escape(item.remarks||'No remarks recorded')}</td><td><button type="button" class="im-stage-action" data-im-row-action="view-result-stage" data-id="${this.escape(item.id)}"><i class="fas fa-eye"></i> View Result</button></td></tr>`;}).join('')}</tbody></table></div></div>`,'lg');
+      this.openModal('Interview Results',`<div class="imia-result-summary"><div class="imia-result-summary-head"><div><strong>${rows.length} selected interview results</strong><span>Open any result for complete student, course, structure, evaluation, score and remarks details.</span></div></div><div class="im-table-wrap"><table class="im-table imia-result-table"><thead><tr><th>Student</th><th>Course</th><th>Interview Structure</th><th>Status</th><th>Score / Outcome</th><th>Remarks</th><th>Action</th></tr></thead><tbody>${rows.map(item=>{const structure=structureRecord(this,item);return `<tr><td><strong>${this.escape(item.name||'—')}</strong><small>${this.escape(this.otrIdForInterview(item)||item.studentId||'—')}</small></td><td>${this.escape(item.course||'—')}</td><td>${this.escape(structure?.name||'Not mapped')}</td><td><span class="im-status ${this.statusClass(item.status)}">${this.escape(item.status||'—')}</span></td><td class="imia-result-score">${item.score?`${this.escape(item.score)}/100`:'—'}</td><td class="imia-result-remarks">${this.escape(item.remarks||'No remarks recorded')}</td><td><button type="button" class="im-stage-action" data-im-row-action="view-result-stage" data-id="${this.escape(item.id)}"><i class="fas fa-eye"></i> View Result</button></td></tr>`;}).join('')}</tbody></table></div></div>`,'lg');
     };
 
     interviews.startSelectedInterviews = function startSelectedInterviews(ids) {

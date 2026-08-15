@@ -6,7 +6,7 @@
 
 (() => {
   const FLAG = '__amsInterviewStructureLiveMappingInstalled';
-  const HISTORY_KEY = 'paAMSInterviewStructureLiveHistoryV1';
+  const LEGACY_HISTORY_KEY = 'paAMSInterviewStructureLiveHistoryV1';
 
   function normalize(value) {
     return String(value ?? '').trim();
@@ -15,23 +15,6 @@
   function clone(value) {
     if (!value) return value;
     try { return JSON.parse(JSON.stringify(value)); } catch (error) { return value; }
-  }
-
-  function readHistory() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
-      return {
-        structures: parsed?.structures && typeof parsed.structures === 'object' ? parsed.structures : {},
-        interviewStructureIds: parsed?.interviewStructureIds && typeof parsed.interviewStructureIds === 'object' ? parsed.interviewStructureIds : {},
-        interviewCourses: parsed?.interviewCourses && typeof parsed.interviewCourses === 'object' ? parsed.interviewCourses : {}
-      };
-    } catch (error) {
-      return { structures: {}, interviewStructureIds: {}, interviewCourses: {} };
-    }
-  }
-
-  function saveHistory(history) {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (error) {}
   }
 
   function activeStructureView(structure) {
@@ -53,7 +36,6 @@
     if (!interviews || interviews[FLAG]) return Boolean(interviews?.[FLAG]);
     interviews[FLAG] = true;
 
-    const history = readHistory();
     const original = {
       loadData: interviews.loadData?.bind(interviews),
       saveStructures: interviews.saveStructures?.bind(interviews),
@@ -64,31 +46,28 @@
     };
 
     const liveStructure = id => interviews.structures.find(structure => structure.id === id) || null;
-    const historicalStructure = id => history.structures[id] || null;
+    const snapshotStructure = item => item?.structureSnapshot || item?.evaluationStructureSnapshot || null;
 
-    const captureLiveStructures = () => {
-      interviews.structures.forEach(structure => {
-        if (!structure?.id) return;
-        history.structures[structure.id] = clone(structure);
-      });
-      saveHistory(history);
+    const migrateLegacyHistory = () => {
+      let legacy = null;
+      try { legacy = JSON.parse(localStorage.getItem(LEGACY_HISTORY_KEY) || 'null'); } catch (error) {}
+      if (legacy) {
+        interviews.interviews.forEach(item => {
+          const structureId = item.structureId || legacy.interviewStructureIds?.[item.id] || '';
+          if (!item.structureId && structureId) item.structureId = structureId;
+          if (!item.structureSnapshot && structureId && legacy.structures?.[structureId]) {
+            item.structureSnapshot = clone(legacy.structures[structureId]);
+          }
+        });
+      }
+      try { localStorage.removeItem(LEGACY_HISTORY_KEY); } catch (error) {}
     };
 
-    const captureInterviewMappings = () => {
-      const existingIds = new Set();
+    const captureInterviewSnapshots = () => {
       interviews.interviews.forEach(item => {
-        if (!item?.id) return;
-        existingIds.add(item.id);
-        if (item.structureId) history.interviewStructureIds[item.id] = item.structureId;
-        if (item.course) history.interviewCourses[item.id] = item.course;
+        const structure = liveStructure(item.structureId);
+        if (structure) item.structureSnapshot = clone(structure);
       });
-      Object.keys(history.interviewStructureIds).forEach(id => {
-        if (!existingIds.has(id)) delete history.interviewStructureIds[id];
-      });
-      Object.keys(history.interviewCourses).forEach(id => {
-        if (!existingIds.has(id)) delete history.interviewCourses[id];
-      });
-      saveHistory(history);
     };
 
     const selectableStructures = (course = '', currentId = '') => {
@@ -112,7 +91,7 @@
     const evaluationStructureFor = item => {
       if (!item) return null;
       const live = liveStructure(item.structureId);
-      const archived = historicalStructure(item.structureId);
+      const archived = snapshotStructure(item);
       const historical = item.status === 'Completed' || Boolean(item.evaluation && Object.keys(item.evaluation).length);
       if (historical && item.evaluationStructureSnapshot) {
         const snapshot = activeStructureView(item.evaluationStructureSnapshot);
@@ -130,7 +109,7 @@
       interviews.interviews.forEach(item => {
         const historical = item.status === 'Completed' || Boolean(item.evaluation && Object.keys(item.evaluation).length);
         if (!historical || item.evaluationStructureSnapshot) return;
-        const structure = activeStructureView(liveStructure(item.structureId) || historicalStructure(item.structureId));
+        const structure = activeStructureView(liveStructure(item.structureId) || snapshotStructure(item));
         if (!structure) return;
         item.evaluationStructureSnapshot = clone(structure);
         changed = true;
@@ -144,7 +123,20 @@
 
     interviews.structureById = function canonicalStructureById(id) {
       if (!id) return null;
-      return liveStructure(id) || historicalStructure(id) || null;
+      return liveStructure(id);
+    };
+
+    interviews.structureForInterview = function structureForInterview(item) {
+      if (!item) return null;
+      return liveStructure(item.structureId) || snapshotStructure(item);
+    };
+
+    interviews.preserveStructureSnapshot = function preserveStructureSnapshot(structureId) {
+      const structure = liveStructure(structureId);
+      if (!structure) return;
+      this.interviews.forEach(item => {
+        if (item.structureId === structureId) item.structureSnapshot = clone(structure);
+      });
     };
 
     interviews.selectableInterviewStructures = selectableStructures;
@@ -152,7 +144,6 @@
 
     if (original.saveStructures) {
       interviews.saveStructures = function saveCanonicalStructures() {
-        captureLiveStructures();
         const result = original.saveStructures();
         if (this.state?.filters?.structure !== 'all' && !liveStructure(this.state.filters.structure)) {
           this.state.filters.structure = 'all';
@@ -163,38 +154,12 @@
 
     if (original.saveInterviews) {
       interviews.saveInterviews = function saveInterviewsWithStructureIntegrity() {
-        const liveIds = new Set(this.structures.map(structure => structure.id));
-
         this.interviews.forEach(item => {
           if (!item?.id) return;
-          const previousStructureId = history.interviewStructureIds[item.id] || '';
-          const previousCourse = history.interviewCourses[item.id] || '';
-
-          // Structure Management currently clears structureId when deleting a structure.
-          // Restore only when that exact previously assigned structure no longer exists.
-          if (!item.structureId && previousStructureId && !liveIds.has(previousStructureId)) {
-            item.structureId = previousStructureId;
-          }
-
-          // Editing a structure's course must not rewrite the student's historical interview course.
-          const currentStructure = item.structureId ? liveStructure(item.structureId) : null;
-          const previousStructure = item.structureId ? historicalStructure(item.structureId) : null;
-          const structureCourseChanged = Boolean(
-            currentStructure && previousStructure
-            && normalize(currentStructure.course) !== normalize(previousStructure.course)
-          );
-          if (
-            previousCourse
-            && previousStructureId === item.structureId
-            && structureCourseChanged
-            && normalize(item.course) === normalize(currentStructure.course)
-            && normalize(item.course) !== normalize(previousCourse)
-          ) {
-            item.course = previousCourse;
-          }
+          const current = liveStructure(item.structureId);
+          if (current) item.structureSnapshot = clone(current);
+          else if (!item.structureId && item.structureSnapshot?.id) item.structureId = item.structureSnapshot.id;
         });
-
-        captureInterviewMappings();
         return original.saveInterviews();
       };
     }
@@ -202,9 +167,10 @@
     if (original.loadData) {
       interviews.loadData = function loadDataWithCanonicalStructures() {
         const result = original.loadData();
-        captureLiveStructures();
-        captureInterviewMappings();
+        migrateLegacyHistory();
+        captureInterviewSnapshots();
         ensureHistoricalSnapshots();
+        original.saveInterviews();
         return result;
       };
     }
@@ -213,7 +179,7 @@
       interviews.saveEvaluation = function saveStructureBoundEvaluation(id, complete = false) {
         const item = this.interviews.find(interview => interview.id === id);
         if (!item) return original.saveEvaluation(id, complete);
-        const structure = activeStructureView(liveStructure(item.structureId) || historicalStructure(item.structureId));
+        const structure = activeStructureView(liveStructure(item.structureId) || snapshotStructure(item));
         if (complete && structure && !item.evaluationStructureSnapshot) {
           item.evaluationStructureSnapshot = clone(structure);
         }
@@ -266,7 +232,7 @@
       const course = row?.course || existing?.course || '';
       const options = selectableStructures(course, existing?.structureId || '');
       const currentExists = existing?.structureId && Boolean(liveStructure(existing.structureId));
-      const archived = existing?.structureId && !currentExists ? historicalStructure(existing.structureId) : null;
+      const archived = existing?.structureId && !currentExists ? snapshotStructure(existing) : null;
       const emptyLabel = archived ? `${archived.name} was removed — select a current structure` : 'Select';
       return `<section class="ams-student-schedule-panel">
         <header><i class="fas fa-hourglass-half"></i><strong>${existing ? 'Edit Scheduled Interview' : 'Schedule Interview'}</strong></header>
@@ -311,7 +277,7 @@
         const course = candidate?.course || existing?.course || '';
         const options = selectableStructures(course, existing?.structureId || '');
         const currentExists = existing?.structureId && Boolean(liveStructure(existing.structureId));
-        const archived = existing?.structureId && !currentExists ? historicalStructure(existing.structureId) : null;
+        const archived = existing?.structureId && !currentExists ? snapshotStructure(existing) : null;
         const emptyLabel = archived ? `${archived.name} was removed — select a current structure` : 'Select Interview Structure';
         return `<option value="">${this.escape(emptyLabel)}</option>${options.map(item => `<option value="${this.escape(item.id)}" ${item.id === (existing?.structureId || candidate?.structureId) ? 'selected' : ''}>${this.escape(item.name)}</option>`).join('')}`;
       };
@@ -373,8 +339,8 @@
     };
 
     const finalizeLoadedData = () => {
-      captureLiveStructures();
-      captureInterviewMappings();
+      migrateLegacyHistory();
+      captureInterviewSnapshots();
       ensureHistoricalSnapshots();
       if (interviews.state?.filters?.structure !== 'all' && !liveStructure(interviews.state.filters.structure)) {
         interviews.state.filters.structure = 'all';
@@ -386,7 +352,6 @@
 
     window.addEventListener('ams:data-change', event => {
       if (event.detail?.source !== 'structures') return;
-      captureLiveStructures();
       if (interviews.state?.filters?.structure !== 'all' && !liveStructure(interviews.state.filters.structure)) {
         interviews.state.filters.structure = 'all';
       }

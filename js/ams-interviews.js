@@ -54,13 +54,7 @@ const AMSInterviews = {
   },
 
   defaultStructures() {
-    return [
-      { id: 'STR-001', name: 'Standard Interview', description: 'General eligibility, motivation, communication, and programme fit.', message: 'Email + SMS', course: 'UPSC', mode: 'In-Person', rounds: 3, attributes: 5, active: true },
-      { id: 'STR-002', name: 'Academic Interview', description: 'Academic readiness and subject-foundation assessment.', message: 'Email Only', course: 'GPSC Class 1-2', mode: 'Online', rounds: 2, attributes: 6, active: true },
-      { id: 'STR-003', name: 'Technical Interview', description: 'Analytical skills, aptitude, and role-based technical discussion.', message: 'WhatsApp + Email', course: 'GPSC Class 3', mode: 'Online', rounds: 4, attributes: 6, active: true },
-      { id: 'STR-004', name: 'Personal Interview', description: 'Personal background, goals, values, and programme commitment.', message: 'Email + SMS', course: 'Sankalp', mode: 'In-Person', rounds: 3, attributes: 5, active: true },
-      { id: 'STR-005', name: 'Final Interview', description: 'Final admission panel review and selection recommendation.', message: 'SMS Only', course: 'Sampurn', mode: 'In-Person', rounds: 2, attributes: 4, active: true }
-    ];
+    return [];
   },
 
   defaultInterviews() {
@@ -280,7 +274,7 @@ const AMSInterviews = {
   },
 
   renderInterviewRow(item) {
-    const structure = this.structureById(item.structureId);
+    const structure = this.evaluationStructureFor?.(item) || this.structureForInterview(item);
     const interviewer = this.interviewerById(item.interviewerId);
     return `<tr>
       <td><input type="checkbox" data-im-select="${item.id}" ${this.selectedRows.has(item.id) ? 'checked' : ''} /></td>
@@ -373,7 +367,7 @@ const AMSInterviews = {
   },
 
   renderCalendarEvent(item, detailed = false) {
-    const structure = this.structureById(item.structureId);
+    const structure = this.structureForInterview(item);
     return `<button type="button" class="im-calendar-event ${this.statusClass(item.status)}" data-im-event="${item.id}"><time>${this.formatTime(item.datetime)}</time><strong>${this.escape(item.name)}</strong><span>${this.escape(structure?.name || item.course)}</span>${detailed ? `<small>${this.escape(item.mode)} · ${this.escape(this.interviewerById(item.interviewerId)?.name || 'Not Assigned')}</small>` : ''}</button>`;
   },
 
@@ -386,14 +380,14 @@ const AMSInterviews = {
       ${this.renderMonthCalendar(rows, true)}
       <div class="im-status-legend">${counts.map(item => `<span><i class="${this.statusClass(item.status)}"></i>${item.status.replace(' Assignment', '')} <b>${item.count}</b></span>`).join('')}</div>
       <div class="im-selected-day"><div class="im-selected-day-head"><strong>${this.formatDate(`${this.state.selectedDate}T00:00`)}</strong><span>${selectedRows.length} interview${selectedRows.length === 1 ? '' : 's'}</span></div><div class="im-overview-timeline">${selectedRows.length ? selectedRows.map(item => {
-        const structure = this.structureById(item.structureId);
+        const structure = this.structureForInterview(item);
         return `<button type="button" data-im-event="${item.id}"><time>${this.formatTime(item.datetime)}</time><i class="${this.statusClass(item.status)}"></i><span><strong>${this.escape(item.name)}</strong><small>${this.escape(item.course)} · ${this.escape(structure?.name || 'Not mapped')}</small></span><em>${this.escape(this.interviewerById(item.interviewerId)?.name || 'Not Assigned')}</em></button>`;
       }).join('') : '<div class="im-empty">No interviews on this date.</div>'}</div></div>
     </aside>`;
   },
 
   renderStructures() {
-    if (window.AMSInterviewStructures?.renderSection) return window.AMSInterviewStructures.renderSection();
+    if (window.AMSInterviewStructures?.app && window.AMSInterviewStructures?.renderSection) return window.AMSInterviewStructures.renderSection();
     return `<section class="im-card im-structures ${this.state.structuresOpen ? 'open' : ''}">
       <div class="im-structures-head"><button type="button" data-im-action="toggle-structures"><i class="fas fa-chevron-${this.state.structuresOpen ? 'down' : 'right'}"></i><strong>Interview Structures</strong><span>${this.structures.filter(item => item.active).length} Active</span></button><button class="btn btn-outline btn-sm" type="button" data-im-action="create-structure"><i class="fas fa-gear"></i> Manage Structures</button></div>
       ${this.state.structuresOpen ? `<div class="im-structure-grid">${this.structures.map((item, index) => `<article class="im-structure-card"><span class="im-structure-icon tone-${index % 4}"><i class="fas ${item.mode === 'Online' ? 'fa-display' : 'fa-people-arrows'}"></i></span><div><strong>${this.escape(item.name)}</strong><small>${this.escape(item.course)} · ${item.rounds} rounds · ${item.attributes} attributes</small><em>${this.escape(item.mode)}</em></div><span class="im-active-badge ${item.active ? 'active' : ''}">${item.active ? 'Active' : 'Inactive'}</span><div class="im-structure-actions"><button type="button" data-im-structure-action="edit" data-id="${item.id}" title="Edit"><i class="fas fa-pen"></i></button><button type="button" data-im-structure-action="toggle" data-id="${item.id}" title="${item.active ? 'Deactivate' : 'Activate'}"><i class="fas ${item.active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i></button><button type="button" data-im-structure-action="delete" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button></div></article>`).join('')}</div>` : ''}
@@ -407,7 +401,7 @@ const AMSInterviews = {
     const month = today.slice(0, 7);
     let rows = this.interviews.filter(item => {
       const interviewer = this.interviewerById(item.interviewerId);
-      const structure = this.structureById(item.structureId);
+      const structure = this.structureForInterview(item);
       const haystack = `${item.name} ${item.inquiryId} ${item.studentId} ${item.course} ${interviewer?.name || ''} ${structure?.name || ''}`.toLowerCase();
       const date = item.datetime.slice(0, 10);
       const kpiMatch = this.state.activeKpi === 'all'
@@ -595,7 +589,7 @@ const AMSInterviews = {
   },
 
   renderAssignedInterviewRow(item, index, groupKey) {
-    const structure = this.structureById(item.structureId);
+    const structure = this.structureForInterview(item);
     const profile = this.studentProfile(item);
     const canDelete = !['Completed', 'In Progress'].includes(item.status);
     return `<tr><td>${index + 1}</td><td>${this.escape(this.interviewerById(item.interviewerId)?.name || 'Not Assigned')}</td><td>${this.formatTime(item.datetime)}</td><td>${this.escape(structure?.name || 'Not mapped')}</td><td><strong>${this.escape(profile.name)}</strong><small>${this.escape(item.studentId)}</small></td><td><strong>${this.escape(item.inquiryId)}</strong><small>${this.escape(profile.otrNo)}</small></td><td>${this.formatDate(item.datetime)}</td><td>${this.formatDate(`${item.applicationDate}T00:00`)}</td><td>${this.escape(item.course)}</td><td>${this.escape(profile.gender || 'Not provided')}</td><td>${this.formatDate(item.submittedDate)}</td><td>${item.score ? `${this.escape(item.score)}/100` : this.escape(item.status)}</td><td><div class="im-assigned-actions"><button type="button" data-im-assigned-action="view" data-id="${item.id}" title="View"><i class="fas fa-eye"></i></button><button type="button" data-im-assigned-action="edit" data-id="${item.id}" title="Edit"><i class="fas fa-pen"></i></button>${!['Completed', 'In Progress'].includes(item.status) ? `<button type="button" data-im-assigned-action="start" data-id="${item.id}" title="Start Interview"><i class="fas fa-play"></i></button>` : ''}${item.status !== 'Completed' ? `<button type="button" data-im-assigned-action="complete" data-id="${item.id}" title="Mark Interview Completed"><i class="fas fa-circle-check"></i></button>` : ''}${canDelete ? `<button type="button" class="danger" data-im-assigned-action="delete" data-id="${item.id}" data-group-key="${this.escape(groupKey)}" title="Delete"><i class="fas fa-trash"></i></button>` : ''}</div></td></tr>`;
@@ -634,9 +628,9 @@ const AMSInterviews = {
         this.render();
       });
     }
-    if (action === 'delete') return this.confirmAction('Delete interview structure?', 'Mapped interviews will be marked as not mapped.', () => {
+    if (action === 'delete') return this.confirmAction('Delete interview structure?', 'Historical interview assignments will be preserved.', () => {
+      this.preserveStructureSnapshot?.(id);
       this.structures = this.structures.filter(item => item.id !== id);
-      this.interviews.forEach(item => { if (item.structureId === id) item.structureId = ''; });
       this.saveStructures();
       this.saveInterviews();
       this.render();
@@ -782,7 +776,7 @@ const AMSInterviews = {
         const canEvaluate = ['Scheduled', 'Rescheduled', 'Awaiting Assignment'].includes(item.status);
         const canEdit = ['Scheduled', 'Rescheduled', 'Awaiting Assignment'].includes(item.status);
         const canView = item.status === 'Completed' || Object.keys(item.evaluation || {}).length;
-        return `<tr><td>${index + 1}</td><td>${this.formatDate(item.datetime)}</td><td>${this.formatTime(item.datetime)} - ${this.escape(item.endTime || '—')}</td><td>${this.escape(this.structureById(item.structureId)?.name || 'Not mapped')}</td><td>${this.escape(this.interviewerById(item.interviewerId)?.name || 'Not Assigned')}</td><td><div class="ams-student-interview-actions"><button type="button" class="edit" data-ams-student-interview-edit="${item.id}" ${canEdit ? '' : 'disabled'}><i class="fas fa-pen"></i>Edit</button>${canEvaluate ? `<button type="button" class="start" data-ams-student-interview-start="${item.id}"><i class="fas fa-play"></i>Start Interview</button>` : ''}<button type="button" class="result" data-ams-student-interview-result="${item.id}" ${canView ? '' : 'disabled'}><i class="fas fa-eye"></i>View Result</button></div><small>${this.escape(item.status)}</small></td></tr>`;
+        return `<tr><td>${index + 1}</td><td>${this.formatDate(item.datetime)}</td><td>${this.formatTime(item.datetime)} - ${this.escape(item.endTime || '—')}</td><td>${this.escape(this.structureForInterview(item)?.name || 'Not mapped')}</td><td>${this.escape(this.interviewerById(item.interviewerId)?.name || 'Not Assigned')}</td><td><div class="ams-student-interview-actions"><button type="button" class="edit" data-ams-student-interview-edit="${item.id}" ${canEdit ? '' : 'disabled'}><i class="fas fa-pen"></i>Edit</button>${canEvaluate ? `<button type="button" class="start" data-ams-student-interview-start="${item.id}"><i class="fas fa-play"></i>Start Interview</button>` : ''}<button type="button" class="result" data-ams-student-interview-result="${item.id}" ${canView ? '' : 'disabled'}><i class="fas fa-eye"></i>View Result</button></div><small>${this.escape(item.status)}</small></td></tr>`;
       }).join('') : '<tr><td colspan="6" class="im-empty">No interviews scheduled for this student.</td></tr>'}</tbody></table>
     </section>`;
   },
@@ -792,7 +786,7 @@ const AMSInterviews = {
       .filter(item => item.status === 'Completed' || Object.keys(item.evaluation || {}).length);
     if (!interviews.length) return;
     const sections = interviews.map(item => {
-      const structure = this.structureById(item.structureId);
+      const structure = this.structureForInterview(item);
       const interviewer = this.interviewerById(item.interviewerId);
       const attributes = (structure?.groups || []).flatMap(group => group.attributes || []);
       return `<section class="ams-overall-report-section">
@@ -888,8 +882,6 @@ const AMSInterviews = {
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       if (existing) {
         Object.assign(existing, data);
-        this.interviews.filter(item => item.structureId === existing.id).forEach(item => { item.course = existing.course; });
-        this.saveInterviews();
       }
       else this.structures.push({ id: `STR-${String(Date.now()).slice(-6)}`, ...data, rounds: 1, attributes: 4, active: true });
       this.saveStructures();
@@ -988,7 +980,7 @@ const AMSInterviews = {
   openInterviewDetail(id, completeRequested = false, options = {}) {
     const item = this.interviews.find(interview => interview.id === id);
     if (!item) return;
-    const structure = this.structureById(item.structureId);
+    const structure = this.evaluationStructureFor?.(item) || this.structureForInterview(item);
     const interviewer = this.interviewerById(item.interviewerId);
     const profile = this.studentProfile(item);
     const attributes = (structure?.groups || []).flatMap(group => (group.attributes || []).map(attribute => ({ ...attribute, groupName: group.name })));
@@ -1054,7 +1046,7 @@ const AMSInterviews = {
     const form = document.getElementById('im-interview-detail-form');
     if (!item || !form || !form.reportValidity()) return;
     const data = new FormData(form);
-    const structure = this.structureById(item.structureId);
+    const structure = this.evaluationStructureFor?.(item) || this.structureForInterview(item);
     const attributes = (structure?.groups || []).flatMap(group => group.attributes || []);
     item.evaluation = Object.fromEntries(attributes.map(attribute => [attribute.id, data.get(`evaluation-${attribute.id}`) || '']));
     item.remarks = String(data.get('remarks') || '');
@@ -1202,7 +1194,7 @@ const AMSInterviews = {
 
   exportCsv() {
     const headers = ['Candidate', 'Inquiry ID', 'Student ID', 'Course', 'Structure', 'Date Time', 'Interviewer', 'Mode', 'Status', 'Score'];
-    const rows = this.filteredInterviews().map(item => [item.name, item.inquiryId, item.studentId, item.course, this.structureById(item.structureId)?.name || '', item.datetime, this.interviewerById(item.interviewerId)?.name || '', item.mode, item.status, item.score]);
+    const rows = this.filteredInterviews().map(item => [item.name, item.inquiryId, item.studentId, item.course, this.structureForInterview(item)?.name || '', item.datetime, this.interviewerById(item.interviewerId)?.name || '', item.mode, item.status, item.score]);
     const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const link = document.createElement('a');
@@ -1263,6 +1255,7 @@ const AMSInterviews = {
   },
 
   structureById(id) { return this.structures.find(item => item.id === id); },
+  structureForInterview(item) { return this.structureById(item?.structureId) || item?.structureSnapshot || item?.evaluationStructureSnapshot || null; },
   interviewerById(id) { return this.interviewers.find(item => item.id === id); },
   statusClass(status) { return String(status).toLowerCase().replace(/\s+/g, '-'); },
   initials(name) { return name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(); },
